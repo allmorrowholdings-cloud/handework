@@ -1,0 +1,8 @@
+handEwork V7 responsive hero patch
+- Repositions hero relief artwork for desktop, tablet and mobile.
+- Removes the mobile blank-gap problem by using a fixed responsive visual stage.
+- Anchors/crops artwork intentionally at bottom-right without stretching it.
+- Compacts Verified professionals card on small screens.
+- Keeps dark mode as the new default and resets the local theme preference key for this release.
+- Improves dark hero heading contrast: warm cream for "With" / "hands", orange for "skilled".
+- Gives the hero search panel a true dark-mode surface and readable field contrast.

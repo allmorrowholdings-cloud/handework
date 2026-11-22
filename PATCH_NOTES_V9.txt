@@ -1,0 +1,7 @@
+handEwork V9 — React Server/Client boundary fix
+
+- Removes render-function props passed from Server Components into LiveRecords.
+- Adds serializable LiveRecords display variants: default, admin, training.
+- Fixes admin dynamic sections (verifications, disputes, payments, risk, analytics).
+- Fixes the same latent runtime error on Training.
+- No backend/database migration required.

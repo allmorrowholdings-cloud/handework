@@ -1,0 +1,2 @@
+import { AppShell } from "../components/app-shell"; import { LiveRecords } from "../components/live-records";
+export default function Notifications(){return <AppShell title="Notifications" note="Booking and payment alerts across in-app, push, SMS and WhatsApp."><section className="app-content"><div className="app-card full-card"><LiveRecords endpoint="/v1/notifications" emptyTitle="You are all caught up" emptyText="Important job, payment and verification updates will appear here." /></div></section></AppShell>}

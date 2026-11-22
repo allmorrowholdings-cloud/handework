@@ -1,0 +1,2 @@
+import Link from "next/link";import { AppShell } from "../../components/app-shell";import { ChatRoom } from "./chat-room";
+export default async function Conversation({params}:{params:Promise<{id:string}>}){const{id}=await params;return <AppShell title="Job conversation" note="Authenticated messages and attachments stay with the booking." action={<Link className="button button-dark" href="/messages">All conversations</Link>}><section className="app-content"><div className="app-card"><ChatRoom id={id}/></div></section></AppShell>}

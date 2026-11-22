@@ -1,0 +1,6 @@
+handEwork V10
+- Preserves existing V9/V8 layout and artwork.
+- Adds organic CSS mask feathering to the homepage relief artwork.
+- Hides sharp PNG/canvas boundaries at bottom/right/left edges.
+- Uses the existing plain hero background; no generated or CSS cracks added.
+- Separate stronger mobile feathering for narrow screens.

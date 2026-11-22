@@ -1,0 +1,6 @@
+HANDEWORK V11 artisan dashboard stability patch
+- fixes React destroy-is-not-a-function crash in WorkProof effect cleanup
+- dedicated artisan Jobs, Messages and Earnings routes/shells
+- artisan job detail and chat preserve artisan navigation
+- verification checks now have explicit upload/update/review states
+- pending/approved verification feedback clarified

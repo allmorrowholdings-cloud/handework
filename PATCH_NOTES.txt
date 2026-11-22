@@ -1,0 +1,33 @@
+handEwork V5 refinement patch — 2026-08-25
+
+UI
+- Dark mode is now the default first-render theme; light remains available via the theme toggle.
+- Homepage hero uses the newly supplied transparent cracked-wall hand/hammer artwork.
+- Removed handmade crack/relief background treatment; hero background is plain.
+- Removed eyebrow/app-kicker subtitle markers globally.
+- Homepage services are focused on Plumbing, Carpentry, Welding, Painting, Masonry, Tailoring, Hairdressing, Makeup artist and Catering. Remaining services stay in Marketplace.
+- Existing premium trust signal strip retained.
+
+SHOP / PAYMENT
+- Shop checkout now creates persistent server-side orders and line items.
+- Prices are server-authoritative; the browser sends product IDs/quantities only.
+- Paystack transaction initialization is wired to PAYSTACK_SECRET_KEY already stored in backend/.env.
+- Paystack webhook updates shop orders automatically in production.
+- Local return flow also verifies the Paystack transaction directly, so localhost testing does not depend on Paystack reaching a localhost webhook.
+- Supports delivery or office pickup, saved on the order record.
+- New migration: d7f1a9c2b430_add_shop_orders.py
+
+AFTER APPLYING
+1. cd backend
+2. .\.venv\Scripts\Activate.ps1
+3. python -m flask --app wsgi:app db upgrade
+4. restart Flask
+5. restart Vite
+
+Optional env values:
+PUBLIC_WEB_URL=http://localhost:3000
+SHOP_DELIVERY_FEE_GHS=35
+SHOP_PICKUP_NOTE=Pickup location and collection window will be confirmed after payment.
+
+Production Paystack webhook:
+POST https://YOUR_PUBLIC_API_DOMAIN/v1/webhooks/paystack

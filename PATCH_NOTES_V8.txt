@@ -1,0 +1,6 @@
+handEwork V8
+- Added a dedicated warm-cream dark-mode handEwork logo asset while preserving orange brand detail.
+- Removed the pale logo backing treatment in dark mode.
+- Moved the Verified professionals card to the top of the hero art stage so it no longer blocks the hammer/hand.
+- Re-centered the actual hero artwork on tablet/mobile with breakpoint-specific sizing and translation.
+- Mobile hero now reserves a compact top lane for the verification card and keeps the sculpture centered below it.

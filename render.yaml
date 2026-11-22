@@ -1,0 +1,123 @@
+services:
+  - type: keyvalue
+    name: handework-redis
+    plan: starter
+    region: frankfurt
+    ipAllowList: []
+
+  - type: web
+    name: handework-api
+    runtime: python
+    plan: starter
+    region: frankfurt
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    preDeployCommand: flask --app wsgi:app db upgrade
+    startCommand: gunicorn --worker-class gthread --threads 4 --workers 2 --bind 0.0.0.0:$PORT wsgi:app
+    healthCheckPath: /v1/health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: handework-redis
+          property: connectionString
+      - key: WEB_ORIGINS
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: MAPBOX_SECRET_TOKEN
+        sync: false
+      - key: EXPO_ACCESS_TOKEN
+        sync: false
+      - key: HUBTEL_CLIENT_ID
+        sync: false
+      - key: HUBTEL_CLIENT_SECRET
+        sync: false
+      - key: HUBTEL_SENDER_ID
+        sync: false
+      - key: WHATSAPP_PROVIDER_URL
+        sync: false
+      - key: WHATSAPP_PROVIDER_TOKEN
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: af-south-1
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_PUBLIC_BASE_URL
+        sync: false
+      - key: PLATFORM_FEE_BPS
+        value: "1200"
+      - key: ESCROW_AUTO_RELEASE_HOURS
+        value: "48"
+
+  - type: worker
+    name: handework-worker
+    runtime: python
+    plan: starter
+    region: frankfurt
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A handework.tasks.celery worker --loglevel=INFO --concurrency=2
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: handework-redis
+          property: connectionString
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: EXPO_ACCESS_TOKEN
+        sync: false
+      - key: HUBTEL_CLIENT_ID
+        sync: false
+      - key: HUBTEL_CLIENT_SECRET
+        sync: false
+      - key: HUBTEL_SENDER_ID
+        sync: false
+      - key: WHATSAPP_PROVIDER_URL
+        sync: false
+      - key: WHATSAPP_PROVIDER_TOKEN
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: af-south-1
+      - key: S3_BUCKET
+        sync: false
+
+  - type: web
+    name: handework-web
+    runtime: node
+    plan: starter
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_VERSION
+        value: 22.13.0
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_MAPBOX_TOKEN
+        sync: false

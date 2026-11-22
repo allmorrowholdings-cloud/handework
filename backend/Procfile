@@ -1,0 +1,2 @@
+web: gunicorn --worker-class gthread --threads 4 --workers 2 --bind 0.0.0.0:$PORT wsgi:app
+worker: celery -A handework.tasks.celery worker --loglevel=INFO --concurrency=2

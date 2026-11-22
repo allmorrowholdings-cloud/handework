@@ -1,0 +1,2 @@
+import Link from "next/link";import { AppShell } from "../../components/app-shell";import { Workboard } from "./workboard";
+export default function ArtisanDashboard(){return <AppShell role="artisan" title="Workboard" note="Only accepted, scheduled and completed jobs are counted." action={<Link className="button button-orange" href="/artisan/availability">Set availability</Link>}><section className="app-content"><Workboard/></section></AppShell>}
