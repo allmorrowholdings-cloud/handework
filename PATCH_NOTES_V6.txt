@@ -1,7 +1,0 @@
-handEwork V6 refinement
-- Brand tagline standardized to: Get it done with skilled hands.
-- Footer brand line updated.
-- Browser/page metadata and social preview copy updated to the new tagline.
-- Homepage service cards now use the supplied artisan artwork for Plumbing, Carpentry, Welding, Painting, Masonry, Tailoring, Hairdressing, Makeup artist and Catering.
-- Supplied electrician and shoemaker artwork included in public/services for marketplace use; they are not added to the homepage shortlist.
-- Dark mode remains default.

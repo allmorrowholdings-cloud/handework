@@ -122,7 +122,7 @@ export default function JoinArtisan() {
           {error && <p className="form-error" role="alert">{error}</p>}
           <div className="form-actions">
             {step > 1 && <button type="button" className="button ghost-button" onClick={() => setStep((current) => current - 1)}>Back</button>}
-            <button className="button button-orange" disabled={busy}>{busy ? "Creating profile…" : step < 3 ? "Continue →" : "Create artisan profile →"}</button>
+            <button className="button button-orange" disabled={busy}>{busy ? "Creating profile…" : step < 3 ? "Continue" : "Create artisan profile"}</button>
           </div>
           <p className="auth-switch">Already applied? <Link href="/auth/sign-in">Sign in</Link></p>
         </form>

@@ -50,6 +50,6 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
     <label><span>What needs doing?</span><input value={service} onChange={(e) => setService(e.target.value)} placeholder="e.g. Plumbing" aria-label="Service needed" /></label>
     <label><span>Where is the job?</span><input value={location} onChange={(e) => { locationRequest.current++; setLocating(false); setLocation(e.target.value); setCoordinates(""); setLocationError(""); }} placeholder="e.g. Osu, Accra" aria-label="Job location" aria-describedby={locationError ? "finder-location-error" : undefined} /><button type="button" className="locate" disabled={locating} onClick={locate}>{locating ? "Locating…" : "Use GPS"}</button></label>
     {locationError && <p id="finder-location-error" className="finder-location-error" role="status">{locationError}</p>}
-    <button className="finder-submit" type="submit" disabled={locating}>Find an artisan <span>→</span></button>
+    <button className="finder-submit" type="submit" disabled={locating}>Find an artisan</button>
   </form>;
 }

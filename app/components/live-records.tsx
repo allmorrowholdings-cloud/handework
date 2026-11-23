@@ -37,7 +37,7 @@ export function LiveRecords({
   }, [endpoint]);
 
   if (state === "loading") return <div className="loading-line"><span />Loading current records…</div>;
-  if (state === "error") return <EmptyState mark="↗" title="Connect the handEwork API" text="This page is ready for live data and will not use sample records while the backend is unavailable." />;
+  if (state === "error") return <EmptyState title="Connect the handEwork API" text="This page is ready for live data and will not use sample records while the backend is unavailable." />;
   if (!items.length) return <EmptyState title={emptyTitle} text={emptyText} action={action ? <Link className="button button-dark" href={action.href}>{action.label}</Link> : undefined} />;
 
   function destination(item: Item) {
@@ -58,6 +58,6 @@ export function LiveRecords({
 
   return <div className="record-list">{items.map((item, index) => {
     const href = destination(item);
-    return <div className="record-row" key={String(item.id ?? index)}>{content(item)}{href && <Link href={href}>Open →</Link>}</div>;
+    return <div className="record-row" key={String(item.id ?? index)}>{content(item)}{href && <Link href={href}>Open</Link>}</div>;
   })}</div>;
 }

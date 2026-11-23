@@ -45,7 +45,7 @@ export function AuthForm({ mode }: { mode: "sign-in" | "create" }) {
     </label>
     {mode === "create" && <input type="hidden" name="role" value="customer" />}
     {error && <p className="form-error" role="alert">{error}</p>}
-    <button className="button button-orange full-button" disabled={busy}>{busy ? "Please wait…" : mode === "sign-in" ? "Sign in securely →" : "Create customer account →"}</button>
+    <button className="button button-orange full-button" disabled={busy}>{busy ? "Please wait…" : mode === "sign-in" ? "Sign in securely" : "Create customer account"}</button>
     <p className="auth-switch">{mode === "sign-in" ? <>New to handEwork? <Link href="/auth/create-account">Create an account</Link></> : <>Already registered? <Link href="/auth/sign-in">Sign in</Link></>}</p>
   </form>;
 }
