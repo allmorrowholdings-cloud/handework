@@ -13,7 +13,7 @@ export function PublicArtisanProfile({ id }: { id: string }) {
   const [record, setRecord] = useState<{artisan:Artisan;portfolio:Portfolio[];workproof:WorkProof}|null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => { api<{artisan:Artisan;portfolio:Portfolio[];workproof:WorkProof}>(`/v1/artisans/${id}`).then(setRecord).catch(() => setFailed(true)); }, [id]);
-  if (failed) return <section className="section shell"><div className="result-state"><h2>Profile unavailable</h2><p>Connect the handEwork API or return to search. This page does not display invented artisan details.</p><Link className="button button-dark" href="/marketplace">Back to search</Link></div></section>;
+  if (failed) return <section className="section shell"><div className="result-state"><h2>Profile unavailable</h2><p>This profile could not be opened. Return to search to find another artisan.</p><Link className="button button-dark" href="/marketplace">Back to search</Link></div></section>;
   if (!record) return <section className="section shell"><div className="loading-line"><span />Loading verified profile…</div></section>;
   const { artisan, portfolio, workproof } = record;
   return <>

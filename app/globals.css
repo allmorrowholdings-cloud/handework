@@ -1548,3 +1548,5 @@ html .home-market .hero.hero-light, html[data-theme] .home-market .hero.hero-lig
   .finder input, .finder .finder-submit { font-size: 16px; }
   .finder .locate, .finder .finder-submit, .search-recovery .button { min-height: 44px; }
 }
+
+@media (min-width: 901px) { .market-layout.results-only { grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); } }

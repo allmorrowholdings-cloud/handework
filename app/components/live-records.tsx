@@ -37,7 +37,7 @@ export function LiveRecords({
   }, [endpoint]);
 
   if (state === "loading") return <div className="loading-line"><span />Loading current records…</div>;
-  if (state === "error") return <EmptyState title="Connect the handEwork API" text="This page is ready for live data and will not use sample records while the backend is unavailable." />;
+  if (state === "error") return <EmptyState title="Unable to load this information" text="Please try again in a moment." />;
   if (!items.length) return <EmptyState title={emptyTitle} text={emptyText} action={action ? <Link className="button button-dark" href={action.href}>{action.label}</Link> : undefined} />;
 
   function destination(item: Item) {

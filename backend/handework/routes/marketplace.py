@@ -1,4 +1,5 @@
 from datetime import date
+from math import isfinite
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from ..extensions import db
@@ -27,7 +28,13 @@ def search_artisans():
     coordinates = parse_coordinates(request.args.get("coordinates", ""))
     if not coordinates and request.args.get("location"):
         coordinates = geocode(request.args["location"])
-    distance_limit = min(max(float(request.args.get("distance_km", 25)), 1), 100)
+    try:
+        requested_distance = float(request.args.get("distance_km", 25))
+    except (TypeError, ValueError):
+        return jsonify({"message": "Distance must be a number"}), 422
+    if not isfinite(requested_distance):
+        return jsonify({"message": "Distance must be a finite number"}), 422
+    distance_limit = min(max(requested_distance, 1), 100)
     query = ArtisanProfile.query.filter_by(verification_status="approved", available=True)
     if service: query = query.filter(db.or_(ArtisanProfile.trade.ilike(f"%{service}%"), ArtisanProfile.secondary_services.ilike(f"%{service}%")))
     rows = []

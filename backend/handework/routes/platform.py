@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import decode_token, get_jwt_identity, jwt_required, verify_jwt_in_request
 from flask_socketio import join_room
 from ..extensions import db, socketio
+
 from ..models import (ArtisanProfile, AuditLog, Booking, BookingStatus, Conversation, Course, Dispute, FileAsset, LedgerEntry, Message, Notification, Organization, OrganizationMember, PromoCode, PushDevice, Referral, Review, Role, Subscription, SupportTicket, TrainingProvider, Verification, WalletAccount)
 from ..security import current_user, role_required
 from ..services.storage import upload_file
@@ -152,8 +153,12 @@ def subscription():
 @bp.get("/training/courses")
 def courses():
     rows = Course.query.filter_by(published=True).order_by(Course.created_at.desc()).limit(100).all(); items=[]
+    providers = {provider.id: provider for provider in TrainingProvider.query.filter(TrainingProvider.id.in_({row.provider_id for row in rows})).all()} if rows else {}
     for row in rows:
-        provider=TrainingProvider.query.get(row.provider_id); items.append({"id":row.id,"title":row.title,"trade":row.trade,"city":row.city,"delivery_mode":row.delivery_mode,"fee":float(row.fee) if row.fee is not None else None,"currency":row.currency,"provider":provider.name,"enrollment_url":row.enrollment_url})
+        provider = providers.get(row.provider_id)
+        if provider is None or provider.verification_status != "approved":
+            continue
+        items.append({"id": row.id, "title": row.title, "trade": row.trade, "city": row.city, "delivery_mode": row.delivery_mode, "fee": float(row.fee) if row.fee is not None else None, "currency": row.currency, "provider": provider.name, "enrollment_url": row.enrollment_url})
     return jsonify({"items":items})
 
 
@@ -172,6 +177,10 @@ def organizations():
 def support():
     verify_jwt_in_request(optional=True); user_id=get_jwt_identity();data=request.get_json(silent=True) or {};message=str(data.get("message") or "").strip();email=str(data.get("email") or "").strip()
     if user_id and not email: email=current_user().email
+    if data.get("booking_id"):
+        booking = db.session.get(Booking, data["booking_id"])
+        if not booking or (user_id and user_id not in (booking.customer_id, booking.artisan.user_id if booking.artisan else None)):
+            return jsonify({"message": "Booking could not be found"}), 404
     if not email or not message:return jsonify({"message":"Email and message are required"}),422
     priority="urgent" if str(data.get("topic") or "").lower()=="safety" else "normal";row=SupportTicket(user_id=user_id,booking_id=data.get("booking_id"),email=email,topic=str(data.get("topic") or "general"),message=message,priority=priority);db.session.add(row);db.session.commit();return jsonify({"id":row.id,"status":row.status}),201
 

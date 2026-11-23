@@ -24,15 +24,19 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
       ({ coords }) => {
         if (request !== locationRequest.current) return;
         setCoordinates(`${coords.latitude},${coords.longitude}`);
-        setLocation("Current location");
+        setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
         setLocating(false);
       },
       (error) => {
         if (request !== locationRequest.current) return;
-        setLocationError(error.code === 1 ? "Location permission was denied. Allow it in your browser or enter your area." : "Could not get your location. Try again or enter your area.");
+        setLocationError(error.code === 1
+          ? "Allow location for this site in your browser, or enter your area below."
+          : error.code === 3
+            ? "Finding your location took too long. Try again or enter your area."
+            : "Your device could not determine its location. Check location services or enter your area.");
         setLocating(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: false, maximumAge: 60_000, timeout: 15_000 }
     );
   }
 

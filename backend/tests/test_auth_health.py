@@ -1,3 +1,4 @@
+from handework.extensions import db
 def test_health(client):
     response=client.get("/v1/health")
     assert response.status_code==200
@@ -24,3 +25,18 @@ def test_account_settings_are_persisted(client,customer):
     body=response.get_json()["user"]
     assert body["first_name"]=="Akosua"
     assert body["notification_preferences"]["whatsapp"] is True
+
+
+def test_public_support_ticket_is_saved(client, app):
+    from handework.models import SupportTicket
+    response = client.post("/v1/support", json={"topic":"safety","email":"person@example.com","message":"Please contact me"})
+    assert response.status_code == 201
+    with app.app_context():
+        ticket = db.session.get(SupportTicket, response.get_json()["id"])
+        assert ticket.email == "person@example.com"
+        assert ticket.priority == "urgent"
+
+
+def test_support_rejects_an_unknown_booking_reference(client):
+    response = client.post("/v1/support", json={"topic":"booking","email":"person@example.com","message":"Please help","booking_id":"missing"})
+    assert response.status_code == 404

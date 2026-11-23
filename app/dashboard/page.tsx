@@ -1,2 +1,2 @@
 import Link from "next/link";import { AppShell } from "../components/app-shell";import { CustomerOverview } from "./customer-overview";
-export default function DashboardPage(){return <AppShell title="Your work, in one place." note="Bookings, payments and updates appear from the live handEwork API." action={<Link className="button button-orange" href="/bookings/new">Book a service</Link>}><section className="app-content"><CustomerOverview/></section></AppShell>}
+export default function DashboardPage(){return <AppShell title="Your work, in one place." note="Follow your bookings, payments and job updates." action={<Link className="button button-orange" href="/bookings/new">Book a service</Link>}><section className="app-content"><CustomerOverview/></section></AppShell>}
