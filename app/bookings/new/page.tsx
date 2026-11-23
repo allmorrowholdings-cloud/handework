@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "../../components/app-shell";
 import { api } from "../../../lib/api";
@@ -8,6 +8,10 @@ import { api } from "../../../lib/api";
 const initial = { service:"", description:"", address:"", area:"", city:"Accra", scheduled_date:"", time_window:"morning", budget_type:"quote", budget:"", contact_phone:"", instant_booking:false };
 
 export default function NewBookingPage() {
+  return <Suspense fallback={<p className="shell" role="status">Loading job request…</p>}><NewBookingForm /></Suspense>;
+}
+
+function NewBookingForm() {
   const params = useSearchParams();
   const router = useRouter();
   const [step, setStep] = useState(1);
