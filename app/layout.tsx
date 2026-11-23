@@ -18,7 +18,6 @@ export const metadata: Metadata = {
     title: "handEwork | Get it done with skilled hands.",
     description: "Get it done with skilled hands. Find trusted artisans near you, book work clearly and pay safely with handEwork.",
   },
-  other: { "codex-preview": "development" },
   icons: {
     icon: [{ url: "/favicon.png", type: "image/png", sizes: "512x512" }],
     shortcut: "/favicon.png",
