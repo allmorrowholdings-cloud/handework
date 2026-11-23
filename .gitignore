@@ -28,3 +28,9 @@ android/
 ios/
 .sites-runtime/
 .wrangler/
+
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+backend/uploads/
+.coverage

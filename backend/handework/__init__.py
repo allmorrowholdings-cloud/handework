@@ -5,7 +5,7 @@ from .config import Config
 from .extensions import db, jwt, limiter, migrate, socketio
 
 
-def create_app(config_object=Config):
+def create_app(config_object=Config, *, seed_development_admin=True):
     app = Flask(__name__)
     app.config.from_object(config_object)
     db.init_app(app)
@@ -59,7 +59,7 @@ def create_app(config_object=Config):
         admin_email = (os.getenv("ADMIN_EMAIL") or "").strip().lower()
         admin_password = os.getenv("ADMIN_PASSWORD") or ""
         admin_phone = (os.getenv("ADMIN_PHONE") or "").strip()
-        if admin_email and admin_password:
+        if seed_development_admin and admin_email and admin_password:
             from .models import Role, User
             with app.app_context():
                 user = User.query.filter_by(email=admin_email).first()

@@ -26,6 +26,8 @@ No test users, fake artisans, sample balances or placeholder transactions are in
 5. Run the web application.
 6. Create an Expo development build for mobile testing. Mapbox and push notifications require a development build, not Expo Go.
 
+For web deployment, browser installation, and homepage animations, see [Deploy handEwork on Vercel](VERCEL.md).
+
 ## Verification commands
 
 ```powershell

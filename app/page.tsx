@@ -4,15 +4,15 @@ import { Footer } from "./components/footer";
 import { LocationSearch } from "./components/location-search";
 
 const services: Array<{code:string;name:string;note:string;image:string|null;visual?:"paint"|"masonry"}> = [
-  { code: "01", name: "Plumbing", note: "Leaks, fittings, installations", image: "/services/plumber.home.png" },
-  { code: "02", name: "Carpentry", note: "Furniture, fittings, repairs", image: "/services/capenter.home.png" },
-  { code: "03", name: "Welding", note: "Gates, frames, metalwork", image: "/services/welder.home.png" },
-  { code: "04", name: "Painting", note: "Interior, exterior, finishing", image: "/services/painter.home.png" },
-  { code: "05", name: "Masonry", note: "Blocks, plastering, repairs", image: "/services/mason.home.png" },
-  { code: "06", name: "Tailoring", note: "Alterations and custom pieces", image: "/services/tailor.home.png" },
-  { code: "07", name: "Hairdressing", note: "Cuts, styling, braiding", image: "/services/hairdresser.home.png" },
-  { code: "08", name: "Makeup artist", note: "Makeup, beauty, grooming", image: "/services/makeupartist.home.png" },
-  { code: "09", name: "Catering", note: "Food, events, coordination", image: "/services/caterer.home.png" },
+  { code: "01", name: "Plumbing", note: "Stop leaks and fit new taps.", image: "/services/home/plumbing.gif" },
+  { code: "02", name: "Carpentry", note: "Fix doors or commission furniture.", image: "/services/home/carpentry.gif" },
+  { code: "03", name: "Welding", note: "Repair gates or build custom metalwork.", image: "/services/home/welding.webp" },
+  { code: "04", name: "Painting", note: "Refresh rooms and exterior walls.", image: "/services/home/painting.webp" },
+  { code: "05", name: "Masonry", note: "Build block walls and patch plaster.", image: "/services/home/masonry.gif" },
+  { code: "06", name: "Tailoring", note: "Alter clothes or get a custom fit.", image: "/services/home/tailoring.gif" },
+  { code: "07", name: "Hairdressing", note: "Book braids, cuts, or styling.", image: "/services/home/hair-beauty.webp" },
+  { code: "08", name: "Makeup artist", note: "Get makeup for events and photos.", image: "/services/home/makeup.webp" },
+  { code: "09", name: "Catering", note: "Feed your guests without the cooking.", image: "/services/home/food-events.webp" },
 ];
 
 const safeguards = [
@@ -44,7 +44,7 @@ export default function Home() {
 
           <div className="home-hammer">
             <picture>
-              <img src="/handework-hero-still.png" alt="A hand gripping a hammer breaks through concrete" width={512} height={512} />
+              <img src="/handework-hammer.webp" alt="A hand gripping a hammer breaks through concrete" width={1024} height={1024} />
             </picture>
           </div>
         </div>
@@ -95,7 +95,7 @@ export default function Home() {
 
       <section className="shop-teaser section"><div className="shell shop-teaser-grid">
         <div><h2>Tools made easier to own.</h2><p>Browse branded trade tools, kits and essentials at discounted prices. Shop by craft, add to cart, then choose delivery or office pickup.</p><div className="button-row"><Link className="button button-orange" href="/shop">Explore the artisan shop</Link><Link className="text-link" href="/join/artisan">Work with handEwork <span>↗</span></Link></div></div>
-        <div className="shop-teaser-art"><img src="/services/capenter.home.png" alt="Branded handEwork carpentry tools" /></div>
+        <div className="shop-teaser-art"><img src="/artisan-toolbox.webp" alt="Patterned wooden toolbox filled with hand tools" loading="lazy" width={960} height={960} /></div>
       </div></section>
 
       <section className="final-cta"><div className="shell final-inner"><div><h2>Ready to get it done?</h2></div><Link className="button button-cream" href="/marketplace">Find an artisan <span>→</span></Link></div></section>

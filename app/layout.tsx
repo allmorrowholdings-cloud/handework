@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: { default: "handEwork | Get it done with skilled hands.", template: "%s | handEwork" },
   description: "Get it done with skilled hands. Find trusted artisans near you, book work clearly and pay safely with handEwork.",
   applicationName: "handEwork",
+  manifest: "/manifest.webmanifest",
   openGraph: {
     title: "handEwork | Get it done with skilled hands.",
     description: "Get it done with skilled hands. Find trusted artisans near you, book work clearly and pay safely with handEwork.",
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/favicon.png", type: "image/png", sizes: "512x512" }],
     shortcut: "/favicon.png",
-    apple: "/favicon.png",
+    apple: "/pwa-icon-192.png",
   },
 };
 
