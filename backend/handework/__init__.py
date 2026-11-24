@@ -29,6 +29,19 @@ def create_app(config_object=Config, *, seed_development_admin=True):
     if os.getenv("FLASK_ENV") == "development" or os.getenv("STORAGE_MODE") == "local":
         @app.get("/v1/local-uploads/<path:filename>")
         def local_upload(filename):
+            if filename.replace(chr(92), "/").split("/", 1)[0] != "portfolio":
+                return jsonify({"message":"File unavailable"}), 404
+            root = os.getenv("LOCAL_UPLOAD_DIR") or os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+            return send_from_directory(root, filename)
+
+        @app.get("/v1/private-download/<token>")
+        def private_download(token):
+            from itsdangerous import BadData
+            from .services.storage import local_signer
+            try:
+                filename = local_signer().loads(token, max_age=900)
+            except BadData:
+                return jsonify({"message":"File link expired or unavailable"}), 404
             root = os.getenv("LOCAL_UPLOAD_DIR") or os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
             return send_from_directory(root, filename)
 

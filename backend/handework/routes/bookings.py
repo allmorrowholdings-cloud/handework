@@ -1,10 +1,13 @@
 import secrets
+from uuid import UUID, uuid5
+from sqlalchemy.exc import IntegrityError
 from decimal import Decimal, InvalidOperation
 from datetime import date, datetime, time, timezone
 from flask import Blueprint, jsonify, request
 from ..extensions import db
-from ..models import ArtisanProfile, Availability, Booking, BookingStatus, BookingStatusEvent, Conversation, JobChange, Quote, Role
+from ..models import ArtisanProfile, Availability, FileAsset, Booking, BookingStatus, BookingStatusEvent, Conversation, JobChange, Quote, Role
 from ..security import current_user, role_required
+from ..services.storage import private_download_url
 from ..services.notifications import dispatch_notifications, queue_notifications
 
 bp = Blueprint("bookings", __name__)
@@ -49,6 +52,16 @@ def bookings():
         return jsonify({"items": [row.public() for row in rows]})
     if user.role != Role.CUSTOMER: return jsonify({"message": "Only customers can create bookings"}), 403
     data = request.get_json(silent=True) or {}
+    booking_id = None
+    request_key = request.headers.get("Idempotency-Key")
+    if request_key:
+        try:
+            booking_id = str(uuid5(UUID(user.id), str(UUID(request_key))))
+        except ValueError:
+            return jsonify({"message": "Invalid booking request key"}), 422
+        existing = db.session.get(Booking, booking_id)
+        if existing:
+            return jsonify(existing.public())
     required = ("service", "description", "address", "area", "city", "contact_phone")
     if any(not str(data.get(field) or "").strip() for field in required): return jsonify({"message": "Complete the service, job, address, city and contact fields", "code": "missing_booking_fields"}), 422
     scheduled = None
@@ -69,7 +82,18 @@ def bookings():
             slot = Availability.query.filter_by(artisan_id=artisan.id, weekday=scheduled.weekday(), active=True).first()
             if not artisan.instant_booking or artisan.starting_price is None or not slot: return jsonify({"message": "Instant booking is not available for this artisan and date"}), 409
             booking.status, booking.agreed_amount, instant_artisan = BookingStatus.ACCEPTED, artisan.starting_price, artisan
-    db.session.add(booking); db.session.flush(); db.session.add(BookingStatusEvent(booking_id=booking.id, actor_id=user.id, to_status=booking.status.value, note="Instant booking accepted" if instant_artisan else "Booking requested"));notification_ids=queue_notifications(user,"Booking created",f"{booking.reference}: {booking.service} is {booking.status.value}.",{"booking_id":booking.id});
+    if booking_id:
+        booking.id = booking_id
+    db.session.add(booking)
+    try:
+        db.session.flush()
+    except IntegrityError:
+        db.session.rollback()
+        existing = db.session.get(Booking, booking_id) if booking_id else None
+        if existing:
+            return jsonify(existing.public())
+        raise
+    db.session.add(BookingStatusEvent(booking_id=booking.id, actor_id=user.id, to_status=booking.status.value, note="Instant booking accepted" if instant_artisan else "Booking requested"));notification_ids=queue_notifications(user,"Booking created",f"{booking.reference}: {booking.service} is {booking.status.value}.",{"booking_id":booking.id});
     if instant_artisan:
         db.session.add(Conversation(booking_id=booking.id,customer_id=user.id,artisan_user_id=instant_artisan.user_id));notification_ids.extend(queue_notifications(instant_artisan.user,"Instant booking received",f"{booking.reference} is scheduled for {scheduled.date().isoformat()} at {booking.currency} {float(booking.agreed_amount):.2f}.",{"booking_id":booking.id},urgent=True))
     db.session.commit();dispatch_notifications(notification_ids)
@@ -86,7 +110,8 @@ def booking_detail(booking_id):
     artisans = {profile.id: profile for profile in ArtisanProfile.query.filter(ArtisanProfile.id.in_({row.artisan_id for row in quotes})).all()} if quotes else {}
     conversation = Conversation.query.filter_by(booking_id=booking.id).first()
     changes = JobChange.query.filter_by(booking_id=booking.id).order_by(JobChange.created_at.desc()).all()
-    return jsonify({"booking": booking.public(), "changes": [row.public() for row in changes], "conversation_id": conversation.id if conversation else None, "events": [{"from": row.from_status, "to": row.to_status, "note": row.note, "occurred_at": row.occurred_at.isoformat()} for row in events], "quotes": [{"id": row.id, "artisan_id": row.artisan_id, "artisan_name": artisans[row.artisan_id].display_name, "amount": float(row.amount), "currency": row.currency, "note": row.note, "status": row.status, "valid_until": row.valid_until.isoformat() if row.valid_until else None} for row in quotes]})
+    files = FileAsset.query.filter_by(booking_id=booking.id, purpose="booking_media").all()
+    return jsonify({"attachments": [{"id": file.id, "url": private_download_url(file.url), "mime_type": file.mime_type} for file in files], "booking": booking.public(), "changes": [row.public() for row in changes], "conversation_id": conversation.id if conversation else None, "events": [{"from": row.from_status, "to": row.to_status, "note": row.note, "occurred_at": row.occurred_at.isoformat()} for row in events], "quotes": [{"id": row.id, "artisan_id": row.artisan_id, "artisan_name": artisans[row.artisan_id].display_name, "amount": float(row.amount), "currency": row.currency, "note": row.note, "status": row.status, "valid_until": row.valid_until.isoformat() if row.valid_until else None} for row in quotes]})
 
 
 @bp.post("/bookings/<booking_id>/changes")
@@ -143,19 +168,26 @@ def decide_change(booking_id, change_id):
 @role_required(Role.ARTISAN)
 def quote(booking_id):
     user = current_user(); profile = ArtisanProfile.query.filter_by(user_id=user.id).first_or_404(); booking = Booking.query.get_or_404(booking_id)
+    if profile.verification_status != "approved": return jsonify({"message": "Complete verification before quoting for work."}), 403
     if booking.artisan_id not in (None, profile.id): return jsonify({"message": "This request is assigned to another artisan"}), 409
     if booking.status not in (BookingStatus.REQUESTED, BookingStatus.QUOTED): return jsonify({"message": "This booking no longer accepts quotes"}), 409
-    data = request.get_json(silent=True) or {}; amount = float(data.get("amount") or 0)
+    data = request.get_json(silent=True) or {}
+    try:
+        amount = Decimal(str(data.get("amount", "")))
+        if not amount.is_finite() or amount <= 0 or amount > Decimal("9999999999.99") or amount != amount.quantize(Decimal("0.01")):
+            raise ValueError
+    except (ValueError, InvalidOperation):
+        return jsonify({"message": "Enter a positive quote with at most two decimal places."}), 422
     if amount <= 0: return jsonify({"message": "Quote amount must be greater than zero"}), 422
     row = Quote(booking_id=booking.id, artisan_id=profile.id, amount=amount, note=str(data.get("note") or "")); db.session.add(row)
     if booking.status == BookingStatus.REQUESTED: transition(booking, BookingStatus.QUOTED, user, "Quote submitted")
-    notification_ids=queue_notifications(booking.customer,"New artisan quote",f"{profile.display_name} quoted {row.currency} {amount:.2f} for {booking.service}.",{"booking_id":booking.id,"quote_id":row.id});db.session.commit();dispatch_notifications(notification_ids);return jsonify({"id": row.id, "status": row.status, "amount": amount}), 201
+    notification_ids=queue_notifications(booking.customer,"New artisan quote",f"{profile.display_name} quoted {row.currency} {amount:.2f} for {booking.service}.",{"booking_id":booking.id,"quote_id":row.id});db.session.commit();dispatch_notifications(notification_ids);return jsonify({"id": row.id, "status": row.status, "amount": float(amount)}), 201
 
 
 @bp.post("/bookings/<booking_id>/quotes/<quote_id>/accept")
 @role_required(Role.CUSTOMER)
 def accept_quote(booking_id, quote_id):
-    user = current_user(); booking = Booking.query.filter_by(id=booking_id, customer_id=user.id).first_or_404(); row = Quote.query.filter_by(id=quote_id, booking_id=booking.id, status="submitted").first_or_404()
+    user = current_user(); booking = Booking.query.filter_by(id=booking_id, customer_id=user.id).with_for_update().first_or_404(); row = Quote.query.filter_by(id=quote_id, booking_id=booking.id, status="submitted").first_or_404()
     if booking.status != BookingStatus.QUOTED: return jsonify({"message": "This quote can no longer be accepted"}), 409
     booking.artisan_id, booking.agreed_amount, row.status = row.artisan_id, row.amount, "accepted"
     Quote.query.filter(Quote.booking_id == booking.id, Quote.id != row.id).update({Quote.status: "declined"})

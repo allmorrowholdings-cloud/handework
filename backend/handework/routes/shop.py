@@ -11,13 +11,18 @@ from ..services.shop_catalog import PRODUCTS
 bp = Blueprint("shop", __name__)
 
 
+def published_products():
+    confirmed = {item.strip() for item in os.getenv("SHOP_PUBLISHED_PRODUCT_IDS", "").split(",")}
+    return {key: value for key, value in PRODUCTS.items() if key in confirmed}
+
+
 def money(value):
     return Decimal(str(value)).quantize(Decimal("0.01"))
 
 
 @bp.get("/shop/products")
 def products():
-    return jsonify({"items": [{"id": key, **{**value, "price": float(value["price"])}} for key, value in PRODUCTS.items()]})
+    return jsonify({"items": [{"id": key, **{**value, "price": float(value["price"])}} for key, value in published_products().items()]})
 
 
 @bp.get("/shop/orders")
@@ -48,6 +53,8 @@ def verify_order(reference):
     if user.role != Role.ADMIN:
         query = query.filter_by(buyer_id=user.id)
     order = query.first_or_404()
+    if order.status in {"refunded", "paid"}:
+        return jsonify({"order": order.public()})
     try:
         provider = Paystack().verify_transaction(order.provider_reference or order.reference)
     except Exception:
@@ -78,9 +85,12 @@ def create_order():
 
     normalised = []
     subtotal = Decimal("0.00")
+    catalog = published_products()
+    if not isinstance(requested, list) or any(not isinstance(row, dict) for row in requested):
+        return jsonify({"message": "Invalid cart"}), 422
     for row in requested:
         product_id = str(row.get("product_id") or "").strip()
-        product = PRODUCTS.get(product_id)
+        product = catalog.get(product_id)
         try:
             quantity = int(row.get("quantity") or 0)
         except (TypeError, ValueError):

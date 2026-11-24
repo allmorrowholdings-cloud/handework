@@ -46,3 +46,22 @@ def test_published_course_is_listed_only_for_approved_provider(client, app):
     response = client.get("/v1/training/courses")
     assert response.status_code == 200
     assert response.get_json()["items"][0]["provider"] == "Test College"
+
+
+def test_guest_problem_search_without_coordinates(client, artisan, monkeypatch):
+    monkeypatch.setattr("handework.routes.marketplace.geocode", lambda location: None)
+    result = client.get("/v1/artisans/search", query_string={
+        "service": "My tap is leaking", "location": "Osu, Accra"
+    }).get_json()
+    assert [person["id"] for person in result["items"]] == [artisan["profile_id"]]
+    assert result["meta"]["coordinates_used"] is False
+    assert not client.get("/v1/artisans/search?location=Tamale").json["items"]
+
+
+def test_shop_only_lists_confirmed_products(client, monkeypatch):
+    from handework.services.shop_catalog import PRODUCTS
+    monkeypatch.delenv("SHOP_PUBLISHED_PRODUCT_IDS", raising=False)
+    assert client.get("/v1/shop/products").json == {"items": []}
+    selected = next(iter(PRODUCTS))
+    monkeypatch.setenv("SHOP_PUBLISHED_PRODUCT_IDS", selected)
+    assert [row["id"] for row in client.get("/v1/shop/products").json["items"]] == [selected]

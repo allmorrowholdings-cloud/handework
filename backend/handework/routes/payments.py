@@ -22,7 +22,7 @@ def wallet_for(user_id, currency="GHS"):
 
 
 def mark_funded(payment, payload):
-    if payment.status in (PaymentStatus.HELD, PaymentStatus.RELEASED): return []
+    if payment.status in (PaymentStatus.HELD, PaymentStatus.RELEASED, PaymentStatus.REFUNDED, PaymentStatus.REFUND_PENDING): return []
     booking = Booking.query.filter_by(id=payment.booking_id).with_for_update().one()
     payment.status, payment.paid_at, payment.provider_payload = PaymentStatus.HELD, datetime.now(timezone.utc), payload
     customer_wallet = wallet_for(payment.customer_id, payment.currency)
@@ -42,14 +42,17 @@ def mark_funded(payment, payload):
 @role_required(Role.CUSTOMER)
 @limiter.limit("5 per minute")
 def mobile_money():
-    user = current_user(); data = request.get_json(silent=True) or {}; booking = Booking.query.filter_by(id=data.get("booking_id"), customer_id=user.id).first_or_404()
+    user = current_user(); data = request.get_json(silent=True) or {}; booking = Booking.query.filter_by(id=data.get("booking_id"), customer_id=user.id).with_for_update().first_or_404()
     if booking.status != BookingStatus.ACCEPTED or booking.agreed_amount is None: return jsonify({"message": "Accept an artisan quote before payment", "code": "booking_not_payable"}), 409
     idem = request.headers.get("Idempotency-Key") or data.get("idempotency_key")
     if not idem: return jsonify({"message": "Idempotency-Key is required", "code": "missing_idempotency_key"}), 400
     existing = Payment.query.filter_by(idempotency_key=idem).first()
     if existing:
-        if existing.customer_id != user.id: return jsonify({"message": "Idempotency key is already in use", "code": "idempotency_conflict"}), 409
+        if existing.customer_id != user.id or existing.booking_id != booking.id: return jsonify({"message": "Idempotency key is already in use", "code": "idempotency_conflict"}), 409
         return jsonify({"payment_id": existing.id, "reference": existing.provider_reference, "status": existing.status.value})
+    pending = Payment.query.filter_by(booking_id=booking.id, status=PaymentStatus.PENDING).first()
+    if pending:
+        return jsonify({"payment_id":pending.id, "reference":pending.provider_reference, "status":"pending"}), 202
     phone, network = str(data.get("phone") or user.phone), str(data.get("network") or "")
     score, signals = payment_risk(user, booking.agreed_amount, phone, network)
     reference = f"handEwork-{secrets.token_hex(8).upper()}"
@@ -57,9 +60,13 @@ def mobile_money():
     payment = Payment(booking_id=booking.id, customer_id=user.id, artisan_id=booking.artisan_id, provider_reference=reference, idempotency_key=idem, channel="mobile_money", network=network, amount=booking.agreed_amount, platform_fee=fee, currency=booking.currency)
     db.session.add(payment); db.session.flush(); db.session.add(RiskEvent(user_id=user.id, booking_id=booking.id, payment_id=payment.id, kind="payment_initiation", score=score, signals=signals, decision="block" if score >= 90 else "review" if score >= 60 else "allow"))
     if score >= 90: payment.status = PaymentStatus.FAILED; db.session.commit(); return jsonify({"message": "Payment requires manual review", "code": "risk_hold"}), 409
+    if not os.getenv("PAYSTACK_SECRET_KEY"):
+        db.session.rollback()
+        return jsonify({"message": "Mobile money is unavailable right now."}), 503
+    db.session.commit()
     try: provider = Paystack().mobile_money_charge(email=user.email, amount_ghs=booking.agreed_amount, phone=phone, network=network, reference=reference)
-    except ValueError as error: db.session.rollback(); return jsonify({"message": str(error), "code": "unsupported_network"}), 422
-    except Exception: db.session.rollback(); return jsonify({"message": "The payment provider could not start this charge", "code": "provider_unavailable"}), 502
+    except ValueError as error: payment.status = PaymentStatus.FAILED; db.session.commit(); return jsonify({"message": str(error), "code": "unsupported_network"}), 422
+    except Exception: db.session.rollback(); return jsonify({"message": "Payment confirmation is unavailable. Check the booking before trying again.", "code": "provider_unavailable"}), 502
     payment.provider_payload = provider; db.session.commit()
     return jsonify({"payment_id": payment.id, "reference": reference, "status": payment.status.value, "provider": provider.get("data", {})}), 202
 
@@ -72,11 +79,13 @@ def paystack_webhook():
     except Exception: return jsonify({"message": "Payment webhook is not configured"}), 503
     if not valid: return jsonify({"message": "Invalid signature"}), 401
     payload = request.get_json(silent=True) or {}; event, data = payload.get("event"), payload.get("data", {}); reference = data.get("reference")
-    payment = Payment.query.filter_by(provider_reference=reference).first()
+    if not reference: return jsonify({"received": True})
+    payment = Payment.query.filter_by(provider_reference=reference).with_for_update().first()
     if not payment:
         shop_order = ShopOrder.query.filter_by(provider_reference=reference).with_for_update().first()
         if not shop_order:
             return jsonify({"received": True})
+        if shop_order.status == "refunded": return jsonify({"received": True})
         if event in ("charge.success", "charge.successful") and data.get("status") == "success":
             expected_amount = int(round(float(shop_order.total) * 100))
             if data.get("amount") == expected_amount and data.get("currency") == shop_order.currency:

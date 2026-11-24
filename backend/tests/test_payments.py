@@ -12,6 +12,7 @@ def payable_booking(client, customer, artisan):
 
 
 def initiate(client, customer, booking_id, monkeypatch):
+    monkeypatch.setenv("PAYSTACK_SECRET_KEY", "local-test-only")
     monkeypatch.setattr(Paystack, "mobile_money_charge", lambda self, **kwargs: {"status":True,"data":{"status":"pay_offline"}})
     return client.post("/v1/payments/mobile-money", json={"booking_id":booking_id,"phone":"0244000001","network":"mtn"}, headers={**customer["headers"],"Idempotency-Key":f"payment-{booking_id}"})
 
@@ -37,3 +38,22 @@ def test_webhook_amount_mismatch_does_not_fund(client, customer, artisan, monkey
     assert response.status_code==200
     booking=client.get(f"/v1/bookings/{booking_id}",headers=customer["headers"]).get_json()["booking"]
     assert booking["status"]=="accepted"
+
+
+def test_retry_after_provider_timeout_reuses_reference(client, customer, artisan, monkeypatch):
+    booking_id = payable_booking(client, customer, artisan)
+    monkeypatch.setenv("PAYSTACK_SECRET_KEY", "unit-test")
+    calls = []
+
+    def timeout(self, **data):
+        calls.append(data["reference"])
+        raise TimeoutError()
+
+    monkeypatch.setattr(Paystack, "mobile_money_charge", timeout)
+    payload = {"booking_id": booking_id, "phone": "0244000001", "network": "mtn"}
+    for key, expected in [("initial", 502), ("retry", 202)]:
+        response = client.post("/v1/payments/mobile-money", json=payload,
+                               headers={**customer["headers"], "Idempotency-Key": key})
+        assert response.status_code == expected
+    assert calls == [response.json["reference"]]
+    assert response.json["status"] == "pending"

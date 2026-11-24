@@ -33,10 +33,15 @@ def verification_decision(verification_id):
     admin=current_user();row=Verification.query.get_or_404(verification_id);data=request.get_json(silent=True) or {};decision=str(data.get("decision") or "")
     if decision not in ("approved","rejected","replacement_required"):return jsonify({"message":"Invalid decision"}),422
     before={"status":row.status};row.status,row.reviewer_id,row.decision_reason,row.decided_at=decision,admin.id,str(data.get("reason") or "")[:500],datetime.now(timezone.utc)
-    profile=ArtisanProfile.query.get(row.artisan_id);required={"government_id","live_selfie","trade_proof","payout_name"};approved={x.kind for x in Verification.query.filter_by(artisan_id=profile.id,status="approved").all()}
-    if decision=="approved":approved.add(row.kind)
-    if required.issubset(approved):profile.verification_status="approved"
-    elif decision=="rejected":profile.verification_status="rejected"
+    profile = ArtisanProfile.query.filter_by(id=row.artisan_id).with_for_update().one()
+    required = {"government_id", "live_selfie", "trade_proof", "payout_name"}
+    statuses = {item.kind: item.status for item in Verification.query.filter_by(artisan_id=profile.id)}
+    if all(statuses.get(kind) == "approved" for kind in required):
+        profile.verification_status = "approved"
+    elif any(statuses.get(kind) == "rejected" for kind in required):
+        profile.verification_status = "rejected"
+    else:
+        profile.verification_status = "pending"
     db.session.add(AuditLog(actor_id=admin.id,action="verification.decision",entity_type="verification",entity_id=row.id,before=before,after={"status":decision,"reason":row.decision_reason}));notification_ids=queue_notifications(profile.user,"Verification updated",f"{row.kind.replace('_',' ')} is {decision.replace('_',' ')}.",{"verification_id":row.id},urgent=decision in ("rejected","replacement_required"));db.session.commit();dispatch_notifications(notification_ids);return jsonify({"status":row.status,"profile_status":profile.verification_status})
 
 

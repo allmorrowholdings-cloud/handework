@@ -7,7 +7,7 @@ from ..extensions import db, socketio
 
 from ..models import (ArtisanProfile, AuditLog, Booking, BookingStatus, Conversation, Course, Dispute, FileAsset, LedgerEntry, Message, Notification, Organization, OrganizationMember, PromoCode, PushDevice, Referral, Review, Role, Subscription, SupportTicket, TrainingProvider, Verification, WalletAccount)
 from ..security import current_user, role_required
-from ..services.storage import upload_file
+from ..services.storage import upload_file, private_download_url
 
 bp = Blueprint("platform", __name__)
 
@@ -38,11 +38,16 @@ def messages(conversation_id):
     if not conversation: return jsonify({"message": "Conversation not found"}), 404
     if request.method == "GET":
         rows = Message.query.filter_by(conversation_id=conversation.id).filter(Message.deleted_at.is_(None)).order_by(Message.created_at.asc()).limit(300).all()
-        return jsonify({"items": [{"id": row.id, "sender_id": row.sender_id, "body": row.body, "media_url": row.media_url, "media_type": row.media_type, "created_at": row.created_at.isoformat(), "edited_at": row.edited_at.isoformat() if row.edited_at else None} for row in rows]})
+        return jsonify({"items": [{"id": row.id, "sender_id": row.sender_id, "body": row.body, "media_url": private_download_url(row.media_url), "media_type": row.media_type, "created_at": row.created_at.isoformat(), "edited_at": row.edited_at.isoformat() if row.edited_at else None} for row in rows]})
     data = request.get_json(silent=True) or {}; body = str(data.get("body") or "").strip(); media_url = data.get("media_url")
+    if media_url:
+        asset_id = str(media_url).removeprefix("asset:")
+        asset = FileAsset.query.filter_by(id=asset_id, owner_id=user.id, purpose="chat_media").first()
+        if not asset: return jsonify({"message":"Choose a file uploaded for this message."}), 422
+        media_url = asset.url
     if not body and not media_url: return jsonify({"message": "Message or attachment is required"}), 422
     row = Message(conversation_id=conversation.id, sender_id=user.id, body=body[:4000] or None, media_url=media_url, media_type=data.get("media_type")); db.session.add(row); db.session.flush(); conversation.last_message_at = row.created_at; db.session.commit()
-    payload = {"id": row.id, "conversation_id": conversation.id, "sender_id": user.id, "body": row.body, "media_url": row.media_url, "media_type": row.media_type, "created_at": row.created_at.isoformat()}
+    payload = {"id": row.id, "conversation_id": conversation.id, "sender_id": user.id, "body": row.body, "media_url": private_download_url(row.media_url), "media_type": row.media_type, "created_at": row.created_at.isoformat()}
     socketio.emit("message.created", payload, to=f"conversation:{conversation.id}")
     return jsonify(payload), 201
 
@@ -93,12 +98,14 @@ def register_push_device():
 @role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
 def upload():
     user = current_user(); purpose = str(request.form.get("purpose") or "booking_media"); booking_id = request.form.get("booking_id")
+    if purpose not in {"booking_media", "chat_media"}: return jsonify({"message": "Unsupported attachment type"}), 422
+    if purpose == "booking_media" and not booking_id: return jsonify({"message": "Select a booking for this file"}), 422
     if booking_id:
         booking = Booking.query.get_or_404(booking_id); artisan_user = booking.artisan.user_id if booking.artisan else None
         if user.role != Role.ADMIN and user.id not in (booking.customer_id, artisan_user): return jsonify({"message": "Booking not found"}), 404
-    try: url = upload_file(request.files.get("file"), user.id, purpose)
+    try: url = upload_file(request.files.get("file"), user.id, purpose, private=True)
     except (ValueError, RuntimeError) as error: return jsonify({"message": str(error)}), 422
-    asset = FileAsset(owner_id=user.id, booking_id=booking_id, purpose=purpose, url=url, mime_type=request.files["file"].mimetype); db.session.add(asset); db.session.commit(); return jsonify({"id": asset.id, "url": url, "scan_status": asset.scan_status}), 201
+    asset = FileAsset(owner_id=user.id, booking_id=booking_id, purpose=purpose, url=url, mime_type=request.files["file"].mimetype); db.session.add(asset); db.session.commit(); return jsonify({"id": asset.id, "url": "asset:" + asset.id if purpose == "chat_media" else private_download_url(url), "scan_status": asset.scan_status}), 201
 
 
 @bp.route("/disputes", methods=["GET", "POST"])

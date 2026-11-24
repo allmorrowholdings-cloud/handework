@@ -29,6 +29,25 @@ def services():
     return jsonify({"items": sorted(names, key=str.casefold)})
 
 
+TRADE_TERMS = {
+    "Plumbing": ("plumb", "leaking tap", "tap is leaking", "burst pipe", "pluming"),
+    "Electrical": ("electric", "lights keep going off", "socket", "electrical wiring"),
+    "Carpentry": ("carpent", "custom furniture", "cabinet"),
+    "Tailoring": ("tailor", "dressmaker", "dress made", "alteration"),
+    "AC repair": ("air conditioning", "ac repair", "ac is not cooling", "cooling"),
+    "Cleaning": ("clean", "housekeep"),
+    "Hairdressing": ("hair", "braid", "barber"),
+}
+
+
+def search_terms(service):
+    query = service.casefold().strip()
+    for name, terms in TRADE_TERMS.items():
+        if name.casefold() == query or any(term in query for term in terms):
+            return (name, *terms)
+    return (service,)
+
+
 @bp.get("/artisans/search")
 def search_artisans():
     service = str(request.args.get("service") or "").strip()
@@ -43,7 +62,15 @@ def search_artisans():
         return jsonify({"message": "Distance must be a finite number"}), 422
     distance_limit = min(max(requested_distance, 1), 100)
     query = ArtisanProfile.query.filter_by(verification_status="approved", available=True)
-    if service: query = query.filter(db.or_(ArtisanProfile.trade.ilike(f"%{service}%"), ArtisanProfile.secondary_services.ilike(f"%{service}%")))
+    if service:
+        query = query.filter(db.or_(*(
+            column.icontains(term, autoescape=True) for term in search_terms(service)
+            for column in (ArtisanProfile.trade, ArtisanProfile.secondary_services)
+        )))
+    if request.args.get("location") and not coordinates:
+        terms = [part.strip() for part in request.args["location"].split(",") if part.strip()]
+        for term in terms:
+            query = query.filter(db.or_(ArtisanProfile.area.icontains(term, autoescape=True), ArtisanProfile.city.icontains(term, autoescape=True)))
     rows = []
     for profile in query.limit(250).all():
         if request.args.get("date"):
@@ -58,6 +85,7 @@ def search_artisans():
             distance = 0.0
         if distance > min(distance_limit, profile.radius_km): continue
         card = profile.search_card(distance)
+        card.update(area=profile.area, city=profile.city)
         card["match_score"] = matching_score(text_match=1 if service else .5, distance_km=distance, radius_km=profile.radius_km, rating=profile.rating_average, completion_rate=profile.completion_rate, available=profile.available, response_minutes=profile.response_minutes)
         rows.append(card)
     rows.sort(key=lambda item: (-item["match_score"], item["distance_km"]))

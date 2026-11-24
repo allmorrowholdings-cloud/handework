@@ -59,3 +59,14 @@ def test_instant_booking_requires_artisan_opt_in_and_available_date(client,custo
     assert response.get_json()["status"]=="accepted"
     detail=client.get(f"/v1/bookings/{response.get_json()['id']}",headers=customer["headers"]).get_json()
     assert detail["conversation_id"]
+
+
+def test_retried_booking_creates_one_request(client, customer, artisan):
+    from uuid import uuid4
+    headers = {**customer["headers"], "Idempotency-Key": str(uuid4())}
+    payload = booking_payload(artisan)
+    first = client.post("/v1/bookings", json=payload, headers=headers)
+    retry = client.post("/v1/bookings", json=payload, headers=headers)
+    assert first.status_code == 201 and retry.status_code == 200
+    assert retry.json["id"] == first.json["id"]
+    assert len(client.get("/v1/bookings", headers=headers).json["items"]) == 1
