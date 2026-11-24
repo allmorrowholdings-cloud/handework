@@ -96,6 +96,12 @@ def bookings():
     db.session.add(BookingStatusEvent(booking_id=booking.id, actor_id=user.id, to_status=booking.status.value, note="Instant booking accepted" if instant_artisan else "Booking requested"));notification_ids=queue_notifications(user,"Booking created",f"{booking.reference}: {booking.service} is {booking.status.value}.",{"booking_id":booking.id});
     if instant_artisan:
         db.session.add(Conversation(booking_id=booking.id,customer_id=user.id,artisan_user_id=instant_artisan.user_id));notification_ids.extend(queue_notifications(instant_artisan.user,"Instant booking received",f"{booking.reference} is scheduled for {scheduled.date().isoformat()} at {booking.currency} {float(booking.agreed_amount):.2f}.",{"booking_id":booking.id},urgent=True))
+    elif booking.artisan_id:
+        notification_ids.extend(queue_notifications(
+            artisan.user, "Quotation requested",
+            f"A customer requested a quotation for {booking.service}.",
+            {"booking_id": booking.id},
+        ))
     db.session.commit();dispatch_notifications(notification_ids)
     return jsonify(booking.public()), 201
 
@@ -179,6 +185,7 @@ def quote(booking_id):
     except (ValueError, InvalidOperation):
         return jsonify({"message": "Enter a positive quote with at most two decimal places."}), 422
     row = Quote(booking_id=booking.id, artisan_id=profile.id, amount=amount, note=str(data.get("note") or "")); db.session.add(row)
+    db.session.flush()
     if booking.status == BookingStatus.REQUESTED: transition(booking, BookingStatus.QUOTED, user, "Quote submitted")
     notification_ids=queue_notifications(booking.customer,"New artisan quote",f"{profile.display_name} quoted {row.currency} {amount:.2f} for {booking.service}.",{"booking_id":booking.id,"quote_id":row.id});db.session.commit();dispatch_notifications(notification_ids);return jsonify({"id": row.id, "status": row.status, "amount": float(amount)}), 201
 
@@ -188,10 +195,13 @@ def quote(booking_id):
 def accept_quote(booking_id, quote_id):
     user = current_user(); booking = Booking.query.filter_by(id=booking_id, customer_id=user.id).with_for_update().first_or_404(); row = Quote.query.filter_by(id=quote_id, booking_id=booking.id, status="submitted").first_or_404()
     if booking.status != BookingStatus.QUOTED: return jsonify({"message": "This quote can no longer be accepted"}), 409
+    artisan = ArtisanProfile.query.filter_by(id=row.artisan_id).with_for_update().one()
+    if artisan.verification_status != "approved":
+        return jsonify({"message": "This professional is no longer eligible to accept this job."}), 409
     booking.artisan_id, booking.agreed_amount, row.status = row.artisan_id, row.amount, "accepted"
     Quote.query.filter(Quote.booking_id == booking.id, Quote.id != row.id).update({Quote.status: "declined"})
     transition(booking, BookingStatus.ACCEPTED, user, "Customer accepted quote")
-    artisan = db.session.get(ArtisanProfile, row.artisan_id); db.session.add(Conversation(booking_id=booking.id, customer_id=user.id, artisan_user_id=artisan.user_id));notification_ids=queue_notifications(artisan.user,"Quote accepted",f"Your {row.currency} {float(row.amount):.2f} quote for {booking.service} was accepted.",{"booking_id":booking.id},urgent=True);db.session.commit();dispatch_notifications(notification_ids)
+    db.session.add(Conversation(booking_id=booking.id, customer_id=user.id, artisan_user_id=artisan.user_id));notification_ids=queue_notifications(artisan.user,"Quote accepted",f"Your {row.currency} {float(row.amount):.2f} quote for {booking.service} was accepted.",{"booking_id":booking.id},urgent=True);db.session.commit();dispatch_notifications(notification_ids)
     return jsonify({"booking": booking.public()})
 
 
@@ -205,7 +215,7 @@ def update_status(booking_id):
     allowed_for_role = {
         Role.CUSTOMER: {BookingStatus.CANCELLED.value},
         Role.ARTISAN: {BookingStatus.EN_ROUTE.value, BookingStatus.IN_PROGRESS.value, BookingStatus.COMPLETION_SUBMITTED.value, BookingStatus.CANCELLED.value},
-        Role.ADMIN: {status.value for status in BookingStatus},
+        Role.ADMIN: {BookingStatus.EN_ROUTE.value, BookingStatus.IN_PROGRESS.value, BookingStatus.COMPLETION_SUBMITTED.value, BookingStatus.CANCELLED.value},
     }
     if target not in allowed_for_role[user.role]: return jsonify({"message": "Use the dedicated payment, dispute or approval action for this status", "code": "role_transition_forbidden"}), 403
     try: transition(booking, data.get("status"), user, str(data.get("note") or "")[:500])

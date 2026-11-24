@@ -1,4 +1,4 @@
-﻿# Marketplace release audit
+# Marketplace release audit
 
 ## Release decision
 
@@ -54,5 +54,7 @@ Booking photos must be reselected after a refresh. Drafts are tab-local. The wid
 - `npm run build:vercel` passed, including TypeScript and generation of 39 static pages.
 - `npm test` passed the Vinext build and two rendered HTML regressions. They verify the public homepage and safe server-rendered authentication forms.
 - `npm run lint` returned zero errors and nine warnings about existing image elements.
-- `python -m pytest backend/tests --disable-warnings --no-cov -o addopts=` passed all 31 tests. New cases cover a lost booking response, a payment-provider timeout, plain-language location matching and catalogue publication.
+- `python -m pytest backend/tests --disable-warnings --no-cov -o addopts=` passed all 33 tests. New cases cover a lost booking response, a payment-provider timeout, plain-language location matching catalogue publication, the professional's incoming request notification, the customer's quote reference and eligibility at quote acceptance.
 - The role walkthrough used a disposable SQLite file, separate customer, applicant and administrator browser contexts and the real HTTP API. Provider money movement and a genuine verification approval were excluded. A local administrator requested replacement of an intentionally unsuitable test image.
+
+Assigned quote requests now create an in-app notification for the selected professional. Submitted quote notices include the real quote ID and currency. Acceptance rechecks professional eligibility, and ordinary status updates cannot directly mark a job paid or refunded. These last changes were verified in the Flask test suite. External notification delivery remains blocked.

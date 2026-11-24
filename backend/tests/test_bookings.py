@@ -70,3 +70,26 @@ def test_retried_booking_creates_one_request(client, customer, artisan):
     assert first.status_code == 201 and retry.status_code == 200
     assert retry.json["id"] == first.json["id"]
     assert len(client.get("/v1/bookings", headers=headers).json["items"]) == 1
+
+
+def test_assigned_request_and_quote_carry_actionable_notifications(client, customer, artisan):
+    booking = client.post("/v1/bookings", json=booking_payload(artisan), headers=customer["headers"]).json
+    notifications = client.get("/v1/notifications", headers=artisan["headers"]).json["items"]
+    assert notifications[0]["data"]["booking_id"] == booking["id"]
+    response = client.post(f"/v1/bookings/{booking['id']}/quotes", headers=artisan["headers"], json={"amount": 250})
+    assert response.status_code == 201
+    notice = client.get("/v1/notifications", headers=customer["headers"]).json["items"][0]
+    assert notice["data"]["quote_id"] == response.json["id"]
+    assert "GHS" in notice["body"]
+
+
+def test_accepting_quote_rechecks_professional_eligibility(client, customer, artisan, app):
+    from handework.extensions import db
+    from handework.models import ArtisanProfile
+    booking = client.post("/v1/bookings", json=booking_payload(artisan), headers=customer["headers"]).json
+    path = f"/v1/bookings/{booking['id']}/quotes"
+    quote = client.post(path, headers=artisan["headers"], json={"amount": 250}).json
+    with app.app_context():
+        db.session.get(ArtisanProfile, artisan["profile_id"]).verification_status = "pending"
+        db.session.commit()
+    assert client.post(f"{path}/{quote['id']}/accept", headers=customer["headers"]).status_code == 409
