@@ -62,6 +62,9 @@ export function saveSession(access: string, refresh?: string) {
 }
 
 export function clearSession() {
+  for (const key of Object.keys(sessionStorage)) {
+    if (key === "handework-application" || key.startsWith("handework-job:")) sessionStorage.removeItem(key);
+  }
   for (const key of [accessKey, refreshKey, activityKey]) localStorage.removeItem(key);
   window.dispatchEvent(new Event("handework-session"));
 }

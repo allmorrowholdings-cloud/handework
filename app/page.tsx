@@ -4,20 +4,18 @@ import { Footer } from "./components/footer";
 import { LocationSearch } from "./components/location-search";
 
 import { services } from "../lib/services";
+import { Professionals } from "./components/professionals";
 import { DemoVideo } from "./components/demo-video";
 
 export default function Home() {
   return (
     <main className="home-market">
-      <link rel="preconnect" href="https://embed.figma.com" />
       <Header />
       <section className="hero hero-light" id="top">
-        <div className="hero-noise" aria-hidden="true" />
         <div className="shell hero-grid hero-grid-visual">
           <div className="hero-copy">
-            <span className="hero-kicker">Artisan services in Ghana</span>
-            <h1>Get work done<br />with skilled hands.</h1>
-            <p className="hero-lede">Find a verified artisan near you. Agree on the work and materials, follow the repair photos, and approve the finished job.</p>
+            <h1>Get it done.</h1>
+            <p className="hero-lede">Find skilled professionals in Ghana for the things you need fixed, made or maintained.</p>
             <LocationSearch />
           </div>
           <div className="home-hammer" aria-hidden="true">
@@ -26,21 +24,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section shell homepage-demos" id="trust" aria-label="handEwork demos">
-        <div>
-          <h2>Try the handEwork prototype</h2>
-          <iframe
-            className="prototype-player"
-            title="Interactive handEwork prototype on Figma"
-            src="https://embed.figma.com/proto/j0w4a2nKe5XfVyq7xF9SAH/Untitled?node-id=8-3&p=f&scaling=fit-width&footer=false&viewport-controls=false&content-scaling=fixed&page-id=6%3A3&starting-point-node-id=8%3A2&embed-host=share"
-            width="390"
-            height="844"
-            loading="eager"
-            allowFullScreen
-          />
-        </div>
-        <DemoVideo />
-      </section>
+      <nav className="trust-links shell" aria-label="Booking safeguards">
+        <Link href="/safety">Professional verification</Link><Link href="/how-it-works">Agreed quotations</Link><Link href="/safety">Completion approval</Link>
+      </nav>
 
       <section className="section shell service-showcase" id="services">
         <div className="section-head"><div><h2>What needs doing?</h2><p>Start with the work. We’ll help you find the right hands.</p></div><Link className="text-link" href="/marketplace">View all services</Link></div>
@@ -52,22 +38,33 @@ export default function Home() {
                 <img src={`/services/home/${service.image}.webp`} alt="" loading="lazy" decoding="async" />
               </picture>
             </div>
-            <div className="service-visual-copy"><span className="service-code">{service.code}</span><div><h3>{service.name}</h3><p>{service.note}</p></div></div>
+            <div className="service-visual-copy"><div><h3>{service.name}</h3><p>{service.note}</p></div></div>
           </Link>
         ))}</div>
       </section>
 
-      <section className="section shell artisan-call" id="artisans">
-        <div className="artisan-lettering" aria-hidden="true">HANDS</div>
-        <div className="artisan-copy"><h2>Your skill should be easier to find.</h2><p>Create a verified work profile, set where and when you work, receive bookings, build a public record and get paid without chasing.</p><div className="button-row"><Link className="button button-dark" href="/join/artisan">Join as an artisan</Link><Link className="text-link" href="/artisan/pro">Explore handEwork Pro</Link></div></div>
-        <div className="artisan-board"><div className="board-label">WORK PROFILE</div><div className="board-line"><span>01</span><b>Show proof, not paperwork</b></div><div className="board-line"><span>02</span><b>Choose your radius and hours</b></div><div className="board-line"><span>03</span><b>Keep work and earnings together</b></div><div className="board-stamp">SKILL<br />COUNTS.</div></div>
+      <Professionals />
+
+      <section className="shell journey-story" id="how-it-works">
+        <h2>How it works</h2>
+        <ol><li><strong>Describe the work</strong><p>Tell us what needs attention, where the job is and when you need help.</p></li>
+          <li><strong>Agree on the details</strong><p>Review the professional, scope and quote before committing to payment.</p></li>
+          <li><strong>Review the result</strong><p>Follow the job record, check the finished work and approve completion or raise a concern.</p></li></ol>
       </section>
-
-      <section className="shop-teaser section"><div className="shell shop-teaser-grid">
-        <div><h2>Tools made easier to own.</h2><p>Browse branded trade tools, kits and essentials at discounted prices. Shop by craft, add to cart, then choose delivery or office pickup.</p><div className="button-row"><Link className="button button-orange" href="/shop">Explore the artisan shop</Link><Link className="text-link" href="/join/artisan">Work with handEwork</Link></div></div>
-        <div className="shop-teaser-art"><img src="/artisan-toolbox.webp" alt="Patterned wooden toolbox filled with hand tools" loading="lazy" width={960} height={960} /></div>
+      <section className="demo-band"><div className="shell demo-layout">
+        <div><h2>See good work<br />in action.</h2><p>Follow a job from the first request to the finishing touches.</p><Link className="text-link" href="/bookings/new">Describe your job</Link></div>
+        <DemoVideo />
       </div></section>
-
+      <section className="shell reputation-story">
+        <div><h2>Good work leaves proof.</h2><p>Look for WorkProof on a professional&apos;s profile. It brings together completed bookings, reviewed work evidence and customer feedback so you can see the experience behind the name.</p><Link className="text-link" href="/marketplace">Explore professionals</Link></div>
+        <div><h2>Your skill. Your future.</h2><p>Set your service area, respond to requests and build a record of the work you deliver.</p><Link className="text-link" href="/join/artisan">Join as a professional</Link></div>
+      </section>
+      <section className="shell ecosystem-links" aria-label="Professional resources"><Link href="/artisan/pro">Professional workspace</Link><Link href="/shop">Artisan shop</Link><Link href="/training">Training opportunities</Link></section>
+      <section className="shell booking-faq"><h2>Before you book</h2>
+        <details><summary>When do I pay?</summary><p>Describing a job is free. Once you accept a quote, the booking shows the payment step. Paying for the job and approving release to the professional are separate actions.</p></details>
+        <details><summary>What if the price changes?</summary><p>Review the proposed change in your booking before agreeing to the new amount. Your decision stays with the job record.</p></details>
+        <details><summary>What if someone misses the appointment or the work needs attention?</summary><p>Keep the messages and photos with your booking and contact <Link href="/support">support</Link> with the reference. Support can review the record and explain the next step.</p></details>
+      </section>
       <section className="final-cta"><div className="shell final-inner"><div><h2>Ready to get it done?</h2></div><Link className="button button-cream" href="/marketplace">Find an artisan</Link></div></section>
       <Footer />
     </main>

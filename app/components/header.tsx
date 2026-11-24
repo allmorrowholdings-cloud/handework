@@ -25,12 +25,12 @@ export function Header() {
   const pathname = usePathname();
   const isHome = pathname === "/";
   return <header className={`site-header ${isHome ? "home-header" : ""}`}><div className="shell nav-wrap">
-    <Logo light={!isHome} />
+    <div className="nav-brand"><Logo light={!isHome} /><small>from ALLMORROW</small></div>
     <nav className={open ? "nav-links open" : "nav-links"} aria-label="Main navigation">
-      <Link href="/marketplace" onClick={() => setOpen(false)}>Find an artisan</Link>
+      <Link href="/marketplace" onClick={() => setOpen(false)}>Services</Link>
       <Link href="/how-it-works" onClick={() => setOpen(false)}>How it works</Link>
-      <Link href="/my-jobs" onClick={() => setOpen(false)}>My jobs</Link>
-      <Link href="/join/artisan" onClick={() => setOpen(false)}>For artisans</Link>
+      {signedIn && <Link href="/my-jobs" onClick={() => setOpen(false)}>My jobs</Link>}
+      <Link href="/join/artisan" onClick={() => setOpen(false)}>For professionals</Link>
     </nav>
     <div className="nav-actions"><ThemeToggle compact /><Link className="nav-signin" href={signedIn ? "/my-jobs" : "/auth/sign-in"}>{signedIn ? "Dashboard" : "Sign in"}</Link><Link className="button button-orange nav-cta" href="/bookings/new">Describe a job</Link><button className="menu-button" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen(!open)}><span /><span /></button></div>
   </div></header>;

@@ -1,2 +1,17 @@
-import Link from "next/link"; import { Header } from "../../components/header"; import { Footer } from "../../components/footer";
-export default function Pro(){return <main className="paper-page"><Header/><section className="pro-hero"><div className="shell"><h1>Tools for artisans<br/>who are building a business.</h1><p>Priority visibility, lower service fees, business insights and faster support. Subscription starts only after the artisan accepts the live price shown at checkout.</p><Link className="button button-orange" href="/auth/sign-in">View plan in your account</Link></div></section><section className="section shell"><div className="service-grid pro-grid">{[["01","Business profile","Add team members, branches and business details."],["02","Work insights","Track response, completion, repeat customers and earnings."],["03","Priority support","Faster routing for payment and job issues."],["04","Training access","Eligible courses and trade certification opportunities."]].map(([n,t,p])=><article className="service-card" key={t}><span className="service-code">{n}</span><div><h3>{t}</h3><p>{p}</p></div></article>)}</div></section><Footer/></main>}
+import Link from "next/link";
+import { Header } from "../../components/header";
+import { Footer } from "../../components/footer";
+
+export default function Pro() {
+  return <main className="paper-page"><Header />
+    <section className="inner-hero"><div className="shell"><h1>handEwork Pro</h1>
+      <p>Your workspace for bookings, availability, earnings and professional evidence.</p>
+      <Link className="button button-orange" href="/artisan/dashboard">Open professional workspace</Link>
+    </div></section>
+    <section className="section shell editorial-grid">{[
+      ["/artisan/profile","Professional profile","Set your trade, service area and professional details."],
+      ["/artisan/workproof","WorkProof","Manage the evidence behind your professional record."],
+      ["/artisan/availability","Availability","Choose the days and hours you can accept work."],
+      ["/training","Training","Explore published programmes and their providers."],
+    ].map(([href,title,detail])=><article key={href}><h2><Link href={href}>{title}</Link></h2><p>{detail}</p></article>)}</section><Footer /></main>;
+}

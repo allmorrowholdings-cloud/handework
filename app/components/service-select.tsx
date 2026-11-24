@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { serviceNames } from "../../lib/services";
 
-export function ServiceSelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+export function ServiceSelect({ value, onChange, allowUnknown = false }: { allowUnknown?: boolean; value: string; onChange: (value: string) => void }) {
   const [extra, setExtra] = useState<string[]>([]);
   useEffect(() => {
     const controller = new AbortController();
@@ -13,7 +13,7 @@ export function ServiceSelect({ value, onChange }: { value: string; onChange: (v
     return () => controller.abort();
   }, []);
   const options = new Map<string,string>();
-  for (const name of [...serviceNames, ...extra, value].filter(Boolean)) {
+  for (const name of [...serviceNames, ...extra, ...(allowUnknown ? ["Help me choose"] : []), value].filter(Boolean)) {
     if (!options.has(name.toLowerCase()) || name === value) options.set(name.toLowerCase(), name);
   }
   return <select required value={value} onChange={event => onChange(event.target.value)}>

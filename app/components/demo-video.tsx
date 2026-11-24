@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function DemoVideo() {
   const ref = useRef<HTMLVideoElement>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     const video = ref.current;
     if (!video || !("IntersectionObserver" in window)) return;
@@ -22,6 +23,7 @@ export function DemoVideo() {
     muted
     playsInline
     controls
-    preload="metadata"
-  /></figure>;
+    preload="none"
+    width={1080} height={1732} onError={() => setFailed(true)}
+  />{failed && <a href="https://www.canva.com/design/DAHbz7MtI7w/0LwZPGWkqQzkCKqdJnDWXw/watch">Watch the demonstration on Canva</a>}</figure>;
 }

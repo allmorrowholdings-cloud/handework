@@ -21,10 +21,17 @@ const initialForm = {
   radius_km: "10",
 };
 
+import { useHydrated } from "../../components/use-hydrated";
+
 type ArtisanForm = typeof initialForm;
 type Session = { access_token: string; refresh_token?: string };
 
 export default function JoinArtisan() {
+  const ready = useHydrated();
+  return ready ? <Application /> : <main><Header /><p className="shell" role="status">Opening your application...</p></main>;
+}
+
+function Application() {
   const router = useRouter();
   useEffect(() => {
     if (!accessToken()) return;
@@ -35,11 +42,18 @@ export default function JoinArtisan() {
     return () => controller.abort();
   }, [router]);
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState<ArtisanForm>(initialForm);
+  const [form, setForm] = useState<ArtisanForm>(() => {
+    try { return {...initialForm, ...JSON.parse(sessionStorage.getItem("handework-application") || "{}"), password: ""}; }
+    catch { return initialForm; }
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    const draft = {...form, password: ""};
+    try { sessionStorage.setItem("handework-application", JSON.stringify(draft)); } catch { /* Private browsing can disable storage. */ }
+  }, [form]);
   const set = (field: keyof ArtisanForm, value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
 
@@ -64,6 +78,7 @@ export default function JoinArtisan() {
         method: "POST",
         body: JSON.stringify({ ...form, client: "web" }),
       });
+      sessionStorage.removeItem("handework-application");
       saveSession(session.access_token, session.refresh_token);
       router.push("/artisan/verification");
     } catch (caught) {
@@ -79,7 +94,7 @@ export default function JoinArtisan() {
       <section className="join-hero">
         <div className="shell">
           
-          <h1>Put your skill<br />where work can find it.</h1>
+          <h1>Let&apos;s get your skill seen.</h1>
           <p>Join as an artisan, complete verification and choose the work you want to receive.</p>
         </div>
       </section>

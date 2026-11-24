@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { accessToken, signOut } from "../../lib/api";
+import { accessToken, api, dashboardPath, signOut } from "../../lib/api";
 import { Logo } from "./header";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -12,20 +12,33 @@ const artisanLinks = [["/artisan/dashboard","Workboard"],["/artisan/workproof","
 
 export function AppShell({ children, role = "customer", title, note, action }: { children: React.ReactNode; role?: "customer" | "artisan" | "admin"; title: string; note?: string; action?: React.ReactNode }) {
   const path = usePathname(); const router = useRouter();
-  const [ready, setReady] = useState(false);
+  const [account, setAccount] = useState("");
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
+    const controller = new AbortController();
     const check = () => {
-      const loggedIn = Boolean(accessToken());
-      setReady(loggedIn);
-      if (!loggedIn) router.replace("/auth/sign-in");
+      if (!accessToken()) { router.replace("/auth/sign-in"); return; }
+      api<{user: {role: string}}>("/v1/auth/me", {signal: controller.signal})
+        .then(({user}) => {
+          if (controller.signal.aborted) return;
+          const restricted = path.startsWith("/admin") || path.startsWith("/artisan/") || path === "/dashboard";
+          if (restricted && user.role !== role) { router.replace(dashboardPath(user.role)); return; }
+          setAccount(user.role);
+        }).catch(error => {
+          if (controller.signal.aborted) return;
+          if (error.status === 401) router.replace("/auth/sign-in");
+          else setAccount("error");
+        });
     };
     check();
-    window.addEventListener("storage", check);
-    window.addEventListener("handework-session", check);
-    return () => { window.removeEventListener("storage", check); window.removeEventListener("handework-session", check); };
-  }, [router]);
-  if (!ready) return <p className="shell" role="status">Checking your account...</p>;
-  const links = role === "artisan" ? artisanLinks : role === "admin" ? [["/admin","Operations"],["/admin/verifications","KYC queue"],["/admin/disputes","Disputes"],["/admin/payments","Payments"],["/admin/risk","Risk review"],["/admin/analytics","Analytics"]] : customerLinks;
+    const changed = () => { if (!accessToken()) router.replace("/auth/sign-in"); };
+    window.addEventListener("storage", changed);
+    window.addEventListener("handework-session", changed);
+    return () => { controller.abort(); window.removeEventListener("storage", changed); window.removeEventListener("handework-session", changed); };
+  }, [attempt, path, role, router]);
+  if (account === "error") return <p className="section shell" role="status">Your account could not load. <button onClick={() => setAttempt(attempt + 1)}>Try again</button></p>;
+  if (!account) return <p className="section shell" role="status">Checking your account...</p>;
+  const links = account === "artisan" ? artisanLinks : account === "admin" ? [["/admin","Operations"],["/admin/verifications","KYC queue"],["/admin/disputes","Disputes"],["/admin/payments","Payments"],["/admin/risk","Risk review"],["/admin/analytics","Analytics"]] : customerLinks;
   return <div className="app-layout">
     <aside className="app-sidebar"><Logo light /><nav>{links.map(([href,label]) => <Link className={path === href ? "active" : ""} href={href} key={href}><span>{label.slice(0,1)}</span>{label}</Link>)}</nav><div className="side-bottom"><ThemeToggle /><Link href="/settings">Settings</Link><button onClick={() => { void signOut(); router.push("/auth/sign-in"); }}>Sign out</button></div></aside>
     <div className="app-main"><header className="app-topbar"><div className="mobile-app-logo"><Logo /></div><div><h1>{title}</h1>{note && <p>{note}</p>}</div>{action && <div className="app-action">{action}</div>}</header>{children}</div>

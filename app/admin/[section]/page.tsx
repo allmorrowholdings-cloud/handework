@@ -1,6 +1,9 @@
 import { AppShell } from "../../components/app-shell";
 import { LiveRecords } from "../../components/live-records";
 
+import { notFound } from "next/navigation";
+import { VerificationReview } from "./verification-review";
+
 const sections = {
   verifications: { title: "KYC queue", empty: "No verification waiting", text: "Government ID, live selfie, trade proof and payout-name checks appear here." },
   disputes: { title: "Dispute desk", empty: "No open dispute", text: "Cases retain their booking, evidence, resolution and financial-action audit trail." },
@@ -11,13 +14,14 @@ const sections = {
 
 export default async function AdminSection({ params }: { params: Promise<{ section: string }> }) {
   const { section } = await params;
-  const copy = sections[section as keyof typeof sections] ?? sections.risk;
+  if (!Object.hasOwn(sections, section)) notFound();
+  const copy = sections[section as keyof typeof sections];
 
   return <AppShell role="admin" title={copy.title} note="Review records for this area of operations.">
     <section className="app-content">
       <div className="app-card full-card">
         <div className="card-head"><h2>Current records</h2></div>
-        <LiveRecords endpoint={`/v1/admin/${section}`} emptyTitle={copy.empty} emptyText={copy.text} variant="admin" />
+        {section === "verifications" ? <VerificationReview /> : <LiveRecords endpoint={`/v1/admin/${section}`} emptyTitle={copy.empty} emptyText={copy.text} variant="admin" />}
       </div>
     </section>
   </AppShell>;

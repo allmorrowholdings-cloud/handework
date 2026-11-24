@@ -76,7 +76,7 @@ export function VerificationManager() {
       const actionText = busyKind === check.kind ? "Uploading…" : approved ? "Approved ✓" : pending ? "Replace file" : "Upload file";
       return <div className={`verify-row verification-${status.replaceAll(" ", "-")}`} key={check.kind}>
         <span>0{index + 1}</span>
-        <div><b>{check.title}</b><small>{row?.decision_reason || check.text}</small><em>{pending ? "Pending admin review" : approved ? "Approved" : status === "rejected" ? "Needs attention" : "Not submitted"}</em></div>
+        <div><b>{check.title}</b><small>{row?.decision_reason || check.text}</small><em>{pending ? "Pending admin review" : approved ? "Approved" : ["replacement_required","rejected"].includes(status) ? "Action required" : "Not submitted"}</em></div>
         {check.kind === "payout_name" ?
           <button type="button" disabled={approved || busyKind === check.kind} onClick={payout}>{busyKind === check.kind ? "Saving…" : approved ? "Approved ✓" : pending ? "Update name" : "Add payout name"}</button> :
           <label className={`verify-upload ${approved ? "disabled" : ""}`} htmlFor={`verification-${check.kind}`}>{actionText}<input id={`verification-${check.kind}`} disabled={approved || busyKind === check.kind} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => void upload(check.kind, event)} /></label>}

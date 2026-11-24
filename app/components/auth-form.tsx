@@ -5,9 +5,12 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, dashboardPath, saveSession } from "../../lib/api";
 
+import { useHydrated } from "./use-hydrated";
+
 type Session = { access_token: string; refresh_token?: string; user: { role: string } };
 
 export function AuthForm({ mode, onAuthenticated, onSwitch }: { mode: "sign-in" | "create"; onAuthenticated?: () => void; onSwitch?: () => void }) {
+  const ready = useHydrated();
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -33,7 +36,7 @@ export function AuthForm({ mode, onAuthenticated, onSwitch }: { mode: "sign-in" 
     }
   }
 
-  return <form className="auth-form" onSubmit={submit}>
+  return <form method="post" className="auth-form" onSubmit={submit}>
     {mode === "create" && <div className="two-fields"><label>First name<input required name="first_name" autoComplete="given-name" /></label><label>Last name<input required name="last_name" autoComplete="family-name" /></label></div>}
     <label>Email address<input required type="email" name="email" autoComplete="email" /></label>
     {mode === "create" && <label>Mobile number<input required type="tel" name="phone" autoComplete="tel" placeholder="+233" /></label>}
@@ -45,7 +48,7 @@ export function AuthForm({ mode, onAuthenticated, onSwitch }: { mode: "sign-in" 
     </label>
     {mode === "create" && <input type="hidden" name="role" value="customer" />}
     {error && <p className="form-error" role="alert">{error}</p>}
-    <button className="button button-orange full-button" disabled={busy}>{busy ? "Please wait…" : mode === "sign-in" ? "Sign in securely" : "Create customer account"}</button>
+    <button className="button button-orange full-button" disabled={busy || !ready}>{busy ? "Please wait…" : mode === "sign-in" ? "Sign in securely" : "Create customer account"}</button>
     <p className="auth-switch">{onSwitch ? <button type="button" className="text-link" onClick={onSwitch}>{mode === "sign-in" ? "Create an account" : "Sign in instead"}</button> : mode === "sign-in" ? <>New to handEwork? <Link href="/auth/create-account">Create an account</Link></> : <>Already registered? <Link href="/auth/sign-in">Sign in</Link></>}</p>
   </form>;
 }
