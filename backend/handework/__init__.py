@@ -27,12 +27,10 @@ def create_app(config_object=Config, *, seed_development_admin=True):
         app.register_blueprint(blueprint, url_prefix="/v1")
 
     if os.getenv("FLASK_ENV") == "development" or os.getenv("STORAGE_MODE") == "local":
-        @app.get("/v1/local-uploads/<path:filename>")
-        def local_upload(filename):
-            if filename.replace(chr(92), "/").split("/", 1)[0] != "portfolio":
-                return jsonify({"message":"File unavailable"}), 404
+        @app.get("/v1/local-uploads/portfolio/<path:filename>")
+        def local_portfolio(filename):
             root = os.getenv("LOCAL_UPLOAD_DIR") or os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
-            return send_from_directory(root, filename)
+            return send_from_directory(os.path.join(root, "portfolio"), filename)
 
         @app.get("/v1/private-download/<token>")
         def private_download(token):

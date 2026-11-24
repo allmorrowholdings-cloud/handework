@@ -725,8 +725,7 @@ html[data-theme="dark"] .shop-category-tabs button.active { color:#17130f; backg
 .hero.hero-light {
   background-color: #f2ebde;
   background-image:
-    linear-gradient(90deg, rgba(255,255,255,.76) 0%, rgba(255,255,255,.46) 35%, rgba(242,233,219,.08) 63%, rgba(216,196,170,.12) 100%),
-    url('/textures/relief-wall.svg');
+    linear-gradient(90deg, rgba(255,255,255,.76) 0%, rgba(255,255,255,.46) 35%, rgba(242,233,219,.08) 63%, rgba(216,196,170,.12) 100%);
   background-size: cover, cover;
   background-position: center, center;
 }
@@ -763,7 +762,6 @@ html[data-theme="dark"] .shop-category-tabs button.active { color:#17130f; backg
   inset: 17% -8% 4% 7%;
   pointer-events: none;
   opacity: .34;
-  background-image: url('/textures/relief-wall.svg');
   background-size: 145% 125%;
   background-position: 69% 50%;
   mix-blend-mode: multiply;
@@ -830,8 +828,7 @@ html[data-theme="dark"] .hero.hero-light {
   color: #f7f0e6;
   background-color: #171411;
   background-image:
-    linear-gradient(90deg, rgba(17,15,13,.94) 0%, rgba(22,18,15,.82) 36%, rgba(31,25,20,.58) 67%, rgba(35,27,21,.68) 100%),
-    url('/textures/relief-wall.svg');
+    linear-gradient(90deg, rgba(17,15,13,.94) 0%, rgba(22,18,15,.82) 36%, rgba(31,25,20,.58) 67%, rgba(35,27,21,.68) 100%);
   background-blend-mode: normal, luminosity;
 }
 html[data-theme="dark"] .hero.hero-light::before { opacity: .26; mix-blend-mode: screen; }

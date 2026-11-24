@@ -178,7 +178,6 @@ def quote(booking_id):
             raise ValueError
     except (ValueError, InvalidOperation):
         return jsonify({"message": "Enter a positive quote with at most two decimal places."}), 422
-    if amount <= 0: return jsonify({"message": "Quote amount must be greater than zero"}), 422
     row = Quote(booking_id=booking.id, artisan_id=profile.id, amount=amount, note=str(data.get("note") or "")); db.session.add(row)
     if booking.status == BookingStatus.REQUESTED: transition(booking, BookingStatus.QUOTED, user, "Quote submitted")
     notification_ids=queue_notifications(booking.customer,"New artisan quote",f"{profile.display_name} quoted {row.currency} {amount:.2f} for {booking.service}.",{"booking_id":booking.id,"quote_id":row.id});db.session.commit();dispatch_notifications(notification_ids);return jsonify({"id": row.id, "status": row.status, "amount": float(amount)}), 201
