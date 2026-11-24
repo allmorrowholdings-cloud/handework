@@ -34,15 +34,9 @@ export default function Home() {
             <p className="hero-lede">Find a verified artisan near you. Agree on the work and materials, follow the repair photos, and approve the finished job.</p>
             <LocationSearch />
           </div>
-          <article className="hero-job-example" aria-labelledby="example-job-title">
-            <header><span>Example job card</span><img src="/handework-hammer.webp" width="80" height="80" alt="" /></header>
-            <h2 id="example-job-title">A leaking kitchen tap in Osu</h2>
-            <dl>
-              <div><dt>Scope</dt><dd>Replace the worn seal and test the tap.</dd></div>
-              <div><dt>Quote</dt><dd>You agree on labour and materials before work begins.</dd></div>
-              <div><dt>Sign-off</dt><dd>Review the repair photo and confirm the leak is fixed.</dd></div>
-            </dl>
-          </article>
+          <div className="home-hammer" aria-hidden="true">
+            <img src="/handework-hammer.webp" width={1024} height={1024} alt="" fetchPriority="high" />
+          </div>
         </div>
       </section>
 
@@ -62,7 +56,17 @@ export default function Home() {
       </section>
 
       <section className="section proof-section" id="trust"><div className="shell proof-grid">
-        <div className="proof-intro"><h2>Hire with confidence.</h2><p>handEwork keeps the important parts visible to both sides. No scattered screenshots. No unclear payment promises.</p><Link className="button button-orange" href="/how-it-works">See how protection works</Link></div>
+        <div className="proof-intro"><h2>Hire with confidence.</h2><p>handEwork keeps the important parts visible to both sides. No scattered screenshots. No unclear payment promises.</p><Link className="button button-orange" href="/how-it-works">See how protection works</Link>
+          <article className="hero-job-example" aria-labelledby="example-job-title">
+            <header><span>Example job card</span></header>
+            <h3 id="example-job-title">A leaking kitchen tap in Osu</h3>
+            <dl>
+              <div><dt>Scope</dt><dd>Replace the worn seal and test the tap.</dd></div>
+              <div><dt>Quote</dt><dd>You agree on labour and materials before work begins.</dd></div>
+              <div><dt>Sign-off</dt><dd>Review the repair photo and confirm the leak is fixed.</dd></div>
+            </dl>
+          </article>
+        </div>
         <div className="proof-list">{safeguards.map(([title, detail], index) => <article key={title}><span>0{index + 1}</span><div><h3>{title}</h3><p>{detail}</p></div></article>)}</div>
       </div></section>
 
