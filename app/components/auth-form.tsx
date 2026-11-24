@@ -3,11 +3,11 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, saveSession } from "../../lib/api";
+import { api, dashboardPath, saveSession } from "../../lib/api";
 
 type Session = { access_token: string; refresh_token?: string; user: { role: string } };
 
-export function AuthForm({ mode }: { mode: "sign-in" | "create" }) {
+export function AuthForm({ mode, onAuthenticated, onSwitch }: { mode: "sign-in" | "create"; onAuthenticated?: () => void; onSwitch?: () => void }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -21,11 +21,11 @@ export function AuthForm({ mode }: { mode: "sign-in" | "create" }) {
     try {
       const session = await api<Session>(mode === "sign-in" ? "/v1/auth/login" : "/v1/auth/register", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, client: "web" }),
       });
       saveSession(session.access_token, session.refresh_token);
-      const destination = session.user.role === "admin" ? "/admin" : session.user.role === "artisan" ? "/artisan/dashboard" : "/dashboard";
-      router.push(destination);
+      if (onAuthenticated) onAuthenticated();
+      else router.replace(dashboardPath(session.user.role));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not continue");
     } finally {
@@ -46,6 +46,6 @@ export function AuthForm({ mode }: { mode: "sign-in" | "create" }) {
     {mode === "create" && <input type="hidden" name="role" value="customer" />}
     {error && <p className="form-error" role="alert">{error}</p>}
     <button className="button button-orange full-button" disabled={busy}>{busy ? "Please wait…" : mode === "sign-in" ? "Sign in securely" : "Create customer account"}</button>
-    <p className="auth-switch">{mode === "sign-in" ? <>New to handEwork? <Link href="/auth/create-account">Create an account</Link></> : <>Already registered? <Link href="/auth/sign-in">Sign in</Link></>}</p>
+    <p className="auth-switch">{onSwitch ? <button type="button" className="text-link" onClick={onSwitch}>{mode === "sign-in" ? "Create an account" : "Sign in instead"}</button> : mode === "sign-in" ? <>New to handEwork? <Link href="/auth/create-account">Create an account</Link></> : <>Already registered? <Link href="/auth/sign-in">Sign in</Link></>}</p>
   </form>;
 }

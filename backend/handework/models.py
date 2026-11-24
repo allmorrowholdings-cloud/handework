@@ -71,6 +71,12 @@ class User(UUIDMixin, TimestampMixin, db.Model):
     def public(self): return {"id": self.id, "email": self.email, "phone": self.phone, "first_name": self.first_name, "last_name": self.last_name, "role": self.role.value, "status": self.status, "country_code": self.country_code, "notification_preferences": self.notification_preferences or {"push": True, "whatsapp": False, "sms": True}}
 
 
+class LoginSession(UUIDMixin, db.Model):
+    __tablename__ = "login_sessions"
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
+    last_active = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+
+
 class ArtisanProfile(UUIDMixin, TimestampMixin, db.Model):
     __tablename__ = "artisan_profiles"
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False, unique=True, index=True)

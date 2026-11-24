@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SessionActivity } from "./components/session-activity";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 export const metadata: Metadata = {
@@ -26,5 +27,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" data-theme="dark" suppressHydrationWarning><body>{children}</body></html>;
+  return <html lang="en" data-theme="dark" suppressHydrationWarning><body><SessionActivity />{children}</body></html>;
 }

@@ -18,17 +18,22 @@ export function VerificationManager() {
   const [notice, setNotice] = useState("");
   const [busyKind, setBusyKind] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const body = await api<{ items: Check[]; profile_status: string }>("/v1/artisans/me/verifications");
-      setItems(body.items ?? []);
-      setProfileStatus(body.profile_status ?? "draft");
-    } catch (caught) {
-      setNotice(caught instanceof Error ? caught.message : "Verification status could not be loaded");
-    }
-  }, []);
+  const load = useCallback((signal?: AbortSignal) =>
+    api<{ items: Check[]; profile_status: string }>("/v1/artisans/me/verifications", { signal })
+      .then(body => {
+        if (signal?.aborted) return;
+        setItems(body.items ?? []);
+        setProfileStatus(body.profile_status ?? "draft");
+      })
+      .catch(caught => {
+        if (!signal?.aborted) setNotice(caught instanceof Error ? caught.message : "Verification status could not be loaded");
+      }), []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
 
   async function upload(kind: string, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];

@@ -22,6 +22,13 @@ def parse_coordinates(value):
     return None
 
 
+@bp.get("/services")
+def services():
+    profiles = db.session.query(ArtisanProfile.trade, ArtisanProfile.secondary_services).filter_by(verification_status="approved").distinct()
+    names = {name.strip() for trade, secondary in profiles for name in [trade, *(secondary or "").split(",")] if name.strip()}
+    return jsonify({"items": sorted(names, key=str.casefold)})
+
+
 @bp.get("/artisans/search")
 def search_artisans():
     service = str(request.args.get("service") or "").strip()

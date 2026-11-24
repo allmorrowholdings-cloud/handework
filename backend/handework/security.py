@@ -2,7 +2,20 @@ from functools import wraps
 from flask import jsonify
 from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
 from .extensions import db
-from .models import User
+from datetime import datetime, timedelta, timezone
+from .extensions import jwt
+from .models import LoginSession, User
+
+
+@jwt.token_in_blocklist_loader
+def session_inactive(_header, claims):
+    sid = claims.get("sid")
+    if not sid:
+        return False
+    return LoginSession.query.filter(
+        LoginSession.id == sid, LoginSession.user_id == claims["sub"],
+        LoginSession.last_active > datetime.now(timezone.utc) - timedelta(days=1)
+    ).first() is None
 
 
 def current_user():

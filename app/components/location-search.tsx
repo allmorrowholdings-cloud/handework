@@ -3,6 +3,8 @@
 import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { ServiceSelect } from "./service-select";
+
 export function LocationSearch({ compact = false, initialService = "", initialLocation = "", initialCoordinates = "" }: { compact?: boolean; initialService?: string; initialLocation?: string; initialCoordinates?: string }) {
   const router = useRouter();
   const [service, setService] = useState(initialService);
@@ -43,16 +45,21 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
   function submit(event: FormEvent) {
     event.preventDefault();
     if (locating) return;
+    if (!service || (!location.trim() && !coordinates)) {
+      setLocationError(!service && !location.trim() ? "Choose a service and enter the job location." : !service ? "Choose a service to continue." : "Enter the job location or use GPS to continue.");
+      (event.currentTarget as HTMLFormElement).querySelector<HTMLElement>(!service ? "select" : "input")?.focus();
+      return;
+    }
     const query = new URLSearchParams();
     if (service.trim()) query.set("service", service.trim());
     if (!coordinates && location.trim()) query.set("location", location.trim());
     if (coordinates) query.set("coordinates", coordinates);
-    router.push(`/marketplace?${query.toString()}`);
+    router.push(`${compact && initialService ? "/marketplace" : "/bookings/new"}?${query.toString()}`);
   }
 
-  return <form className={compact ? "finder compact" : "finder"} onSubmit={submit}>
-    <label><span>What needs doing?</span><input value={service} onChange={(e) => setService(e.target.value)} placeholder="e.g. Plumbing" aria-label="Service needed" /></label>
-    <label><span>Where is the job?</span><input value={location} onChange={(e) => { locationRequest.current++; setLocating(false); setLocation(e.target.value); setCoordinates(""); setLocationError(""); }} placeholder="e.g. Osu, Accra" aria-label="Job location" aria-describedby={locationError ? "finder-location-error" : undefined} /><button type="button" className="locate" disabled={locating} onClick={locate}>{locating ? "Locating…" : "Use GPS"}</button></label>
+  return <form className={compact ? "finder compact" : "finder"} onSubmit={submit} noValidate>
+    <label><span>What needs doing?</span><ServiceSelect value={service} onChange={value => { setService(value); setLocationError(""); }} /></label>
+    <label><span>Where is the job?</span><input required value={location} onChange={(e) => { locationRequest.current++; setLocating(false); setLocation(e.target.value); setCoordinates(""); setLocationError(""); }} placeholder="e.g. Osu, Accra" aria-label="Job location" aria-describedby={locationError ? "finder-location-error" : undefined} /><button type="button" className="locate" disabled={locating} onClick={locate}>{locating ? "Locating…" : "Use GPS"}</button></label>
     {locationError && <p id="finder-location-error" className="finder-location-error" role="status">{locationError}</p>}
     <button className="finder-submit" type="submit" disabled={locating}>Find an artisan</button>
   </form>;

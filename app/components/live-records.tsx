@@ -23,21 +23,19 @@ export function LiveRecords({
   variant?: DisplayVariant;
   linkBase?: string;
 }) {
-  const [items, setItems] = useState<Item[]>([]);
-  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const [result, setResult] = useState<{ endpoint: string; items: Item[] | null } | null>(null);
 
   useEffect(() => {
-    setState("loading");
-    api<{ items: Item[] }>(endpoint)
-      .then((data) => {
-        setItems(data.items ?? []);
-        setState("ready");
-      })
-      .catch(() => setState("error"));
+    const controller = new AbortController();
+    api<{ items: Item[] }>(endpoint, { signal: controller.signal })
+      .then(data => { if (!controller.signal.aborted) setResult({endpoint, items: data.items ?? []}); })
+      .catch(() => { if (!controller.signal.aborted) setResult({endpoint, items: null}); });
+    return () => controller.abort();
   }, [endpoint]);
 
-  if (state === "loading") return <div className="loading-line"><span />Loading current records…</div>;
-  if (state === "error") return <EmptyState title="Unable to load this information" text="Please try again in a moment." />;
+  const items = result?.items;
+  if (result?.endpoint !== endpoint) return <div className="loading-line"><span />Loading current records…</div>;
+  if (!items) return <EmptyState title="Unable to load this information" text="Please try again in a moment." />;
   if (!items.length) return <EmptyState title={emptyTitle} text={emptyText} action={action ? <Link className="button button-dark" href={action.href}>{action.label}</Link> : undefined} />;
 
   function destination(item: Item) {

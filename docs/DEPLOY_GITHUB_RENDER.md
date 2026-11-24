@@ -1,5 +1,29 @@
 # Push handEwork to GitHub and deploy on Render
 
+## Connect an existing Vercel frontend to Render
+
+1. In Render, select the `handework-api` web service. Open **Environment**, choose **Edit**, then **Add variable** and **Import from .env**. Import a production copy. Set `DATABASE_URL` to persistent MySQL using the installed PyMySQL driver. Use the Blueprint's private Key Value connection for `REDIS_URL`. Set strong production `SECRET_KEY` and `JWT_SECRET_KEY`. Omit development admin seeding and local file storage. Set `WEB_ORIGINS` to the exact public frontend origins, comma-separated. Set `PUBLIC_WEB_URL` to the canonical frontend origin for checkout returns.
+2. For the Celery service, `handework-worker`, share the database, Redis and notification settings with the API. An environment group can hold shared values. Keep service-level overrides consistent. Use **Save, rebuild, and deploy** for the code update. The Blueprint runs `flask --app wsgi:app db upgrade` before serving the API, including the browser session table.
+3. In the existing frontend host's production environment, set `NEXT_PUBLIC_API_URL` to the API HTTPS origin without a trailing slash or `/v1`. Add `NEXT_PUBLIC_MAPBOX_TOKEN` if displaying the map. Redeploy the frontend so the browser bundle picks up these settings.
+4. Open `/v1/health` on the API and check for HTTP 200 and database status `ok`. From the frontend, sign in to a staging customer account, create a booking with a photo, and open My jobs. Repeat the dashboard check with an approved artisan. The health endpoint checks database connectivity only.
+5. Configure Paystack test mode and point its webhook to `/v1/webhooks/paystack` on the API. Verify a test payment against the booking ledger and a shop checkout return. Verify a private file upload, area search and actual delivery of a queued notification separately.
+
+Provision the first administrator deliberately from a trusted backend shell using the existing `python -m scripts.create_admin` command with the intended administrator credentials. Web sign-in uses the account role stored in the database.
+
+### Provider connections to check
+
+| Feature | What the repository implements | Next step |
+| --- | --- | --- |
+| Payments and shop | Paystack collection, checkout, signed webhooks and refund requests | Supply `PAYSTACK_SECRET_KEY`, register the webhook and verify test transactions end to end. |
+| Files and verification | S3 uploads, signed private downloads and manual administrator review | Supply bucket, region and scoped AWS credentials. Test public portfolio and private verification files separately. Automated identity-provider verification requires additional implementation. |
+| Maps | Mapbox geocoding and a browser map. Search distance uses geographic coordinates. | Supply backend `MAPBOX_SECRET_TOKEN` and frontend public token. Road-route distance has a helper but no booking integration. |
+| Notifications | Redis/Celery queue with Expo push, Hubtel SMS and a generic WhatsApp HTTP adapter | Connect the worker, supply provider credentials, register a test device and verify delivery. Confirm the WhatsApp provider accepts the adapter payload. |
+| Unassigned quote requests | Customers can submit a request without choosing an artisan. The artisan workboard lists assigned bookings. | Add a dispatch or invitation step for unassigned requests. For the first end-to-end test, choose a matched artisan. |
+| Artisan payouts and timed escrow | Completion and payment-release accounting are implemented | Provider transfers to the artisan and scheduled automatic release need implementation and reconciliation tests. |
+| Matching and monitoring | Rules-based matching works independently of an AI provider | AI service matching and Sentry SDK reporting need implementation before their environment keys have any effect. |
+
+See [Render environment settings](https://render.com/docs/configure-environment-variables) and the repository's [integration guide](EXTERNAL_INTEGRATIONS.md).
+
 ## Part A: Create the GitHub repository
 
 ### 1. Confirm secrets are excluded

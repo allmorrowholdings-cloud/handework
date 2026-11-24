@@ -1,12 +1,11 @@
-import os
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from email_validator import validate_email, EmailNotValidError
 import phonenumbers
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt, get_jwt_identity, jwt_required
 from ..extensions import db, limiter
-from ..models import ArtisanProfile, Role, User
+from ..models import ArtisanProfile, LoginSession, Role, User
 
 bp = Blueprint("auth", __name__)
 
@@ -25,19 +24,20 @@ def normalize_phone(value):
 
 
 
-def configured_admin_emails():
-    values = [os.getenv("ADMIN_EMAIL", ""), *os.getenv("ADMIN_EMAILS", "").split(",")]
-    return {str(value).strip().lower() for value in values if str(value).strip()}
-
-
-def ensure_configured_admin(user):
-    if user and user.email and user.email.lower() in configured_admin_emails() and user.role != Role.ADMIN:
-        user.role = Role.ADMIN
-        return True
-    return False
+def browser_tokens(user, session_id):
+    return {
+        "access_token": create_access_token(identity=user.id, additional_claims={"sid": session_id, "role": user.role.value}),
+        "refresh_token": create_refresh_token(identity=user.id, additional_claims={"sid": session_id}, expires_delta=timedelta(days=1)),
+    }
 
 
 def session_for(user):
+    if (request.get_json(silent=True) or {}).get("client") == "web":
+        session = LoginSession(user_id=user.id)
+        db.session.add(session)
+        db.session.commit()
+        return {**browser_tokens(user, session.id), "user": user.public()}
+
     return {"access_token": create_access_token(identity=user.id, additional_claims={"role": user.role.value}), "refresh_token": create_refresh_token(identity=user.id), "user": user.public()}
 
 
@@ -82,7 +82,6 @@ def login():
     user = User.query.filter_by(email=email).first() if email else None
     if not user or not user.check_password(str(data.get("password") or "")): return jsonify({"message": "Email or password is incorrect", "code": "invalid_credentials"}), 401
     if user.status != "active": return jsonify({"message": "This account cannot sign in", "code": "account_unavailable"}), 403
-    ensure_configured_admin(user)
     user.last_login_at = datetime.now(timezone.utc); db.session.commit(); return jsonify(session_for(user))
 
 
@@ -91,7 +90,28 @@ def login():
 def refresh():
     user = db.session.get(User, get_jwt_identity())
     if not user or user.status != "active": return jsonify({"message": "Account is unavailable"}), 401
+    sid = get_jwt().get("sid")
+    if sid:
+        now = datetime.now(timezone.utc)
+        updated = LoginSession.query.filter(LoginSession.id == sid, LoginSession.user_id == user.id,
+                                            LoginSession.last_active > now - timedelta(days=1)).update({"last_active": now}, synchronize_session=False)
+        if not updated:
+            return jsonify({"message": "Please sign in again."}), 401
+        db.session.commit()
+        return jsonify(browser_tokens(user, sid))
+    if (request.get_json(silent=True) or {}).get("client") == "web":
+        return jsonify(session_for(user))
     return jsonify({"access_token": create_access_token(identity=user.id, additional_claims={"role": user.role.value})})
+
+
+@bp.post("/auth/logout")
+@jwt_required(verify_type=False)
+def logout():
+    sid = get_jwt().get("sid")
+    if sid:
+        LoginSession.query.filter_by(id=sid, user_id=get_jwt_identity()).delete()
+        db.session.commit()
+    return "", 204
 
 
 @bp.route("/auth/me", methods=["GET", "PATCH"])

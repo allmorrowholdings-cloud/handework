@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "../../components/header";
-import { api, saveSession } from "../../../lib/api";
+import { accessToken, api, saveSession } from "../../../lib/api";
 
 const initialForm = {
   first_name: "",
@@ -26,6 +26,14 @@ type Session = { access_token: string; refresh_token?: string };
 
 export default function JoinArtisan() {
   const router = useRouter();
+  useEffect(() => {
+    if (!accessToken()) return;
+    const controller = new AbortController();
+    api<{user: {role: string}}>("/v1/auth/me", { signal: controller.signal })
+      .then(({user}) => { if (!controller.signal.aborted && user.role === "artisan") router.replace("/artisan/dashboard"); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [router]);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<ArtisanForm>(initialForm);
   const [showPassword, setShowPassword] = useState(false);
@@ -54,7 +62,7 @@ export default function JoinArtisan() {
     try {
       const session = await api<Session>("/v1/auth/register-artisan", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, client: "web" }),
       });
       saveSession(session.access_token, session.refresh_token);
       router.push("/artisan/verification");

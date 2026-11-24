@@ -1,9 +1,11 @@
 "use client";
 
-import { ChangeEvent, FormEvent, Suspense, useState } from "react";
+import { ChangeEvent, FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AppShell } from "../../components/app-shell";
-import { api } from "../../../lib/api";
+import { Header } from "../../components/header";
+import { AuthForm } from "../../components/auth-form";
+import { ServiceSelect } from "../../components/service-select";
+import { accessToken, api } from "../../../lib/api";
 
 const initial = { service:"", description:"", address:"", area:"", city:"Accra", scheduled_date:"", time_window:"morning", budget_type:"quote", budget:"", contact_phone:"", instant_booking:false };
 
@@ -15,30 +17,75 @@ function NewBookingForm() {
   const params = useSearchParams();
   const router = useRouter();
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState({ ...initial, area: params.get("area") ?? "", service: params.get("service") ?? "" });
+  const [form, setForm] = useState({ ...initial, area: params.get("area") ?? params.get("location") ?? params.get("coordinates") ?? "", service: params.get("service") ?? "" });
   const [media, setMedia] = useState<File[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [auth, setAuth] = useState<"sign-in" | "create" | null>(null);
+  const [artisan, setArtisan] = useState(params.get("artisan") ?? "");
+  const [matches, setMatches] = useState<{id: string; display_name: string}[]>([]);
+  const [matchStatus, setMatchStatus] = useState("Checking artisan availability...");
+  const [createdId, setCreatedId] = useState("");
+  const [uploaded, setUploaded] = useState(0);
+  const coordinates = params.get("coordinates");
+  useEffect(() => {
+    if (step !== 3 || params.get("artisan")) return;
+    const query = new URLSearchParams({service: form.service, location: form.area + ", " + form.city, date: form.scheduled_date});
+    if (coordinates && form.area === (params.get("location") ?? params.get("area") ?? coordinates)) query.set("coordinates", coordinates);
+    const controller = new AbortController();
+    api<{items: {id: string; display_name: string}[]}>(`/v1/artisans/search?${query}`, {signal: controller.signal})
+      .then(({items}) => { if (!controller.signal.aborted) { setMatches(items); setMatchStatus(items.length ? "" : "No matches for this date. You can still request a quote."); } })
+      .catch(() => { if (!controller.signal.aborted) setMatchStatus("Matching is temporarily unavailable. You can still request a quote."); });
+    return () => controller.abort();
+  }, [step, form.service, form.city, form.area, form.scheduled_date, coordinates, params]);
+  useEffect(() => {
+    if (auth) document.querySelector<HTMLInputElement>(".request-auth input")?.focus();
+  }, [auth]);
   const set = (field:string, value:string|boolean) => setForm((current) => ({ ...current, [field]: value }));
-  function files(event: ChangeEvent<HTMLInputElement>) { setMedia(Array.from(event.target.files ?? []).slice(0, 5)); }
+  function files(event: ChangeEvent<HTMLInputElement>) {
+    const selected = Array.from(event.target.files ?? []);
+    setError(selected.length > 5 ? "The first five files were added. Choose again to change them." : "");
+    setMedia(selected.slice(0, 5));
+  }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError("");
+    if (step === 1 && !form.description.trim()) { setError("Describe the job before continuing."); return; }
+    if (step === 2 && (!form.area.trim() || !form.address.trim())) { setError("Enter the job address and area before continuing."); return; }
+    if (step === 2 && !params.get("artisan")) {
+      setMatches([]);
+      setArtisan("");
+      setMatchStatus("Checking artisan availability...");
+    }
     if (step < 3) { setStep(step + 1); return; }
+    if (!accessToken()) { setAuth("sign-in"); return; }
+    if (auth || busy) return;
     setBusy(true);
     try {
-      const booking = await api<{id:string}>("/v1/bookings", { method:"POST", body:JSON.stringify({ ...form, artisan_id: params.get("artisan") || undefined }) });
-      for (const file of media) {
-        const upload = new FormData(); upload.append("file", file); upload.append("purpose", "booking_media"); upload.append("booking_id", booking.id);
-        await api("/v1/uploads", { method:"POST", body:upload });
+      let id = createdId;
+      if (!id) {
+        const booking = await api<{id:string}>("/v1/bookings", { method:"POST", body:JSON.stringify({ ...form, artisan_id: artisan || undefined }) });
+        id = booking.id;
+        setCreatedId(id);
       }
-      router.push(`/bookings/${booking.id}`);
+      for (let i = uploaded; i < media.length; i++) {
+        const upload = new FormData(); upload.append("file", media[i]); upload.append("purpose", "booking_media"); upload.append("booking_id", id);
+        await api("/v1/uploads", { method:"POST", body:upload });
+        setUploaded(i + 1);
+      }
+      router.push(`/bookings/${id}`);
     } catch (caught) { setError(caught instanceof Error ? caught.message : "Could not create booking"); }
     finally { setBusy(false); }
   }
-  return <AppShell title="Request skilled work" note="Nothing is charged until the scope and artisan are confirmed."><section className="app-content narrow-content"><div className="booking-progress"><span className={step>=1?"on":""}>1. Work</span><span className={step>=2?"on":""}>2. Place & time</span><span className={step>=3?"on":""}>3. Budget & review</span></div><form className="app-card booking-form" onSubmit={submit}>
-    {step===1 && <><h2>What needs doing?</h2><label>Service category<input required value={form.service} onChange={(event)=>set("service",event.target.value)} placeholder="Plumbing, makeup, carpentry…" /></label><label>Job details<textarea required value={form.description} onChange={(event)=>set("description",event.target.value)} rows={6} placeholder="Describe the problem or result you need. Include measurements or useful details." /></label><label className="upload-zone">Photos or short video<input type="file" multiple accept="image/*,video/*" onChange={files} /><span>{media.length ? `${media.length} file${media.length===1?"":"s"} selected` : "Add up to five clear job photos"}</span></label></>}
+  return <main><Header /><div className="shell public-request"><header><h1>Request skilled work</h1><p>Nothing is charged until the scope and artisan are confirmed.</p></header><section className="app-content narrow-content"><div className="booking-progress"><span className={step>=1?"on":""}>1. Work</span><span className={step>=2?"on":""}>2. Place & time</span><span className={step>=3?"on":""}>3. Budget & review</span></div><form className="app-card booking-form" onSubmit={submit}>
+    {step===1 && <><h2>What needs doing?</h2><label>Service category<ServiceSelect value={form.service} onChange={value => set("service", value)} /></label><label>Job details<textarea required value={form.description} onChange={(event)=>set("description",event.target.value)} rows={6} placeholder="Describe the problem or result you need. Include measurements or useful details." /></label><label className="upload-zone">Photos or short video<input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4" onChange={files} /><span>{media.length ? `${media.length} file${media.length===1?"":"s"} selected` : "Add up to five clear job photos"}</span></label></>}
     {step===2 && <><h2>Where and when?</h2><label>Job address<input required value={form.address} onChange={(event)=>set("address",event.target.value)} placeholder="House number, street or landmark" /></label><div className="two-fields"><label>Area<input required value={form.area} onChange={(event)=>set("area",event.target.value)} placeholder="e.g. East Legon" /></label><label>City<select value={form.city} onChange={(event)=>set("city",event.target.value)}><option>Accra</option><option>Kumasi</option><option>Tema</option><option>Takoradi</option><option>Cape Coast</option><option>Tamale</option></select></label></div><div className="two-fields"><label>Date<input required type="date" value={form.scheduled_date} onChange={(event)=>set("scheduled_date",event.target.value)} /></label><label>Time window<select value={form.time_window} onChange={(event)=>set("time_window",event.target.value)}><option value="morning">Morning, 7am–11am</option><option value="midday">Midday, 11am–3pm</option><option value="evening">Evening, 3pm–7pm</option></select></label></div></>}
-    {step===3 && <><h2>Set clear limits.</h2><fieldset className="budget-type-field"><legend>Budget type</legend><div className="budget-type-grid">{[["fixed","Fixed budget"],["quote","I need an estimate"],["hourly","Hourly"]].map(([value,label])=><label className={form.budget_type===value?"selected":""} key={value}><input type="radio" name="budget_type" value={value} checked={form.budget_type===value} onChange={(event)=>set("budget_type",event.target.value)} /><span>{label}</span></label>)}</div></fieldset><label>{form.budget_type === "quote" ? "Budget in GHS (optional)" : "Budget in GHS"}<input required={form.budget_type !== "quote"} type="number" min="1" value={form.budget} onChange={(event)=>set("budget",event.target.value)} inputMode="decimal" placeholder="e.g. 350" /></label><label>Phone for job updates<input required type="tel" value={form.contact_phone} onChange={(event)=>set("contact_phone",event.target.value)} placeholder="+233" /></label>{params.get("instant")==="1"&&<label className="check consent"><input type="checkbox" checked={form.instant_booking} onChange={(event)=>set("instant_booking",event.target.checked)}/> Book instantly at the artisan&apos;s starting price when this date is available.</label>}<label className="check consent"><input required type="checkbox" /> I will keep job changes and approvals in handEwork so support can review the record.</label></>}
-    {error && <p className="form-error">{error}</p>}<div className="form-actions">{step>1 && <button type="button" className="button ghost-button" onClick={()=>setStep(step-1)}>Back</button>}<button className="button button-orange" disabled={busy}>{busy?"Submitting…":step<3?"Continue":"Create booking"}</button></div>
-  </form></section></AppShell>;
+    {step===3 && <><h2>Budget and review</h2><p><strong>{form.service}</strong> &middot; {form.description}</p><p>{form.address}, {form.area}, {form.city} &middot; {form.scheduled_date}, {form.time_window}</p>
+      {!params.get("artisan") && <label>Artisan<select value={artisan} onChange={event => setArtisan(event.target.value)}><option value="">Request a quote</option>{matches.map(person => <option key={person.id} value={person.id}>{person.display_name}</option>)}</select></label>}
+      {!params.get("artisan") && matchStatus && <p role="status">{matchStatus}</p>}<fieldset className="budget-type-field"><legend>Budget type</legend><div className="budget-type-grid">{[["fixed","Fixed budget"],["quote","I need an estimate"],["hourly","Hourly"]].map(([value,label])=><label className={form.budget_type===value?"selected":""} key={value}><input type="radio" name="budget_type" value={value} checked={form.budget_type===value} onChange={(event)=>set("budget_type",event.target.value)} /><span>{label}</span></label>)}</div></fieldset><label>{form.budget_type === "quote" ? "Budget in GHS (optional)" : "Budget in GHS"}<input required={form.budget_type !== "quote"} type="number" min="1" value={form.budget} onChange={(event)=>set("budget",event.target.value)} inputMode="decimal" placeholder="e.g. 350" /></label><label>Phone for job updates<input required type="tel" value={form.contact_phone} onChange={(event)=>set("contact_phone",event.target.value)} placeholder="+233" /></label>{params.get("instant")==="1"&&<label className="check consent"><input type="checkbox" checked={form.instant_booking} onChange={(event)=>set("instant_booking",event.target.checked)}/> Book instantly at the artisan&apos;s starting price when this date is available.</label>}<label className="check consent"><input required type="checkbox" /> I will keep job changes and approvals in handEwork so support can review the record.</label></>}
+    {error && <p className="form-error" role="alert">{error}</p>}<div className="form-actions">{step>1 && !createdId && <button type="button" className="button ghost-button" onClick={()=>setStep(step-1)}>Back</button>}<button className="button button-orange" disabled={busy || Boolean(auth)}>{busy?"Submitting…":step<3?"Continue":createdId?"Finish uploading":"Confirm request"}</button></div>
+  </form>
+    {auth && <section className="app-card request-auth" aria-label="Account for this booking"><h2>{auth === "sign-in" ? "Sign in to send your request" : "Create an account to send your request"}</h2><p>Your job details and photos are ready. Confirm your request after signing in.</p>
+      <AuthForm key={auth} mode={auth} onAuthenticated={() => setAuth(null)} onSwitch={() => setAuth(auth === "create" ? "sign-in" : "create")} />
+    </section>}
+  </section></div></main>;
 }

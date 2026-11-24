@@ -187,7 +187,12 @@ def support():
 
 @socketio.on("join.conversation")
 def socket_join(data):
-    try: user_id = decode_token(data.get("token", ""))["sub"]
+    try:
+        from ..security import session_inactive
+        claims = decode_token(data.get("token", ""))
+        if claims.get("type") != "access" or session_inactive({}, claims):
+            return {"ok": False, "error": "Sign in again"}
+        user_id = claims["sub"]
     except Exception: return {"ok": False, "error": "unauthorized"}
     conversation = Conversation.query.get(data.get("conversation_id"))
     if not conversation or user_id not in (conversation.customer_id, conversation.artisan_user_id): return {"ok": False, "error": "forbidden"}

@@ -1,6 +1,6 @@
 import secrets
 from decimal import Decimal, InvalidOperation
-from datetime import datetime, time, timezone
+from datetime import date, datetime, time, timezone
 from flask import Blueprint, jsonify, request
 from ..extensions import db
 from ..models import ArtisanProfile, Availability, Booking, BookingStatus, BookingStatusEvent, Conversation, JobChange, Quote, Role
@@ -53,7 +53,11 @@ def bookings():
     if any(not str(data.get(field) or "").strip() for field in required): return jsonify({"message": "Complete the service, job, address, city and contact fields", "code": "missing_booking_fields"}), 422
     scheduled = None
     if data.get("scheduled_date"):
-        scheduled = datetime.combine(datetime.fromisoformat(data["scheduled_date"]).date(), time(8, 0), tzinfo=timezone.utc)
+        try:
+            hour = {"morning": 8, "midday": 12, "evening": 16}.get(data.get("time_window", "morning"), 8)
+            scheduled = datetime.combine(date.fromisoformat(data["scheduled_date"]), time(hour, 0), tzinfo=timezone.utc)
+        except (TypeError, ValueError):
+            return jsonify({"message": "Choose a valid job date."}), 422
     booking = Booking(reference=f"VV-{secrets.token_hex(4).upper()}", customer_id=user.id, service=data["service"].strip(), description=data["description"].strip(), address=data["address"].strip(), area=data["area"].strip(), city=data["city"].strip(), scheduled_start=scheduled, budget_type=data.get("budget_type", "quote"), budget_amount=data.get("budget") or None, contact_phone=data["contact_phone"].strip())
     instant_artisan = None
     if data.get("artisan_id"):
