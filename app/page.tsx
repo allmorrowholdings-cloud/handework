@@ -15,12 +15,6 @@ const services = [
   { code: "09", name: "Catering", note: "Feed your guests without the cooking.", image: "food-events" },
 ];
 
-const safeguards = [
-  ["Identity checked", "Artisans submit an ID, a live photo and their trade details before receiving the verified mark."],
-  ["Money held safely", "Payment stays in handEwork escrow until the agreed work is completed and approved."],
-  ["Work recorded", "Scope, chat, progress photos, changes and approvals remain attached to the booking."],
-];
-
 export default function Home() {
   return (
     <main className="home-market">
@@ -55,20 +49,31 @@ export default function Home() {
         ))}</div>
       </section>
 
-      <section className="section proof-section" id="trust"><div className="shell proof-grid">
-        <div className="proof-intro"><h2>Hire with confidence.</h2><p>handEwork keeps the important parts visible to both sides. No scattered screenshots. No unclear payment promises.</p><Link className="button button-orange" href="/how-it-works">See how protection works</Link>
-          <article className="hero-job-example" aria-labelledby="example-job-title">
-            <header><span>Example job card</span></header>
-            <h3 id="example-job-title">A leaking kitchen tap in Osu</h3>
-            <dl>
-              <div><dt>Scope</dt><dd>Replace the worn seal and test the tap.</dd></div>
-              <div><dt>Quote</dt><dd>You agree on labour and materials before work begins.</dd></div>
-              <div><dt>Sign-off</dt><dd>Review the repair photo and confirm the leak is fixed.</dd></div>
-            </dl>
-          </article>
+      <section className="section shell homepage-demos" id="trust" aria-label="handEwork demos">
+        <div>
+          <h2>Try the handEwork prototype</h2>
+          <iframe
+            className="prototype-player"
+            title="Interactive handEwork prototype on Figma"
+            src="https://embed.figma.com/proto/j0w4a2nKe5XfVyq7xF9SAH/Untitled?node-id=8-3&p=f&scaling=scale-down&content-scaling=fixed&page-id=6%3A3&starting-point-node-id=8%3A2&embed-host=share"
+            width="800"
+            height="450"
+            loading="lazy"
+            allowFullScreen
+          />
+          <a className="text-link" href="https://www.figma.com/proto/j0w4a2nKe5XfVyq7xF9SAH/Untitled?node-id=8-3&starting-point-node-id=8%3A2" target="_blank" rel="noopener noreferrer">Open in Figma</a>
         </div>
-        <div className="proof-list">{safeguards.map(([title, detail], index) => <article key={title}><span>0{index + 1}</span><div><h3>{title}</h3><p>{detail}</p></div></article>)}</div>
-      </div></section>
+        <figure>
+          <iframe
+            className="canva-player"
+            title="Allmorrow demo by Mzphill"
+            src="https://www.canva.com/design/DAHbz7MtI7w/0LwZPGWkqQzkCKqdJnDWXw/watch?embed"
+            loading="lazy"
+            allowFullScreen
+          />
+          <figcaption><a className="text-link" href="https://www.canva.com/design/DAHbz7MtI7w/0LwZPGWkqQzkCKqdJnDWXw/watch?utm_content=DAHbz7MtI7w&utm_campaign=designshare&utm_medium=embeds&utm_source=link" target="_blank" rel="noopener noreferrer">Allmorrow demo</a> by Mzphill</figcaption>
+        </figure>
+      </section>
 
       <section className="section shell artisan-call" id="artisans">
         <div className="artisan-lettering" aria-hidden="true">HANDS</div>

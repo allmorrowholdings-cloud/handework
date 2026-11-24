@@ -1549,3 +1549,26 @@ html .home-market .hero.hero-light, html[data-theme] .home-market .hero.hero-lig
 }
 
 @media (min-width: 901px) { .market-layout.results-only { grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); } }
+
+.homepage-demos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .38fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 64px);
+}
+.homepage-demos h2 { margin: 0 0 20px; font-size: clamp(1.75rem, 3vw, 3rem); }
+.homepage-demos figure { margin: 0; }
+.homepage-demos iframe {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-bottom: 12px;
+  border: 1px solid rgba(0, 0, 0, .1);
+  border-radius: 8px;
+}
+.prototype-player { aspect-ratio: 16 / 9; }
+.canva-player { aspect-ratio: 1 / 1.60463; }
+@media (max-width: 760px) {
+  .homepage-demos { grid-template-columns: minmax(0, 1fr); }
+  .homepage-demos figure { width: min(100%, 340px); justify-self: center; }
+}
