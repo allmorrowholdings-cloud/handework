@@ -109,7 +109,7 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
     else query.set("service", service.trim());
     if (coordinates) query.set("coordinates",coordinates);
     else query.set("location",location.trim());
-    router.push(`${compact && !describe ? "/marketplace" : "/bookings/new"}?${query.toString()}`);
+    router.push(`${describe ? "/bookings/new" : "/marketplace"}?${query.toString()}`);
   }
 
   return <form className={compact ? "finder compact" : "finder"} onSubmit={submit} noValidate>

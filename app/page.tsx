@@ -133,7 +133,7 @@ export default function Home() {
 
           <div className="home-safety-video">
             <iframe
-              src="https://drive.google.com/file/d/1WkwTiQNtryINCKccY5KNMdhd5ot3y06U/preview"
+              src="https://drive.google.com/file/d/1WkwTiQNtryINCKccY5KNMdhd5ot3y06U/preview?autoplay=1"
               title="handEwork Safety and Trust"
               loading="lazy"
               allow="autoplay; fullscreen"
