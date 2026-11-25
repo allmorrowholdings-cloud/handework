@@ -2,7 +2,7 @@ from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 from ..extensions import db
-from ..models import (ArtisanProfile, AuditLog, Booking, BookingStatus, Dispute, Payment, PaymentStatus, RiskEvent, Role, SupportTicket, Verification, WorkProofEvidence)
+from ..models import (ArtisanProfile, AuditLog, Booking, BookingStatus, Dispute, FileAsset, Payment, PaymentStatus, RiskEvent, Role, SupportTicket, Verification, WorkProofEvidence)
 from ..security import current_user, role_required
 from ..services.storage import private_download_url
 from ..services.notifications import dispatch_notifications, queue_notifications
@@ -15,7 +15,9 @@ bp = Blueprint("admin", __name__)
 def operations_queue():
     items=[]
     for row in Verification.query.filter_by(status="pending").order_by(Verification.created_at).limit(50): items.append({"id":row.id,"kind":"verification","title":row.kind,"status":row.status,"created_at":row.created_at.isoformat()})
-    for row in WorkProofEvidence.query.filter_by(status="pending").order_by(WorkProofEvidence.created_at).limit(50): items.append({"id":row.id,"kind":"workproof","title":row.title,"status":row.status,"created_at":row.created_at.isoformat()})
+    for row in WorkProofEvidence.query.filter_by(status="pending").order_by(WorkProofEvidence.created_at).limit(50):
+        asset=db.session.get(FileAsset,row.file_asset_id) if row.file_asset_id else None
+        items.append({"id":row.id,"kind":"workproof","title":row.title,"status":row.status,"evidence_url":private_download_url(asset.url,300) if asset and not asset.deleted_at else None,"created_at":row.created_at.isoformat()})
     for row in Dispute.query.filter_by(status="open").order_by(Dispute.created_at).limit(50): items.append({"id":row.id,"kind":"dispute","title":row.reason,"status":row.status,"created_at":row.created_at.isoformat()})
     for row in SupportTicket.query.filter_by(status="open").order_by(SupportTicket.created_at).limit(50): items.append({"id":row.id,"kind":"support","title":row.topic,"status":row.status,"created_at":row.created_at.isoformat()})
     for row in RiskEvent.query.filter_by(decision="review").order_by(RiskEvent.score.desc()).limit(50): items.append({"id":row.id,"kind":"risk","title":row.kind,"status":row.decision,"score":row.score,"created_at":row.created_at.isoformat()})
@@ -55,7 +57,7 @@ def dispute_queue():
         for log in AuditLog.query.filter_by(entity_type="dispute",entity_id=row.id,action="dispute.response").order_by(AuditLog.created_at):
             details=log.after or {}
             asset=db.session.get(FileAsset,details["asset_id"]) if details.get("asset_id") else None
-            result.append({"actor":log.actor_id,"message":details.get("message"),"url":private_download_url(asset.url) if asset else None})
+            result.append({"actor":log.actor_id,"message":details.get("message"),"url":private_download_url(asset.url) if asset and not asset.deleted_at else None})
         return result
     rows=Dispute.query.order_by(Dispute.created_at).limit(200).all();return jsonify({"items":[{"id":x.id,"booking_id":x.booking_id,"responses":responses(x),"reason":x.reason,"description":x.description,"status":x.status,"created_at":x.created_at.isoformat()} for x in rows]})
 

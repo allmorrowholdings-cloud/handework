@@ -5,6 +5,7 @@ import { DisputeDesk } from "./dispute-desk";
 import { PaymentOperations } from "./payment-operations";
 import { notFound } from "next/navigation";
 import { VerificationReview } from "./verification-review";
+import { ShopMediaManager } from "./shop-media";
 
 const sections = {
   verifications: { title: "KYC queue", empty: "No verification waiting", text: "Government ID, live selfie, trade proof and payout-name checks appear here." },
@@ -12,6 +13,7 @@ const sections = {
   payments: { title: "Payment operations", empty: "No payment exception", text: "Pending, failed and refund-pending transactions appear here for reconciliation." },
   risk: { title: "Risk review", empty: "No risk event waiting", text: "Blocked and review-level signals appear here for a human decision." },
   analytics: { title: "Live analytics", empty: "No analytics response", text: "Booking, payment and verification totals appear here." },
+  media: { title: "Shop product media", empty: "No product images", text: "Upload approved product photography for the shop catalog." },
 } as const;
 
 export default async function AdminSection({ params }: { params: Promise<{ section: string }> }) {
@@ -23,7 +25,7 @@ export default async function AdminSection({ params }: { params: Promise<{ secti
     <section className="app-content">
       <div className="app-card full-card">
         <div className="card-head"><h2>Current records</h2></div>
-        {section === "disputes" ? <DisputeDesk/> : section === "payments" ? <PaymentOperations/> : section === "verifications" ? <VerificationReview /> : <LiveRecords endpoint={`/v1/admin/${section}`} emptyTitle={copy.empty} emptyText={copy.text} variant="admin" />}
+        {section === "disputes" ? <DisputeDesk/> : section === "payments" ? <PaymentOperations/> : section === "verifications" ? <VerificationReview /> : section === "media" ? <ShopMediaManager/> : <LiveRecords endpoint={`/v1/admin/${section}`} emptyTitle={copy.empty} emptyText={copy.text} variant="admin" />}
       </div>
     </section>
   </AppShell>;

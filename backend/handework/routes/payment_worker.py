@@ -26,7 +26,7 @@ def auto_release(booking_id):
     event = BookingStatusEvent.query.filter_by(booking_id=booking.id, to_status="completion_submitted").order_by(BookingStatusEvent.occurred_at.desc()).first()
     if not event or not booking.artisan or booking.artisan.verification_status != "approved":
         return False
-    evidence = FileAsset.query.filter_by(booking_id=booking.id, owner_id=booking.artisan.user_id, purpose="completion_evidence").first()
+    evidence = FileAsset.query.filter_by(booking_id=booking.id, owner_id=booking.artisan.user_id, purpose="completion_evidence", deleted_at=None).order_by(FileAsset.created_at.desc()).first()
     recipient = db.session.get(PayoutRecipient, booking.artisan_id)
     if not evidence or not recipient:
         return False

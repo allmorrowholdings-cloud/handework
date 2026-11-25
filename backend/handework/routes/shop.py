@@ -1,15 +1,17 @@
 import os
+from datetime import datetime, timezone
 from uuid import UUID, uuid5
 from sqlalchemy.exc import IntegrityError
 from decimal import Decimal
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from ..extensions import db, limiter
-from ..models import Role, ShopOrder, ShopOrderItem
+from ..models import AuditLog, FileAsset, Role, ShopOrder, ShopOrderItem, ShopProductMedia
 from ..security import current_user, role_required
 from ..services.paystack import Paystack, checkout_enabled, checkout_url
 from .payments import verify_charge
 from ..services.commission import commission, commission_bps
 from ..services.shop_catalog import PRODUCTS
+from ..services.storage import upload_file, metadata_for, private_download_url, delete_object
 
 bp = Blueprint("shop", __name__)
 
@@ -25,7 +27,60 @@ def money(value):
 
 @bp.get("/shop/products")
 def products():
-    return jsonify({"items": [{"id": key, **{**value, "price": float(value["price"])}} for key, value in published_products().items()]})
+    images={row.product_id:row.file_asset_id for row in ShopProductMedia.query.all()}
+    assets={asset.id:asset for asset in FileAsset.query.filter(FileAsset.id.in_(list(images.values()))).all()} if images else {}
+    return jsonify({"items": [{"id": key, **{**value, "price": float(value["price"])},"image":private_download_url(assets[images[key]].url,300) if key in images and images[key] in assets else None} for key, value in published_products().items()]})
+
+
+@bp.get("/admin/shop-media")
+@role_required(Role.ADMIN)
+def shop_media():
+    rows=ShopProductMedia.query.order_by(ShopProductMedia.product_id).all()
+    items=[]
+    for row in rows:
+        asset=db.session.get(FileAsset,row.file_asset_id)
+        if asset and not asset.deleted_at: items.append({"product_id":row.product_id,"file_asset_id":asset.id,"image_url":private_download_url(asset.url,300)})
+    return jsonify({"items":items})
+
+
+@bp.put("/admin/shop-products/<product_id>/image")
+@role_required(Role.ADMIN)
+def put_shop_image(product_id):
+    if product_id not in PRODUCTS: return jsonify({"message":"Unknown shop product"}),404
+    previous=ShopProductMedia.query.filter_by(product_id=product_id).first()
+    try:
+        stored=upload_file(request.files.get("file"),current_user().id,"shop_image",private=True)
+        asset=FileAsset(owner_id=current_user().id,purpose="shop_image",**metadata_for(stored));db.session.add(asset);db.session.flush()
+        if previous:
+            old_asset=db.session.get(FileAsset,previous.file_asset_id);previous.file_asset_id=asset.id
+            if old_asset:
+                asset.replaces_asset_id = old_asset.id
+                old_asset.deleted_at = datetime.now(timezone.utc)
+        else:
+            old_asset=None;db.session.add(ShopProductMedia(product_id=product_id,file_asset_id=asset.id))
+        db.session.add(AuditLog(actor_id=current_user().id,action="shop.image.upload",entity_type="shop_product",entity_id=product_id,after={"asset_id":asset.id,"sha256":asset.sha256}));db.session.commit()
+    except ValueError as error:
+        db.session.rollback()
+        if "stored" in locals():
+            try: delete_object(stored.url)
+            except Exception: current_app.logger.exception("Invalid shop image cleanup failed")
+        return jsonify({"message":str(error)}),422
+    except RuntimeError as error:
+        db.session.rollback()
+        if "stored" in locals():
+            try: delete_object(stored.url)
+            except Exception: current_app.logger.exception("Failed shop image cleanup failed")
+        return jsonify({"message":str(error)}),503
+    except Exception:
+        db.session.rollback()
+        if "stored" in locals():
+            try: delete_object(stored.url)
+            except Exception: current_app.logger.exception("Shop image transaction cleanup failed")
+        raise
+    if old_asset:
+        try: delete_object(old_asset.url)
+        except Exception: current_app.logger.exception("Replaced shop image cleanup failed")
+    return jsonify({"product_id":product_id,"image_url":private_download_url(asset.url,300)}),201
 
 
 @bp.get("/shop/orders")

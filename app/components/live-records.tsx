@@ -56,6 +56,6 @@ export function LiveRecords({
 
   return <div className="record-list">{items.map((item, index) => {
     const href = destination(item);
-    return <div className="record-row" key={String(item.id ?? index)}>{content(item)}{href && <Link href={href}>Open</Link>}</div>;
+    return <div className="record-row" key={String(item.id ?? index)}>{content(item)}{href && <Link href={href}>Open</Link>}{typeof item.evidence_url === "string" && <a href={item.evidence_url} target="_blank" rel="noreferrer">Review evidence</a>}</div>;
   })}</div>;
 }

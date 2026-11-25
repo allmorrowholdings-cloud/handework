@@ -26,7 +26,8 @@ def create_app(config_object=Config, *, seed_development_admin=True):
     for blueprint in (auth_bp, marketplace_bp, bookings_bp, payments_bp, platform_bp, admin_bp, workproof_bp, shop_bp):
         app.register_blueprint(blueprint, url_prefix="/v1")
 
-    if os.getenv("FLASK_ENV") == "development" or os.getenv("STORAGE_MODE") == "local":
+    from .services.storage import local_storage_allowed
+    if local_storage_allowed(app) and (os.getenv("FLASK_ENV") == "development" or os.getenv("STORAGE_MODE") == "local"):
         @app.get("/v1/local-uploads/portfolio/<path:filename>")
         def local_portfolio(filename):
             root = os.getenv("LOCAL_UPLOAD_DIR") or os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")

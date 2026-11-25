@@ -1,14 +1,14 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from math import isfinite
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import jwt_required
 from ..extensions import db, limiter
-from ..models import ArtisanProfile, Availability, PortfolioItem, Role, Verification
+from ..models import ArtisanProfile, Availability, FileAsset, PortfolioItem, Role, Verification
 from ..security import current_user, role_required
 from ..services.distance import haversine_km
 from ..services.maps import geocode, places, point, LocationUnavailable
 from ..services.matching import matching_score
-from ..services.storage import private_download_url, upload_file
+from ..services.storage import private_download_url, upload_file, metadata_for, delete_object
 from ..services.workproof import public_workproof
 
 bp = Blueprint("marketplace", __name__)
@@ -98,6 +98,7 @@ def ranked_artisans(service,coordinates,distance_limit,location=None,weekday=Non
             distance = None
         if distance is not None and distance > min(distance_limit, profile.radius_km): continue
         card = profile.search_card(distance)
+        card["avatar_url"] = private_download_url(profile.avatar_url,300) if profile.avatar_url else None
         card.update(area=profile.area, city=profile.city)
         card["match_score"] = matching_score(text_match=1 if service else .5, distance_km=distance, radius_km=profile.radius_km, rating=profile.rating_average, completion_rate=profile.completion_rate, available=profile.available, response_minutes=profile.response_minutes)
         rows.append(card)
@@ -110,7 +111,7 @@ def ranked_artisans(service,coordinates,distance_limit,location=None,weekday=Non
 def artisan_detail(artisan_id):
     profile = ArtisanProfile.query.filter_by(id=artisan_id, verification_status="approved").first_or_404()
     portfolio = PortfolioItem.query.filter_by(artisan_id=profile.id, moderation_status="approved").order_by(PortfolioItem.created_at.desc()).all()
-    return jsonify({"artisan": {**profile.search_card(None), "bio": profile.bio, "years_experience": profile.years_experience, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km}, "workproof": public_workproof(profile), "portfolio": [{"id": item.id, "title": item.title, "description": item.description, "service": item.service, "media_url": private_download_url(item.media_url), "media_type": item.media_type, "before_after": item.before_after} for item in portfolio]})
+    return jsonify({"artisan": {**profile.search_card(None), "avatar_url":private_download_url(profile.avatar_url,300) if profile.avatar_url else None, "bio": profile.bio, "years_experience": profile.years_experience, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km}, "workproof": public_workproof(profile), "portfolio": [{"id": item.id, "title": item.title, "description": item.description, "service": item.service, "media_url": private_download_url(item.media_url,300), "media_type": item.media_type, "before_after": item.before_after} for item in portfolio]})
 
 
 @bp.route("/artisans/me", methods=["GET", "PATCH"])
@@ -131,7 +132,7 @@ def my_artisan_profile():
         if "starting_price" in data: profile.starting_price = data["starting_price"]
         if "instant_booking" in data: profile.instant_booking = bool(data["instant_booking"])
         db.session.commit()
-    return jsonify({"artisan": {**profile.search_card(None), "bio": profile.bio, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km, "latitude":float(profile.latitude) if profile.latitude is not None else None,"longitude":float(profile.longitude) if profile.longitude is not None else None,"verification_status": profile.verification_status, "available": profile.available}})
+    return jsonify({"artisan": {**profile.search_card(None), "avatar_url":private_download_url(profile.avatar_url,300) if profile.avatar_url else None, "bio": profile.bio, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km, "latitude":float(profile.latitude) if profile.latitude is not None else None,"longitude":float(profile.longitude) if profile.longitude is not None else None,"verification_status": profile.verification_status, "available": profile.available}})
 
 
 @bp.route("/artisans/me/availability", methods=["GET", "PUT"])
@@ -156,12 +157,45 @@ def portfolio():
     profile = ArtisanProfile.query.filter_by(user_id=current_user().id).first_or_404()
     if request.method == "POST":
         file = request.files.get("file")
-        try: url = upload_file(file, profile.id, "portfolio")
-        except (ValueError, RuntimeError) as error: return jsonify({"message": str(error)}), 422
-        item = PortfolioItem(artisan_id=profile.id, title=request.form.get("title", "Untitled work").strip(), description=request.form.get("description", "").strip(), service=request.form.get("service", profile.trade).strip(), media_url=url, media_type="video" if file.mimetype.startswith("video") else "image", before_after=request.form.get("before_after"))
-        db.session.add(item); db.session.commit(); return jsonify({"item": {"id": item.id, "status": item.moderation_status, "media_url": private_download_url(item.media_url)}}), 201
+        replace_id=str(request.form.get("replace_id") or "")
+        existing=PortfolioItem.query.filter_by(id=replace_id,artisan_id=profile.id).first() if replace_id else None
+        if replace_id and not existing: return jsonify({"message":"Portfolio item not found"}),404
+        try:
+            stored = upload_file(file, current_user().id, "portfolio", private=True)
+            asset=FileAsset(owner_id=current_user().id,purpose="portfolio",**metadata_for(stored));db.session.add(asset);db.session.flush()
+            if existing:
+                old_asset=db.session.get(FileAsset,existing.file_asset_id) if existing.file_asset_id else None
+                existing.file_asset_id=asset.id;existing.media_url=asset.url;existing.media_type="video" if file.mimetype.startswith("video") else "image";existing.moderation_status="pending"
+            else:
+                existing=PortfolioItem(artisan_id=profile.id,title=request.form.get("title", "Untitled work").strip(),description=request.form.get("description", "").strip(),service=request.form.get("service",profile.trade).strip(),media_url=asset.url,file_asset_id=asset.id,media_type="video" if file.mimetype.startswith("video") else "image",before_after=request.form.get("before_after"));db.session.add(existing);old_asset=None
+            if old_asset:
+                asset.replaces_asset_id = old_asset.id
+                old_asset.deleted_at = datetime.now(timezone.utc)
+            db.session.commit()
+        except ValueError as error:
+            db.session.rollback()
+            if "stored" in locals():
+                try: delete_object(stored.url)
+                except Exception: current_app.logger.exception("Invalid portfolio upload cleanup failed")
+            return jsonify({"message": str(error)}), 422
+        except RuntimeError as error:
+            db.session.rollback()
+            if "stored" in locals():
+                try: delete_object(stored.url)
+                except Exception: current_app.logger.exception("Failed portfolio upload cleanup failed")
+            return jsonify({"message": str(error)}), 503
+        except Exception:
+            db.session.rollback()
+            if "stored" in locals():
+                try: delete_object(stored.url)
+                except Exception: current_app.logger.exception("Portfolio transaction cleanup failed")
+            raise
+        if old_asset:
+            try: delete_object(old_asset.url)
+            except Exception: current_app.logger.exception("Replaced portfolio file cleanup failed")
+        return jsonify({"item": {"id": existing.id, "status": existing.moderation_status, "media_url": private_download_url(existing.media_url,300)}}), 201
     rows = PortfolioItem.query.filter_by(artisan_id=profile.id).order_by(PortfolioItem.created_at.desc()).all()
-    return jsonify({"items": [{"id": row.id, "title": row.title, "service": row.service, "media_url": private_download_url(row.media_url), "status": row.moderation_status} for row in rows]})
+    return jsonify({"items": [{"id": row.id, "title": row.title, "service": row.service, "media_url": private_download_url(row.media_url,300), "status": row.moderation_status} for row in rows]})
 
 
 @bp.route("/artisans/me/verifications", methods=["GET", "POST"])
@@ -175,15 +209,43 @@ def verifications():
         row = Verification.query.filter_by(artisan_id=profile.id, kind=kind).first()
         if row and row.status == "approved": return jsonify({"message": "Approved verification cannot be replaced without an admin request"}), 409
         if not row: row = Verification(artisan_id=profile.id, kind=kind)
+        stored = None
+        old_asset = None
         if kind == "payout_name":
             value = str(request.form.get("value") or "").strip()
-            if not value: return jsonify({"message": "Payout account name is required"}), 422
+            if not value:
+                return jsonify(message="Payout account name is required"), 422
             row.provider_reference = value[:120]
         else:
-            try: row.file_url = upload_file(request.files.get("file"), profile.id, "verification", private=True)
-            except (ValueError, RuntimeError) as error: return jsonify({"message": str(error)}), 422
-        row.status, row.decision_reason, row.decided_at, row.reviewer_id = "pending", None, None, None
-        db.session.add(row); db.session.commit(); return jsonify({"id": row.id, "kind": row.kind, "status": row.status}), 201
+            try:
+                stored = upload_file(request.files.get("file"), current_user().id, kind)
+            except ValueError as error:
+                return jsonify(message=str(error)), 422
+            except RuntimeError as error:
+                return jsonify(message=str(error)), 503
+        try:
+            if stored:
+                old_asset = db.session.get(FileAsset, row.file_asset_id) if row.file_asset_id else None
+                asset = FileAsset(owner_id=current_user().id, purpose=kind,
+                                  replaces_asset_id=row.file_asset_id, **metadata_for(stored))
+                db.session.add(asset)
+                db.session.flush()
+                row.file_url, row.file_asset_id = asset.url, asset.id
+                if old_asset:
+                    old_asset.deleted_at = datetime.now(timezone.utc)
+            row.status, row.decision_reason, row.decided_at, row.reviewer_id = "pending", None, None, None
+            db.session.add(row)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            if stored:
+                try: delete_object(stored.url)
+                except Exception: current_app.logger.exception("Verification transaction cleanup failed")
+            raise
+        if old_asset:
+            try: delete_object(old_asset.url)
+            except Exception: current_app.logger.exception("Replaced verification object cleanup failed")
+        return jsonify({"id": row.id, "kind": row.kind, "status": row.status}), 201
     rows = Verification.query.filter_by(artisan_id=profile.id).all()
     return jsonify({"profile_status": profile.verification_status, "items": [{"id": row.id, "kind": row.kind, "status": row.status, "decision_reason": row.decision_reason, "updated_at": row.updated_at.isoformat()} for row in rows]})
 

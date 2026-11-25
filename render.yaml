@@ -49,11 +49,17 @@ services:
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
       - key: AWS_REGION
-        value: af-south-1
-      - key: S3_BUCKET
         sync: false
-      - key: S3_PUBLIC_BASE_URL
+      - key: S3_ENDPOINT_URL
         sync: false
+      - key: STORAGE_MODE
+        value: s3
+      - key: S3_PRIVATE_BUCKET
+        value: handework-private
+      - key: S3_MEDIA_BUCKET
+        value: handework-media
+      - key: S3_EVIDENCE_BUCKET
+        value: handework-evidence
       - key: PLATFORM_FEE_BPS
         value: "1200"
       - key: PAYMENTS_ENABLED
@@ -101,9 +107,17 @@ services:
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
       - key: AWS_REGION
-        value: af-south-1
-      - key: S3_BUCKET
         sync: false
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: STORAGE_MODE
+        value: s3
+      - key: S3_PRIVATE_BUCKET
+        value: handework-private
+      - key: S3_MEDIA_BUCKET
+        value: handework-media
+      - key: S3_EVIDENCE_BUCKET
+        value: handework-evidence
 
   - type: web
     name: handework-web

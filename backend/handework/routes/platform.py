@@ -1,13 +1,13 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import decode_token, get_jwt_identity, jwt_required, verify_jwt_in_request
 from flask_socketio import join_room
 from ..extensions import db, socketio
 
-from ..models import (ArtisanProfile, AuditLog, Booking, BookingStatus, Conversation, Course, Dispute, FileAsset, LedgerEntry, Message, Notification, Organization, OrganizationMember, PromoCode, PushDevice, Referral, Review, Role, Subscription, SupportTicket, TrainingProvider, Verification, WalletAccount)
+from ..models import (ArtisanProfile, AuditLog, Booking, BookingStatus, Conversation, Course, Dispute, FileAsset, LedgerEntry, Message, Notification, Organization, OrganizationMember, PortfolioItem, PromoCode, PushDevice, Referral, Review, Role, ShopProductMedia, Subscription, SupportTicket, TrainingProvider, Verification, WalletAccount, WorkProofEvidence)
 from ..security import current_user, role_required
-from ..services.storage import upload_file, private_download_url
+from ..services.storage import upload_file, private_download_url, metadata_for, delete_object
 
 bp = Blueprint("platform", __name__)
 
@@ -42,7 +42,7 @@ def messages(conversation_id):
     data = request.get_json(silent=True) or {}; body = str(data.get("body") or "").strip(); media_url = data.get("media_url")
     if media_url:
         asset_id = str(media_url).removeprefix("asset:")
-        asset = FileAsset.query.filter_by(id=asset_id, owner_id=user.id, purpose="chat_media").first()
+        asset = FileAsset.query.filter_by(id=asset_id, owner_id=user.id, purpose="chat_media", deleted_at=None).first()
         if not asset: return jsonify({"message":"Choose a file uploaded for this message."}), 422
         media_url = asset.url
     if not body and not media_url: return jsonify({"message": "Message or attachment is required"}), 422
@@ -105,16 +105,133 @@ def register_push_device():
 @role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
 def upload():
     user = current_user(); purpose = str(request.form.get("purpose") or "booking_media"); booking_id = request.form.get("booking_id")
-    if purpose not in {"booking_media", "chat_media", "completion_evidence"}: return jsonify({"message": "Unsupported attachment type"}), 422
-    if purpose in {"booking_media","completion_evidence"} and not booking_id: return jsonify({"message": "Select a booking for this file"}), 422
+    if purpose not in {"booking_media", "chat_media", "completion_evidence", "dispute_evidence", "workproof_evidence", "profile_picture"}: return jsonify({"message": "Unsupported attachment type"}), 422
+    if purpose in {"booking_media","completion_evidence","dispute_evidence"} and not booking_id: return jsonify({"message": "Select a booking for this file"}), 422
+    if purpose in {"workproof_evidence","profile_picture"} and user.role not in (Role.ARTISAN, Role.ADMIN): return jsonify({"message":"Artisan account required"}), 403
     if booking_id:
         booking = Booking.query.get_or_404(booking_id); artisan_user = booking.artisan.user_id if booking.artisan else None
         if user.role != Role.ADMIN and user.id not in (booking.customer_id, artisan_user): return jsonify({"message": "Booking not found"}), 404
         if purpose == "completion_evidence" and (user.id != artisan_user or booking.status != BookingStatus.IN_PROGRESS):
             return jsonify(message="Only the assigned artisan may submit completion evidence during work"), 403
-    try: url = upload_file(request.files.get("file"), user.id, purpose, private=True)
-    except (ValueError, RuntimeError) as error: return jsonify({"message": str(error)}), 422
-    asset = FileAsset(owner_id=user.id, booking_id=booking_id, purpose=purpose, url=url, mime_type=request.files["file"].mimetype); db.session.add(asset); db.session.commit(); return jsonify({"id": asset.id, "url": "asset:" + asset.id if purpose == "chat_media" else private_download_url(url), "scan_status": asset.scan_status}), 201
+        if purpose == "dispute_evidence" and not Dispute.query.filter_by(booking_id=booking.id, status="open").first(): return jsonify({"message":"Open a dispute before attaching dispute evidence"}), 409
+    file = request.files.get("file")
+    replaced_avatar = None
+    try:
+        stored = upload_file(file, user.id, purpose, private=True)
+        asset = FileAsset(owner_id=user.id, booking_id=booking_id, purpose=purpose, **metadata_for(stored)); db.session.add(asset); db.session.flush()
+        if purpose == "profile_picture":
+            profile=ArtisanProfile.query.filter_by(user_id=user.id).first_or_404();replaced_avatar=db.session.get(FileAsset,profile.avatar_file_id) if profile.avatar_file_id else None
+            profile.avatar_file_id=asset.id; profile.avatar_url=asset.url
+            if replaced_avatar:
+                asset.replaces_asset_id = replaced_avatar.id
+                replaced_avatar.deleted_at = datetime.now(timezone.utc)
+        db.session.commit()
+    except ValueError as error:
+        db.session.rollback(); return jsonify({"message": str(error)}), 422
+    except RuntimeError as error:
+        db.session.rollback()
+        if "stored" in locals():
+            try: delete_object(stored.url)
+            except Exception: current_app.logger.exception("Failed upload cleanup failed")
+        return jsonify({"message": str(error)}), 503
+    except Exception:
+        db.session.rollback()
+        if "stored" in locals():
+            try: delete_object(stored.url)
+            except Exception: current_app.logger.exception("Orphan storage object cleanup failed")
+        raise
+    if replaced_avatar:
+        try: delete_object(replaced_avatar.url)
+        except Exception: current_app.logger.exception("Replaced profile image cleanup failed")
+    return jsonify({"id": asset.id, "url": "asset:" + asset.id if purpose == "chat_media" else private_download_url(asset.url), "scan_status": asset.scan_status}), 201
+
+
+def _locked_evidence(asset, user):
+    if user.role == Role.ADMIN or asset.purpose not in {"completion_evidence", "dispute_evidence"}:
+        return False
+    booking = db.session.get(Booking, asset.booking_id)
+    return booking and booking.status in {
+        BookingStatus.COMPLETION_SUBMITTED, BookingStatus.DISPUTED,
+        BookingStatus.COMPLETED, BookingStatus.REFUNDED,
+    }
+
+
+def _asset_accessible(asset, user):
+    if user.role == Role.ADMIN or asset.owner_id == user.id:
+        return True
+    if asset.booking_id:
+        booking = Booking.query.get(asset.booking_id)
+        return bool(booking and user.id in (booking.customer_id, booking.artisan.user_id if booking.artisan else None))
+    return False
+
+
+@bp.get("/files/<asset_id>/download")
+@role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
+def download_file(asset_id):
+    asset = FileAsset.query.filter_by(id=asset_id).first_or_404(); user=current_user()
+    if asset.deleted_at or not _asset_accessible(asset,user): return jsonify({"message":"File not found"}),404
+    return jsonify({"url":private_download_url(asset.url,300),"expires_in":300,"mime_type":asset.mime_type,"filename":asset.original_filename}),200
+
+
+@bp.put("/files/<asset_id>")
+@role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
+def replace_file(asset_id):
+    old=FileAsset.query.filter_by(id=asset_id).with_for_update().first_or_404();user=current_user()
+    if old.deleted_at or (user.role!=Role.ADMIN and old.owner_id!=user.id): return jsonify({"message":"File not found"}),404
+    if _locked_evidence(old, user):
+        return jsonify(message="Submitted evidence cannot be replaced"), 409
+    verification=Verification.query.filter_by(file_asset_id=old.id).first()
+    if verification and verification.status=="approved" and user.role!=Role.ADMIN: return jsonify({"message":"Approved verification replacement requires administrator review"}),409
+    try:
+        stored=upload_file(request.files.get("file"),old.owner_id,old.purpose,private=True)
+        replacement=FileAsset(owner_id=old.owner_id,booking_id=old.booking_id,purpose=old.purpose,replaces_asset_id=old.id,**metadata_for(stored));db.session.add(replacement);db.session.flush()
+        for row in PortfolioItem.query.filter_by(file_asset_id=old.id): row.file_asset_id=replacement.id;row.media_url=replacement.url;row.moderation_status="pending";row.media_type="video" if replacement.mime_type.startswith("video/") else "image"
+        for row in Verification.query.filter_by(file_asset_id=old.id): row.file_asset_id=replacement.id;row.file_url=replacement.url;row.status="pending";row.reviewer_id=None;row.decided_at=None
+        for row in WorkProofEvidence.query.filter_by(file_asset_id=old.id): row.file_asset_id=replacement.id;row.status="pending";row.reviewer_id=None;row.decided_at=None
+        for row in ArtisanProfile.query.filter_by(avatar_file_id=old.id): row.avatar_file_id=replacement.id;row.avatar_url=replacement.url
+        for row in ShopProductMedia.query.filter_by(file_asset_id=old.id): row.file_asset_id=replacement.id
+        if old.purpose == "chat_media":
+            Message.query.filter_by(media_url=old.url).update({"media_url": replacement.url, "media_type": replacement.mime_type})
+        old.deleted_at=datetime.now(timezone.utc);db.session.add(AuditLog(actor_id=user.id,action="file.replaced",entity_type="file_asset",entity_id=old.id,before={"sha256":old.sha256},after={"asset_id":replacement.id,"sha256":replacement.sha256}));db.session.commit()
+    except ValueError as error:
+        db.session.rollback();return jsonify({"message":str(error)}),422
+    except RuntimeError as error:
+        db.session.rollback()
+        if "stored" in locals():
+            try: delete_object(stored.url)
+            except Exception: current_app.logger.exception("Failed replacement cleanup failed")
+        return jsonify({"message":str(error)}),503
+    except Exception:
+        db.session.rollback()
+        if "stored" in locals():
+            try: delete_object(stored.url)
+            except Exception: current_app.logger.exception("Orphan storage object cleanup failed")
+        raise
+    try: delete_object(old.url)
+    except Exception: current_app.logger.exception("Replaced object cleanup failed for asset %s",old.id)
+    return jsonify({"id":replacement.id,"url":private_download_url(replacement.url,300),"expires_in":300}),200
+
+
+@bp.delete("/files/<asset_id>")
+@role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
+def remove_file(asset_id):
+    asset=FileAsset.query.filter_by(id=asset_id).with_for_update().first_or_404();user=current_user()
+    if asset.deleted_at or (user.role!=Role.ADMIN and asset.owner_id!=user.id): return jsonify({"message":"File not found"}),404
+    if _locked_evidence(asset, user):
+        return jsonify(message="Submitted evidence cannot be removed"), 409
+    verification=Verification.query.filter_by(file_asset_id=asset.id).first()
+    if verification and verification.status=="approved" and user.role!=Role.ADMIN: return jsonify({"message":"Approved verification documents require administrator approval to remove"}),409
+    for row in Verification.query.filter_by(file_asset_id=asset.id): row.file_asset_id=None;row.file_url=None;row.status="replacement_required"
+    for row in PortfolioItem.query.filter_by(file_asset_id=asset.id).all(): db.session.delete(row)
+    for row in WorkProofEvidence.query.filter_by(file_asset_id=asset.id): row.file_asset_id=None;row.status="rejected";row.decision_reason="Evidence file removed"
+    for row in ArtisanProfile.query.filter_by(avatar_file_id=asset.id): row.avatar_file_id=None;row.avatar_url=None
+    ShopProductMedia.query.filter_by(file_asset_id=asset.id).delete(synchronize_session=False)
+    if asset.purpose == "chat_media":
+        Message.query.filter_by(media_url=asset.url).update({"media_url": None, "media_type": None})
+    asset.deleted_at=datetime.now(timezone.utc);db.session.add(AuditLog(actor_id=user.id,action="file.deleted",entity_type="file_asset",entity_id=asset.id,before={"purpose":asset.purpose,"sha256":asset.sha256},after={"deleted":True}));db.session.commit()
+    try: delete_object(asset.url)
+    except Exception: current_app.logger.exception("Deleted object cleanup failed for asset %s",asset.id)
+    return jsonify({"id":asset.id,"deleted":True}),200
 
 
 @bp.route("/disputes", methods=["GET", "POST"])
@@ -227,7 +344,7 @@ def dispute_response(dispute_id):
     message=str(data.get("message") or "").strip()
     if not 1<=len(message)<=4000: return jsonify(message="Enter a response of up to 4,000 characters"),422
     asset_id=data.get("asset_id")
-    if asset_id and not FileAsset.query.filter_by(id=asset_id,owner_id=actor.id,booking_id=booking.id).first():
+    if asset_id and not FileAsset.query.filter_by(id=asset_id,owner_id=actor.id,booking_id=booking.id,purpose="dispute_evidence",deleted_at=None).first():
         return jsonify(message="Evidence must belong to this booking"),422
     db.session.add(AuditLog(actor_id=actor.id,action="dispute.response",entity_type="dispute",entity_id=dispute.id,
                             after={"message":message,"asset_id":asset_id}))

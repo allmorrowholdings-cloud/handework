@@ -94,6 +94,7 @@ class ArtisanProfile(UUIDMixin, TimestampMixin, db.Model):
     currency = db.Column(db.String(3), nullable=False, default="GHS")
     languages = db.Column(db.String(255))
     avatar_url = db.Column(db.String(700))
+    avatar_file_id = db.Column(db.String(36), db.ForeignKey("file_assets.id", ondelete="SET NULL", use_alter=True, name="fk_artisan_profiles_avatar_file_id"))
     verification_status = db.Column(db.String(24), nullable=False, default="draft", index=True)
     available = db.Column(db.Boolean, nullable=False, default=False, index=True)
     instant_booking = db.Column(db.Boolean, nullable=False, default=False)
@@ -114,6 +115,7 @@ class PortfolioItem(UUIDMixin, TimestampMixin, db.Model):
     description = db.Column(db.Text)
     service = db.Column(db.String(120), nullable=False, index=True)
     media_url = db.Column(db.String(700), nullable=False)
+    file_asset_id = db.Column(db.String(36), db.ForeignKey("file_assets.id", ondelete="SET NULL"), index=True)
     media_type = db.Column(db.String(24), nullable=False, default="image")
     before_after = db.Column(db.String(12))
     moderation_status = db.Column(db.String(20), nullable=False, default="pending", index=True)
@@ -298,6 +300,7 @@ class WorkProofEvidence(UUIDMixin, TimestampMixin, db.Model):
     decision_reason = db.Column(db.String(500))
     decided_at = db.Column(db.DateTime(timezone=True))
     public_metadata = db.Column(db.JSON, nullable=False, default=dict)
+    file_asset_id = db.Column(db.String(36), db.ForeignKey("file_assets.id", ondelete="SET NULL"), index=True)
 
 
 class Notification(UUIDMixin, db.Model):
@@ -326,6 +329,7 @@ class Verification(UUIDMixin, TimestampMixin, db.Model):
     artisan_id = db.Column(db.String(36), db.ForeignKey("artisan_profiles.id"), nullable=False, index=True)
     kind = db.Column(db.String(32), nullable=False)
     file_url = db.Column(db.String(700))
+    file_asset_id = db.Column(db.String(36), db.ForeignKey("file_assets.id", ondelete="SET NULL"), index=True)
     status = db.Column(db.String(24), nullable=False, default="pending", index=True)
     provider_reference = db.Column(db.String(120))
     reviewer_id = db.Column(db.String(36), db.ForeignKey("users.id"), index=True)
@@ -448,8 +452,22 @@ class FileAsset(UUIDMixin, db.Model):
     purpose = db.Column(db.String(40), nullable=False, index=True)
     url = db.Column(db.String(700), nullable=False)
     mime_type = db.Column(db.String(100), nullable=False)
+    storage_bucket = db.Column(db.String(128))
+    storage_key = db.Column(db.String(1024))
+    original_filename = db.Column(db.String(255))
+    size_bytes = db.Column(db.BigInteger)
+    sha256 = db.Column(db.String(64))
+    is_private = db.Column(db.Boolean, nullable=False, default=True)
+    deleted_at = db.Column(db.DateTime(timezone=True))
+    replaces_asset_id = db.Column(db.String(36), db.ForeignKey("file_assets.id", ondelete="SET NULL"))
     scan_status = db.Column(db.String(20), nullable=False, default="pending", index=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow, index=True)
+
+
+class ShopProductMedia(UUIDMixin, TimestampMixin, db.Model):
+    __tablename__ = "shop_product_media"
+    product_id = db.Column(db.String(80), nullable=False, unique=True, index=True)
+    file_asset_id = db.Column(db.String(36), db.ForeignKey("file_assets.id", ondelete="RESTRICT"), nullable=False)
 
 
 class AuditLog(UUIDMixin, db.Model):

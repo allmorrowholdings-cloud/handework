@@ -149,6 +149,11 @@ def test_auto_release_gates(client,customer,artisan,monkeypatch):
     db.session.commit()
     assert not auto_release(booking)
     c.provider_hold=False
+    evidence = FileAsset.query.filter_by(booking_id=booking).one()
+    evidence.deleted_at = datetime.now(timezone.utc)
+    db.session.commit()
+    assert not auto_release(booking)
+    evidence.deleted_at = None
     db.session.commit()
     assert auto_release(booking)
     assert auto_release(booking)
