@@ -71,7 +71,13 @@ def bookings():
     if data.get("scheduled_date"):
         try:
             hour = {"morning": 8, "midday": 12, "evening": 16}.get(data.get("time_window", "morning"), 8)
-            scheduled = datetime.combine(date.fromisoformat(data["scheduled_date"]), time(hour, 0), tzinfo=timezone.utc)
+            selected_date = date.fromisoformat(data["scheduled_date"])
+            if selected_date < datetime.now(timezone.utc).date():
+                return jsonify({
+                    "message": "Choose today or a future date for your job.",
+                    "code": "past_booking_date"
+                }), 422
+            scheduled = datetime.combine(selected_date, time(hour, 0), tzinfo=timezone.utc)
         except (TypeError, ValueError):
             return jsonify({"message": "Choose a valid job date."}), 422
     booking = Booking(reference=f"VV-{secrets.token_hex(4).upper()}", customer_id=user.id, service=data["service"].strip(), description=data["description"].strip(), address=data["address"].strip(), area=data["area"].strip(), city=data["city"].strip(), scheduled_start=scheduled, budget_type=data.get("budget_type", "quote"), budget_amount=data.get("budget") or None, contact_phone=data["contact_phone"].strip())

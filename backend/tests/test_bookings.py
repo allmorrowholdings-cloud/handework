@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 def booking_payload(artisan):
     return {"service":"Plumbing","description":"Replace a leaking kitchen tap","address":"1 Example Street","area":"Osu","city":"Accra","contact_phone":"0244000001","budget_type":"quote","budget":350,"artisan_id":artisan["profile_id"]}
 
@@ -53,7 +55,9 @@ def test_job_change_decisions_preserve_original_payment_amount(client, customer,
 def test_instant_booking_requires_artisan_opt_in_and_available_date(client,customer,artisan):
     client.patch("/v1/artisans/me",json={"instant_booking":True,"starting_price":250},headers=artisan["headers"])
     client.put("/v1/artisans/me/availability",json={"items":[{"weekday":5,"start_time":"08:00","end_time":"17:00","active":True}]},headers=artisan["headers"])
-    payload=booking_payload(artisan)|{"scheduled_date":"2026-08-15","instant_booking":True}
+    today = datetime.now(timezone.utc).date()
+    saturday = today + timedelta(days=(5 - today.weekday()) % 7 + 7)
+    payload=booking_payload(artisan)|{"scheduled_date":saturday.isoformat(),"instant_booking":True}
     response=client.post("/v1/bookings",json=payload,headers=customer["headers"])
     assert response.status_code==201
     assert response.get_json()["status"]=="accepted"
@@ -93,3 +97,35 @@ def test_accepting_quote_rechecks_professional_eligibility(client, customer, art
         db.session.get(ArtisanProfile, artisan["profile_id"]).verification_status = "pending"
         db.session.commit()
     assert client.post(f"{path}/{quote['id']}/accept", headers=customer["headers"]).status_code == 409
+
+
+def test_past_booking_date_rejected(client, customer, artisan):
+    from datetime import datetime, timedelta, timezone
+
+    yesterday = datetime.now(timezone.utc).date() - timedelta(days=1)
+    payload = booking_payload(artisan) | {
+        "scheduled_date": yesterday.isoformat()
+    }
+
+    response = client.post(
+        "/v1/bookings", json=payload,
+        headers=customer["headers"]
+    )
+
+    assert response.status_code == 422
+    assert response.json["code"] == "past_booking_date"
+
+
+def test_current_booking_date_allowed(client, customer, artisan):
+    from datetime import datetime, timezone
+
+    payload = booking_payload(artisan) | {
+        "scheduled_date": datetime.now(timezone.utc).date().isoformat()
+    }
+
+    response = client.post(
+        "/v1/bookings", json=payload,
+        headers=customer["headers"]
+    )
+
+    assert response.status_code == 201

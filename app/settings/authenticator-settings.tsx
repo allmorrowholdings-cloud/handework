@@ -29,6 +29,7 @@ export function AuthenticatorSettings() {
   const [code, setCode] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [manage, setManage] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState(false);
   const [signInRequired, setSignInRequired] = useState(false);
@@ -122,10 +123,14 @@ export function AuthenticatorSettings() {
   }
 
   return (
-    <section className="app-card settings-form">
-      <h2>Account security</h2>
+    <section className="app-card settings-form hw-security-card">
+      <div className="hw-section-heading">
+        <span className="hw-kicker">SECURITY & ACCESS</span>
+        <h2>Account security</h2>
+        <p>Keep your account and work protected.</p>
+      </div>
 
-      <div className="phone-verification">
+      <div className="phone-verification hw-security-panel">
         <div className="phone-verification-heading">
           <strong>Two-factor authentication</strong>
           {status?.required && (
@@ -195,7 +200,7 @@ export function AuthenticatorSettings() {
                 <img
                   src={enrollment.qr_code}
                   alt="Private authenticator enrollment QR code"
-                  className="authenticator-qr"
+                  className="authenticator-qr hw-qr"
                 />
 
                 <label>Manual setup key
@@ -210,7 +215,7 @@ export function AuthenticatorSettings() {
                 <label>Six-digit authenticator code
                   <input
                     value={code}
-                    inputMode="numeric"
+                    className="hw-verification-code" inputMode="numeric"
                     maxLength={6}
                     autoComplete="one-time-code"
                     onChange={(event) =>
@@ -257,6 +262,16 @@ export function AuthenticatorSettings() {
                   </p>
                 )}
 
+                <button type="button" className="button hw-outline"
+                  onClick={() => {
+                    setManage(!manage);
+                    setPassword("");
+                    setCode("");
+                  }}>
+                  {manage ? "Close security settings" : status.enabled
+                    ? "Manage authenticator" : "Set up authenticator"}
+                </button>
+                {manage && <>
                 <label>Current password
                   <input
                     type="password"
@@ -318,6 +333,7 @@ export function AuthenticatorSettings() {
                     Set up Google Authenticator
                   </button>
                 )}
+                </>}
               </>
             )}
           </>

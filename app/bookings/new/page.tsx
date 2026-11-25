@@ -8,6 +8,10 @@ import { AuthForm } from "../../components/auth-form";
 import { ServiceSelect } from "../../components/service-select";
 import { accessToken, api } from "../../../lib/api";
 
+function bookingToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 const initial = { coordinates:"", requestKey:"", service:"", description:"", address:"", area:"", city:"Accra", scheduled_date:"", time_window:"morning", budget_type:"quote", budget:"", contact_phone:"", instant_booking:false };
 
 export default function NewBookingPage() {

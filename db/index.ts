@@ -1,4 +1,8 @@
-import { env } from "cloudflare:workers";
+import { env as cloudflareEnv } from "cloudflare:workers";
+
+const env = cloudflareEnv as typeof cloudflareEnv & {
+  DB?: D1Database;
+};
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 

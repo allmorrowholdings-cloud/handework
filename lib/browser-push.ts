@@ -1,4 +1,4 @@
-﻿import { getApp, getApps, initializeApp } from "firebase/app";
+import { getApp, getApps, initializeApp } from "firebase/app";
 import {
   getMessaging,
   getToken,
@@ -19,6 +19,20 @@ const config = {
 
 const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 const tokenKey = "handework_browser_push_token";
+
+export function browserPushUnavailableReason() {
+  if (typeof window === "undefined") return "Checking browser...";
+  if (!window.isSecureContext) return "Notifications require a secure connection.";
+  if (!("Notification" in window) || !("serviceWorker" in navigator))
+    return "This browser does not support web notifications.";
+  if (process.env.NEXT_PUBLIC_FIREBASE_PUSH_ENABLED !== "true")
+    return "Browser notifications have not been enabled for this deployment.";
+  if (!vapidKey || !Object.values(config).every(Boolean))
+    return "Browser notification configuration is incomplete.";
+  if (Notification.permission === "denied")
+    return "Notifications are blocked. Allow them in your browser site settings.";
+  return "";
+}
 
 export function browserPushAvailable() {
   return (

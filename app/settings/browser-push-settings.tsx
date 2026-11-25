@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import {
   browserPushAvailable,
+  browserPushUnavailableReason,
   browserPushRegistered,
   enableBrowserPush,
   disableBrowserPush
@@ -72,7 +73,7 @@ export function BrowserPushSettings() {
         </button>
 
         {!available && !enabled && (
-          <p>Browser notifications are currently unavailable.</p>
+          <p role="status">{browserPushUnavailableReason() || "Notifications are unavailable on this device."}</p>
         )}
 
         {notice && <p role="status">{notice}</p>}

@@ -12,9 +12,12 @@ export function LocationMap({items,coordinates="",onPick,route}:{items:MapPoint[
   const pick=useRef(onPick);
   const [ready,setReady]=useState(false);
   const [error,setError]=useState("");
+  const [retry,setRetry]=useState(0);
   useEffect(()=>{pick.current=onPick},[onPick]);
   useEffect(()=>{
     let disposed=false;
+    setReady(false);
+    setError("");
     void import("maplibre-gl").then(lib=>{
       if(disposed||!container.current)return;
       const map=new lib.Map({container:container.current,style:styleUrl,center:[-1.1,7.9],zoom:5});
@@ -22,10 +25,20 @@ export function LocationMap({items,coordinates="",onPick,route}:{items:MapPoint[
       map.addControl(new lib.NavigationControl(),"top-right");
       map.on("click",e=>pick.current?.(e.lngLat.lat,e.lngLat.lng));
       map.on("load",()=>{if(!disposed){setReady(true);setError("")}});
-      map.on("error",()=>{if(!disposed)setError("Some map resources could not load.")});
+      map.on("error", event => {
+        if (!disposed) {
+          console.warn("handEwork map resource error", event.error?.message);
+          setError("The map is having trouble loading. You can retry or enter the address manually.");
+        }
+      });
+      map.on("idle", () => {
+        if (!disposed && map.areTilesLoaded() && map.isStyleLoaded()) {
+          setError("");
+        }
+      });
     }).catch(()=>setError("The interactive map is unavailable on this device."));
     return ()=>{disposed=true;instance.current?.remove();instance.current=null};
-  },[]);
+  },[retry]);
   useEffect(()=>{
     const map=instance.current;
     if(!ready||!map)return;
@@ -52,5 +65,10 @@ export function LocationMap({items,coordinates="",onPick,route}:{items:MapPoint[
     });
     return ()=>{disposed=true;markers.forEach(m=>m.remove())};
   },[ready,coordinates,items,route]);
-  return <><div className="real-map" style={{minHeight:290}} ref={container} aria-label="Interactive location map"/>{error&&<small role="status">{error}</small>}</>;
+  return <><div className="real-map" style={{minHeight:290}} ref={container} aria-label="Interactive location map"/>{error && <div className="hw-map-notice" role="status">
+      <span>{error}</span>
+      <button type="button" onClick={() => setRetry(value => value + 1)}>
+        Retry map
+      </button>
+    </div>}</>;
 }
