@@ -61,9 +61,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <nav className="trust-links shell" aria-label="Booking safeguards">
-        <Link href="/safety">Professional verification</Link><Link href="/how-it-works">Agreed quotations</Link><Link href="/safety">Completion approval</Link>
-      </nav>
 
       <section className="section shell service-showcase" id="services">
         <div className="section-head"><div><h2>What needs doing?</h2><p>Start with the work. We’ll help you find the right hands.</p></div><Link className="text-link" href="/marketplace">View all services</Link></div>

@@ -64,7 +64,7 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
         return;
       }
       setCoordinates(`${lat},${lon}`);
-      setLocation("Finding your neighborhoodâ€¦");
+      setLocation("Finding your neighborhood...");
       void reverseLocation(lat,lon,request);
     }, error => {
       if (locationRequest.current !== request) return;
@@ -119,11 +119,11 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
     </label>
     <div className="finder-place">
       <label className="finder-place-input"><span>Where is the job?</span>
-        <input value={location} onChange={e=>{locationRequest.current++;setLocating(false);setCoordinates("");setLocation(e.target.value);setLocationError("");}} placeholder="Town, neighborhood or landmark in Ghana" aria-label="Job location" />
-        <button type="button" className="locate" onClick={locate} disabled={locating}>{locating ? "Findingâ€¦" : "Use GPS"}</button>
+        <input value={location} onChange={e=>{locationRequest.current++;setLocating(false);setCoordinates("");setLocation(e.target.value);setLocationError("");}} placeholder="Town, neighbourhood or landmark" aria-label="Job location" />
+        <button type="button" className="locate" onClick={locate} disabled={locating} aria-label="Use GPS to find the job location">{locating ? "Finding..." : "Use GPS"}</button>
       </label>
       <details className="finder-browse">
-        <summary>Browse all 16 regions, districts and towns</summary>
+        <summary>Choose region, district and town</summary>
         <div className="finder-admin-grid">
           <select aria-label="Ghana region" value={regionId} onChange={e=>updateRegion(e.target.value)}>
             <option value="">Choose region</option>
@@ -138,7 +138,7 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
             {district?.towns.map((item,i)=><option key={`${item.name}-${i}`} value={item.name}>{item.name}</option>)}
           </select>
         </div>
-        <p>Can't find your community? Type its name or nearest landmark above. Directory: <a href="https://openadmindata.org/api/gh/" target="_blank" rel="noopener noreferrer">Open Admin Data (CC BY 4.0)</a>.</p>
+        <p>Can't find your community? Enter the town or nearest landmark above.</p>
       </details>
     </div>
     {locationError && <p className="finder-location-error" role="status">{locationError}</p>}

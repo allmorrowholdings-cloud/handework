@@ -1066,3 +1066,61 @@ html[data-theme="dark"] .home-market .home-process-media {
 @media (prefers-reduced-motion: reduce) {
   .home-market .hero.hero-light .finder .finder-submit { transition: none; }
 }
+
+
+/* HANDEWORK_GPS_LAYOUT_POLISH_FIXED_2026 */
+.home-market .hero.hero-light .finder,
+.home-market .hero.hero-light .finder.compact {
+  box-shadow: none !important;
+}
+.home-market .hero.hero-light .finder .finder-submit {
+  width: min(100%, 390px);
+  justify-self: center;
+  min-height: 58px;
+  border-radius: 8px;
+  box-shadow: none !important;
+  text-align: center;
+}
+.home-market .hero.hero-light .finder .finder-place-input .locate,
+.home-market .finder .finder-place-input .locate {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  min-height: 38px;
+  padding: 4px 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #b55218;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: none;
+  text-decoration: none;
+  cursor: pointer;
+}
+.home-market .finder .finder-place-input .locate:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.home-market .finder .finder-place-input .locate:focus-visible {
+  outline: 2px solid #da6620;
+  outline-offset: 3px;
+}
+.finder-browse summary {
+  display: list-item;
+  list-style: disclosure-closed;
+  padding: 7px 0;
+  color: #a44917;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.finder-browse[open] summary { list-style: disclosure-open; }
+.finder-browse summary::marker { color: #a44917; }
+@media (max-width: 720px) {
+  .home-market .hero.hero-light .finder .finder-submit {
+    width: calc(100% - 16px);
+    min-height: 56px;
+  }
+  .home-market .finder .finder-place-input input { padding-right: 88px; }
+}
