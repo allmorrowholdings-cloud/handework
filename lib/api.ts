@@ -25,7 +25,20 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
       if (response.ok) throw error;
       return {};
     });
-    if (!response.ok) throw Object.assign(new Error(body.message ?? "Request failed"), { details: body, status: response.status });
+    if (!response.ok) {
+      const message =
+        typeof body === "object" &&
+        body !== null &&
+        "message" in body &&
+        typeof body.message === "string"
+          ? body.message
+          : "Request failed";
+
+      throw Object.assign(new Error(message), {
+        details: body,
+        status: response.status
+      });
+    }
     return body as T;
   } catch (error) {
     if (signal.aborted && signal.reason === timeout.reason) {
@@ -97,11 +110,32 @@ async function renew() {
   if (localStorage.getItem(refreshKey) !== refresh) return accessToken();
   if (response.status === 401 || response.status === 422) { clearSession(); return null; }
   if (!response.ok) throw new Error("Could not reconnect to your account. Please try again.");
-  const body = await response.json();
-  if (localStorage.getItem(refreshKey) !== refresh) return accessToken();
+  const body: unknown = await response.json();
+
+  if (localStorage.getItem(refreshKey) !== refresh)
+    return accessToken();
+
+  if (
+    typeof body !== "object" ||
+    body === null ||
+    !("access_token" in body) ||
+    typeof body.access_token !== "string" ||
+    !body.access_token
+  ) {
+    throw new Error("Invalid session response. Please sign in again.");
+  }
+
   localStorage.setItem(accessKey, body.access_token);
-  if (body.refresh_token) localStorage.setItem(refreshKey, body.refresh_token);
-  return body.access_token as string;
+
+  if (
+    "refresh_token" in body &&
+    typeof body.refresh_token === "string" &&
+    body.refresh_token
+  ) {
+    localStorage.setItem(refreshKey, body.refresh_token);
+  }
+
+  return body.access_token;
 }
 
 export function renewSession() {
