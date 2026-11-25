@@ -1,14 +1,15 @@
 {
-  "extends": "./tsconfig.json",
-  "exclude": [
-    "node_modules",
-    "worker/**/*",
-    "db/**/*"
-  ],
-  "compilerOptions": {
-    "types": [
-      "node",
-      "@cloudflare/workers-types"
-    ]
-  }
+    "extends":  "./tsconfig.json",
+    "compilerOptions":  {
+                            "types":  [
+                                          "node",
+                                          "@cloudflare/workers-types"
+                                      ]
+                        },
+    "exclude":  [
+                    "node_modules",
+                    "worker/**/*",
+                    "db/**/*",
+                    "mobile/**/*"
+                ]
 }
