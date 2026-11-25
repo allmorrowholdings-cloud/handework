@@ -6,6 +6,7 @@ import { LocationSearch } from "./components/location-search";
 import { services } from "../lib/services";
 import { Professionals } from "./components/professionals";
 import { DemoVideo } from "./components/demo-video";
+import { WorkforceSignal } from "./components/workforce-signal";
 
 export default function Home() {
   return (
@@ -86,34 +87,10 @@ export default function Home() {
 
       <section className="home-evidence" aria-labelledby="home-evidence-title">
         <div className="shell">
-          <span className="home-eyebrow">Skilled work matters</span>
           <h2 id="home-evidence-title">A stronger future for skilled work.</h2>
-          <p className="home-evidence-lede">
-            Ghana's tradespeople keep homes, businesses and communities moving.
-            handEwork brings clearer service discovery and professional work records.
-          </p>
-          <div className="home-evidence-grid">
-            <div>
-              <strong>1.6M+</strong>
-              <span>Craft and related trades workers in Ghana</span>
-              <small>Ghana Statistical Service, 2021 Census — national workforce, not handEwork registrations</small>
-            </div>
-            <div>
-              <strong>8</strong>
-              <span>Featured service categories</span>
-              <small>Explore skilled services on handEwork</small>
-            </div>
-            <div>
-              <strong>3</strong>
-              <span>Clear steps in the booking journey</span>
-              <small>Describe, agree and review</small>
-            </div>
+          <div className="home-workforce-signal" aria-label="National workforce context">
+            <WorkforceSignal />
           </div>
-          <a className="home-evidence-source"
-             href="https://census2021.statsghana.gov.gh/gssmain/fileUpload/reportthemesub/2021%20PHC%20General%20Report%20Vol%203E_Economic%20Activity.pdf"
-             target="_blank" rel="noopener noreferrer">
-            Source: Ghana Statistical Service, 2021 Population and Housing Census
-          </a>
         </div>
       </section>
       <Professionals />
@@ -121,40 +98,19 @@ export default function Home() {
       <section className="home-workproof" aria-labelledby="home-workproof-title">
         <div className="shell home-workproof-grid">
           <div className="home-workproof-intro">
-            <span className="home-eyebrow">WorkProof by handEwork</span>
             <h2 id="home-workproof-title">Good work leaves proof.</h2>
-            <p>Skills deserve recognition. Explore completed work, approved portfolio evidence and customer feedback where available on verified professional profiles.</p>
+            <p>Skills deserve recognition. Build your work history, portfolio and reputation with every completed job.</p>
             <div className="home-workproof-actions">
-              <Link href="/marketplace" className="home-process-cta">Explore professionals <span aria-hidden="true">→</span></Link>
-              <Link href="/join/artisan" className="home-workproof-link">Build your reputation</Link>
+              <Link href="/join/artisan" className="home-process-cta">Build your reputation <span aria-hidden="true">â†’</span></Link>
             </div>
           </div>
-          <div className="home-workproof-panel">
-            <div className="home-workproof-panel-head">
-              <span className="home-workproof-brand">h<span>E</span></span>
-              <strong>WorkProof</strong>
-              <small>Professional credibility</small>
-            </div>
-            <div className="home-workproof-feature">
-              <span>01</span>
-              <div><h3>Completed work</h3><p>See recorded jobs completed through handEwork.</p></div>
-            </div>
-            <div className="home-workproof-feature">
-              <span>02</span>
-              <div><h3>Portfolio evidence</h3><p>Explore reviewed examples of professional work.</p></div>
-            </div>
-            <div className="home-workproof-feature">
-              <span>03</span>
-              <div><h3>Customer feedback</h3><p>Read published reviews where available.</p></div>
-            </div>
-            <p className="home-workproof-disclaimer">Feature overview, not a fictional professional profile.</p>
+          <div className="home-workproof-illustration">
+            <img src="/workproof-reference.png" width={1448} height={1086} loading="lazy" decoding="async" alt="Illustrative WorkProof interface concept. The person, job counts, reviews and ratings shown are examples, not real handEwork records." />
           </div>
         </div>
       </section>
-      <section className="shell ecosystem-links" aria-label="Professional resources"><Link href="/artisan/pro">Professional workspace</Link><Link href="/shop">Artisan shop</Link><Link href="/training">Training opportunities</Link></section>
       <section className="shell booking-faq" aria-labelledby="home-faq-title">
         <div className="home-faq-heading">
-          <span className="home-eyebrow">Good to know</span>
           <h2 id="home-faq-title">Before you book</h2>
           <p>A few answers to help you get started.</p>
         </div>

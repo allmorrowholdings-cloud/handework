@@ -2243,3 +2243,34 @@ html .home-market .hero.hero-light, html[data-theme] .home-market .hero.hero-lig
     width: 100%;
   }
 }
+
+/* HANDEWORK_RESPONSIVE_NAV_2026 */
+.site-header .nav-wrap { min-width:0; }
+.site-header .nav-brand, .site-header .nav-actions { min-width:0; }
+.site-header .nav-brand > small { max-width: 100%; overflow:hidden; text-overflow:ellipsis; }
+.site-header .nav-actions .nav-cta { white-space:nowrap; padding-inline:14px; border-radius:6px; }
+@media (max-width: 1100px) {
+  .site-header .nav-wrap { gap:12px; }
+  .site-header .nav-links { gap:12px; }
+  .site-header .nav-links > a { white-space:nowrap; }
+  .site-header .nav-actions { gap:8px; }
+  .site-header .nav-actions .nav-cta { font-size:12px; }
+}
+@media (max-width: 1024px) {
+  .site-header .nav-wrap { height:70px; gap:8px; }
+  .site-header .nav-brand { flex:1 1 auto; min-width:0; }
+  .site-header .nav-actions { gap:6px; flex:0 0 auto; }
+  .site-header .nav-links { display:none; position:absolute; top:70px; left:0; right:0; width:100%; padding:16px 20px 22px; background:#17130f; color:#fff; z-index:100; }
+  .site-header .nav-links.open { display:grid; gap:0; max-height:calc(100dvh - 70px); overflow-y:auto; }
+  .site-header .nav-links.open a { color:#f7f0e6; font-size:14px; border-bottom:1px solid rgba(255,255,255,.12); padding:13px 6px; }
+  .site-header .nav-links.open .mobile-account-links { display:grid; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.18); }
+  .site-header .nav-signin, .site-header .nav-cta { display:none !important; }
+  .site-header .menu-button { display:block; flex:none; border-radius:6px; }
+  .site-header .nav-brand > small { font-size:8px; }
+  .site-header .logo-image, .site-header .logo-image .logo-image-wrap { width:clamp(98px,25vw,145px); }
+}
+@media (max-width: 390px) {
+  .site-header .nav-actions { gap:3px; }
+  .site-header .nav-brand > small { font-size:7px; }
+  .site-header .nav-wrap { padding-inline:12px; }
+}
