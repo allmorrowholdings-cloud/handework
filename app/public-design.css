@@ -655,3 +655,308 @@ html[data-theme="dark"] .home-market .home-process-media {
     transform: none;
   }
 }
+
+
+/* HANDEWORK_EVIDENCE_WORKPROOF_FAQ_V2 */
+
+/* Sourced context, not fabricated marketplace performance */
+.home-market .home-evidence {
+  padding: clamp(65px, 8vw, 110px) 0;
+  background: var(--surface);
+  color: var(--foreground);
+  border-block: 1px solid var(--divider);
+}
+
+.home-evidence h2 {
+  max-width: 680px;
+  margin: 0 0 18px;
+  font-size: clamp(35px, 4.5vw, 61px);
+  line-height: 1.05;
+  letter-spacing: -.055em;
+}
+
+.home-evidence-lede {
+  max-width: 670px;
+  margin: 0 0 34px;
+  color: var(--secondary);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.home-evidence-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 0;
+  border-block: 1px solid var(--divider);
+}
+
+.home-evidence-grid > div {
+  padding: 28px clamp(16px, 3vw, 40px);
+  min-width: 0;
+}
+
+.home-evidence-grid > div:first-child { padding-left: 0; }
+
+.home-evidence-grid > div + div {
+  border-left: 1px solid var(--divider);
+}
+
+.home-evidence-grid strong {
+  display: block;
+  margin-bottom: 12px;
+  font-size: clamp(43px, 6vw, 78px);
+  font-weight: 800;
+  letter-spacing: -.075em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-evidence-grid span {
+  display: block;
+  max-width: 25ch;
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 650;
+}
+
+.home-evidence-grid small,
+.home-evidence-source {
+  display: block;
+  margin-top: 12px;
+  color: var(--secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.home-evidence-source {
+  margin-top: 17px;
+  text-decoration: none;
+}
+
+.home-evidence-source:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* WorkProof feature showcase */
+.home-market .home-workproof {
+  padding: clamp(75px, 8vw, 118px) 0;
+  background: #171615;
+  color: #fff;
+}
+
+.home-workproof-grid {
+  display: grid;
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: clamp(32px, 7vw, 100px);
+}
+
+.home-workproof-intro h2 {
+  max-width: 10ch;
+  margin: 0 0 22px;
+  color: #fff;
+  font-size: clamp(45px, 5.5vw, 76px);
+  letter-spacing: -.06em;
+  line-height: .99;
+}
+
+.home-workproof-intro > p {
+  max-width: 50ch;
+  color: #c8c4be;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.home-workproof-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px 24px;
+  margin-top: 28px;
+}
+
+.home-workproof-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 46px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+}
+
+.home-workproof-link:hover { color: #ffcf22; }
+
+.home-workproof-panel {
+  min-width: 0;
+  padding: clamp(18px, 3vw, 32px);
+  border: 1px solid #45413a;
+  border-radius: 22px;
+  background: #23211e;
+}
+
+.home-workproof-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #49453d;
+}
+
+.home-workproof-brand {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  background: #da6620;
+  border-radius: 11px;
+  color: #14120f;
+  font-size: 20px;
+  font-weight: 850;
+}
+
+.home-workproof-brand span { color: #fff; }
+
+.home-workproof-panel-head > strong {
+  font-size: 21px;
+  letter-spacing: -.04em;
+}
+
+.home-workproof-panel-head > small {
+  margin-left: auto;
+  color: #c8c2b6;
+  font-size: 11px;
+}
+
+.home-workproof-feature {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 18px;
+  padding: 25px 0;
+  border-bottom: 1px solid #49453d;
+}
+
+.home-workproof-feature > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #89684c;
+  border-radius: 10px;
+  color: #ffb276;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.home-workproof-feature h3 {
+  margin: 0 0 6px;
+  color: #fff;
+  font-size: 18px;
+}
+
+.home-workproof-feature p {
+  margin: 0;
+  color: #bab4ab;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.home-workproof-disclaimer {
+  margin: 18px 0 0;
+  color: #aaa49c;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* FAQ: centered, restrained, responsive */
+.home-market .booking-faq {
+  padding-block: clamp(70px, 8vw, 115px);
+}
+
+.home-market .home-faq-heading {
+  max-width: 650px;
+  margin: 0 auto 35px;
+  text-align: center;
+}
+
+.home-market .home-faq-heading h2 {
+  margin: 0 0 13px;
+  font-size: clamp(37px, 4.7vw, 62px);
+  line-height: 1.05;
+  letter-spacing: -.05em;
+  color: var(--foreground);
+}
+
+.home-market .home-faq-heading > p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 15px;
+}
+
+.home-market .home-faq-list {
+  width: min(100%, 820px);
+  margin-inline: auto;
+}
+
+.home-market .home-faq-list details {
+  max-width: none;
+  border-bottom: 1px solid var(--divider);
+}
+
+.home-market .home-faq-list details:first-child {
+  border-top: 1px solid var(--divider);
+}
+
+.home-market .home-faq-list summary {
+  padding: 23px 8px;
+  color: var(--foreground);
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.home-market .home-faq-list details > p {
+  margin: 0;
+  padding: 0 8px 23px;
+  color: var(--secondary);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+@media (max-width: 850px) {
+  .home-workproof-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 650px) {
+  .home-evidence-grid { grid-template-columns: 1fr 1fr; }
+
+  .home-evidence-grid > div { padding: 20px 14px; }
+
+  .home-evidence-grid > div:first-child {
+    grid-column: 1 / -1;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--divider);
+  }
+
+  .home-evidence-grid > div:nth-child(2) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .home-evidence-grid strong { font-size: clamp(42px, 12vw, 65px); }
+  .home-workproof-panel { padding: 18px 15px; }
+  .home-workproof-panel-head { flex-wrap: wrap; }
+  .home-workproof-panel-head > small { margin-left: 0; }
+
+  .home-market .home-faq-list summary {
+    padding: 19px 2px;
+    font-size: 15px;
+  }
+
+  .home-market .home-faq-list details > p {
+    font-size: 14px;
+  }
+}
