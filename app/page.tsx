@@ -57,14 +57,7 @@ export default function Home() {
             </Link>
           </div>
           <div className="home-process-media">
-            <div className="home-process-media-head">
-              <span>See handEwork in action</span>
-              <span aria-hidden="true">●</span>
-            </div>
             <DemoVideo />
-            <p className="home-process-caption">
-              From the first request to the finishing touches.
-            </p>
           </div>
         </div>
       </section>
@@ -74,13 +67,17 @@ export default function Home() {
 
       <section className="section shell service-showcase" id="services">
         <div className="section-head"><div><h2>What needs doing?</h2><p>Start with the work. We’ll help you find the right hands.</p></div><Link className="text-link" href="/marketplace">View all services</Link></div>
-        <div className="service-visual-grid">{services.map((service) => (
+        <div className="service-visual-grid">{services.filter((service) => service.name !== "Catering").map((service) => (
           <Link className="service-visual-card" href={`/marketplace?service=${encodeURIComponent(service.name)}`} key={service.name}>
             <div className="service-visual-media">
-              <picture>
-                <source media="(prefers-reduced-motion: reduce)" srcSet={`/services/home/stills/${service.image}.webp`} />
-                <img src={`/services/home/${service.image}.webp`} alt="" loading="lazy" decoding="async" />
-              </picture>
+              <img
+                src={`/services/home/drive/${service.image}.webp`}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                width={960}
+                height={640}
+              />
             </div>
             <div className="service-visual-copy"><div><h3>{service.name}</h3><p>{service.note}</p></div></div>
           </Link>

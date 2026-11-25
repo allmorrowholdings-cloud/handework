@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [{ url: "/favicon.png", type: "image/png", sizes: "512x512" }],
     shortcut: "/favicon.png",
-    apple: "/pwa-icon-192.png",
+    apple: "/handework-app-icon-192.png",
   },
 };
 

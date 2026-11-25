@@ -584,3 +584,74 @@ html[data-theme="dark"] .home-market .service-visual-media {
     transition: none;
   }
 }
+
+
+/* HANDEWORK_EIGHT_STATIC_CLEANUP */
+
+/* Video sits on the section background, without a card. */
+.home-market .home-process-media,
+html[data-theme="dark"] .home-market .home-process-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-market .home-process .demo-video {
+  position: relative;
+  width: min(100%, 330px);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-market .home-process .demo-video video {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  border-radius: 10px;
+  background: transparent;
+}
+
+/* Use supplied static photographs rather than GIFs. */
+.home-market .service-visual-media {
+  background: transparent;
+}
+
+.home-market .service-visual-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: none;
+}
+
+.home-market .service-visual-card:hover img {
+  transform: scale(1.025);
+}
+
+@media (max-width: 900px) {
+  .home-market .home-process .demo-video {
+    width: min(100%, 300px);
+  }
+}
+
+@media (max-width: 650px) {
+  .home-market .home-process .demo-video {
+    width: min(100%, 280px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-market .service-visual-card:hover img {
+    transform: none;
+  }
+}

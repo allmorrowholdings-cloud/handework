@@ -5,12 +5,10 @@ import { useEffect, useRef, useState } from "react";
 export function DemoVideo() {
   const ref = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
-  const [soundRequired, setSoundRequired] = useState(false);
 
   useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-    const video = element;
+    const video = ref.current;
+    if (!video) return;
 
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
@@ -18,42 +16,46 @@ export function DemoVideo() {
 
     let disposed = false;
 
-    async function start() {
-      if (reducedMotion.matches || disposed || !video.paused) return;
+    async function startPlayback(element: HTMLVideoElement) {
+      if (disposed || reducedMotion.matches || !element.paused) return;
 
       try {
-        video.muted = false;
-        await video.play();
-        if (!disposed) setSoundRequired(false);
+        element.muted = false;
+        await element.play();
       } catch {
         if (disposed) return;
 
-        video.muted = true;
+        // Browsers may require muted autoplay.
+        element.muted = true;
 
         try {
-          await video.play();
-          if (!disposed) setSoundRequired(true);
+          await element.play();
         } catch {
-          if (!disposed) setSoundRequired(true);
+          // Native controls allow manual playback.
         }
       }
     }
 
+    const start = () => {
+      void startPlayback(video);
+    };
+
+    const stop = () => {
+      video.pause();
+    };
+
     if (!("IntersectionObserver" in window)) {
-      void start();
+      start();
       return () => {
         disposed = true;
-        video.pause();
+        stop();
       };
     }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          void start();
-        } else {
-          video.pause();
-        }
+        if (entry.isIntersecting) start();
+        else stop();
       },
       { threshold: 0.25 }
     );
@@ -63,21 +65,9 @@ export function DemoVideo() {
     return () => {
       disposed = true;
       observer.disconnect();
-      video.pause();
+      stop();
     };
   }, []);
-
-  function enableSound() {
-    const video = ref.current;
-    if (!video) return;
-
-    video.muted = false;
-    video.volume = 1;
-
-    void video.play()
-      .then(() => setSoundRequired(false))
-      .catch(() => setSoundRequired(true));
-  }
 
   return (
     <figure className="demo-video">
@@ -93,20 +83,8 @@ export function DemoVideo() {
         onError={() => setFailed(true)}
       />
 
-      {soundRequired && !failed && (
-        <button
-          type="button"
-          className="video-enable-sound"
-          onClick={enableSound}
-        >
-          Enable sound
-        </button>
-      )}
-
       {failed && (
-        <a href="https://www.canva.com/design/DAHbz7MtI7w/0LwZPGWkqQzkCKqdJnDWXw/watch">
-          Watch the demonstration on Canva
-        </a>
+        <p role="status">Video unavailable right now.</p>
       )}
     </figure>
   );
