@@ -1124,3 +1124,112 @@ html[data-theme="dark"] .home-market .home-process-media {
   }
   .home-market .finder .finder-place-input input { padding-right: 88px; }
 }
+
+
+/* HANDEWORK_DESCRIBE_ACTION_POLISH_2026 */
+.home-market .hero.hero-light .finder .finder-mode {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 5px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #da6620;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  box-shadow: none;
+  cursor: pointer;
+  transition: color .18s ease;
+}
+
+.home-market .hero.hero-light .finder .finder-mode:hover {
+  color: #a94813;
+  text-decoration: none;
+}
+
+.home-market .hero.hero-light .finder .finder-mode:focus-visible {
+  outline: 2px solid #da6620;
+  outline-offset: 4px;
+}
+
+/* HANDEWORK_HOME_BUTTONS_UNIFIED_2026 */
+.home-market .hero.hero-light .finder .finder-submit,
+.home-market .home-process-cta,
+.home-market .service-showcase .section-head .text-link,
+.home-market .final-cta .button,
+.home-market .site-header .nav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 50px;
+  padding: 12px 22px;
+  border: 1px solid #ffcf22;
+  border-radius: 6px;
+  background: #ffcf22;
+  color: #14120f;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: none;
+  transform: none;
+  transition: background-color .18s ease, border-color .18s ease;
+}
+.home-market .hero.hero-light .finder .finder-submit {
+  width: min(100%,390px);
+  min-height: 56px;
+  justify-self: center;
+  margin: 12px auto 6px;
+  font-size: 16px;
+}
+.home-market .home-workproof-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 12px 22px;
+  border: 1px solid #ffcf22;
+  border-radius: 6px;
+  background: transparent;
+  color: #ffcf22;
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+  box-shadow: none;
+}
+.home-market .hero.hero-light .finder .finder-submit:hover,
+.home-market .home-process-cta:hover,
+.home-market .service-showcase .section-head .text-link:hover,
+.home-market .final-cta .button:hover,
+.home-market .site-header .nav-cta:hover {
+  background: #edbd10;
+  border-color: #edbd10;
+  color: #14120f;
+  box-shadow: none;
+  transform: none;
+}
+.home-market .home-workproof-link:hover {
+  background: #ffcf22;
+  color: #14120f;
+  text-decoration: none;
+}
+@media (max-width:650px) {
+  .home-market .hero.hero-light .finder .finder-submit { width: calc(100% - 16px); }
+  .home-market .home-process-cta,
+  .home-market .home-workproof-actions .home-process-cta,
+  .home-market .home-workproof-link,
+  .home-market .final-cta .button { width: 100%; }
+  .home-market .service-showcase .section-head .text-link { width: fit-content; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-market .home-process-cta,
+  .home-market .hero.hero-light .finder .finder-submit { transition: none; }
+}

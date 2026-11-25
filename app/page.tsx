@@ -67,14 +67,17 @@ export default function Home() {
         <div className="service-visual-grid">{services.filter((service) => service.name !== "Catering").map((service) => (
           <Link className="service-visual-card" href={`/marketplace?service=${encodeURIComponent(service.name)}`} key={service.name}>
             <div className="service-visual-media">
-              <img
-                src={`/services/home/drive/${service.image}.webp`}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                width={960}
-                height={640}
-              />
+              <picture>
+                <source media="(prefers-reduced-motion: reduce)" srcSet={`/services/home/animated/stills/${service.image}.webp`} />
+                <img
+                  src={`/services/home/animated/${service.image}.webp`}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  width={360}
+                  height={240}
+                />
+              </picture>
             </div>
             <div className="service-visual-copy"><div><h3>{service.name}</h3><p>{service.note}</p></div></div>
           </Link>
