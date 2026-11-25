@@ -62,3 +62,14 @@ test("account codes and new passwords are submitted by POST after hydration", as
     }
   }
 });
+
+test("training exposes the external submission workflow and protects its management pages", async () => {
+  const training = await render("/training");
+  assert.equal(training.status, 200);
+  assert.match(await training.text(), /href="\/submissions\?purpose=training_resource"/);
+  for (const path of ["/submissions", "/admin/drive-submissions"]) {
+    const page = await render(path);
+    assert.equal(page.status, 200);
+    assert.match(await page.text(), /Checking your account/);
+  }
+});

@@ -156,6 +156,10 @@ def test_auto_release_gates(client,customer,artisan,monkeypatch):
     c.provider_hold=False
     evidence = FileAsset.query.filter_by(booking_id=booking).one()
     evidence.deleted_at = datetime.now(timezone.utc)
+    from handework.models import DriveSubmission
+    db.session.add(DriveSubmission(owner_id=artisan["user"]["id"], purpose="portfolio", title="Finished job",
+                                  url="https://drive.google.com/file/d/example/view", item_kind="file",
+                                  drive_id="example", status="approved"))
     db.session.commit()
     assert not auto_release(booking)
     evidence.deleted_at = None

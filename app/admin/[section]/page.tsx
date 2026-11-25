@@ -5,9 +5,11 @@ import { DisputeDesk } from "./dispute-desk";
 import { PaymentOperations } from "./payment-operations";
 import { notFound } from "next/navigation";
 import { VerificationReview } from "./verification-review";
+import { DriveReview } from "./drive-review";
 import { ShopMediaManager } from "./shop-media";
 
 const sections = {
+  "drive-submissions": { title: "Google Drive link review", empty: "", text: "" },
   verifications: { title: "KYC queue", empty: "No verification waiting", text: "Government ID, live selfie, trade proof and payout-name checks appear here." },
   disputes: { title: "Dispute desk", empty: "No open dispute", text: "Cases retain their booking, evidence, resolution and financial-action audit trail." },
   payments: { title: "Payment operations", empty: "No payment exception", text: "Pending, failed and refund-pending transactions appear here for reconciliation." },
@@ -25,7 +27,7 @@ export default async function AdminSection({ params }: { params: Promise<{ secti
     <section className="app-content">
       <div className="app-card full-card">
         <div className="card-head"><h2>Current records</h2></div>
-        {section === "disputes" ? <DisputeDesk/> : section === "payments" ? <PaymentOperations/> : section === "verifications" ? <VerificationReview /> : section === "media" ? <ShopMediaManager/> : <LiveRecords endpoint={`/v1/admin/${section}`} emptyTitle={copy.empty} emptyText={copy.text} variant="admin" />}
+        {section === "drive-submissions" ? <DriveReview/> : section === "disputes" ? <DisputeDesk/> : section === "payments" ? <PaymentOperations/> : section === "verifications" ? <VerificationReview /> : section === "media" ? <ShopMediaManager/> : <LiveRecords endpoint={`/v1/admin/${section}`} emptyTitle={copy.empty} emptyText={copy.text} variant="admin" />}
       </div>
     </section>
   </AppShell>;

@@ -38,9 +38,9 @@ export function AppShell({ children, role = "customer", title, note, action }: {
   }, [attempt, path, role, router]);
   if (account === "error") return <p className="section shell" role="status">Your account could not load. <button onClick={() => setAttempt(attempt + 1)}>Try again</button></p>;
   if (!account) return <p className="section shell" role="status">Checking your account...</p>;
-  const links = account === "artisan" ? artisanLinks : account === "admin" ? [["/admin","Operations"],["/admin/verifications","KYC queue"],["/admin/disputes","Disputes"],["/admin/payments","Payments"],["/admin/media","Shop media"],["/admin/risk","Risk review"],["/admin/analytics","Analytics"]] : customerLinks;
+  const links = account === "artisan" ? artisanLinks : account === "admin" ? [["/admin","Operations"],["/admin/verifications","KYC queue"],["/admin/disputes","Disputes"],["/admin/payments","Payments"],["/admin/media","Shop media"],["/admin/drive-submissions","Drive link review"],["/admin/risk","Risk review"],["/admin/analytics","Analytics"]] : customerLinks;
   return <div className="app-layout">
-    <aside className="app-sidebar"><Logo light /><nav>{links.map(([href,label]) => <Link className={path === href ? "active" : ""} href={href} key={href}><span>{label.slice(0,1)}</span>{label}</Link>)}</nav><div className="side-bottom"><ThemeToggle /><Link href="/settings">Settings</Link><button onClick={() => { void signOut(); router.push("/auth/sign-in"); }}>Sign out</button></div></aside>
+    <aside className="app-sidebar"><Logo light /><nav>{links.map(([href,label]) => <Link className={path === href ? "active" : ""} href={href} key={href}><span>{label.slice(0,1)}</span>{label}</Link>)}</nav><div className="side-bottom"><ThemeToggle /><Link href="/submissions">My Drive submissions</Link><Link href="/settings">Settings</Link><button onClick={() => { void signOut(); router.push("/auth/sign-in"); }}>Sign out</button></div></aside>
     <div className="app-main"><header className="app-topbar"><div className="mobile-app-logo"><Logo /></div><div><h1>{title}</h1>{note && <p>{note}</p>}</div>{action && <div className="app-action">{action}</div>}</header>{children}</div>
   </div>;
 }

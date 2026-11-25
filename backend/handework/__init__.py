@@ -23,7 +23,8 @@ def create_app(config_object=Config, *, seed_development_admin=True):
     from .routes.admin import bp as admin_bp
     from .routes.workproof import bp as workproof_bp
     from .routes.shop import bp as shop_bp
-    for blueprint in (auth_bp, marketplace_bp, bookings_bp, payments_bp, platform_bp, admin_bp, workproof_bp, shop_bp):
+    from .routes.drive_submissions import bp as drive_bp
+    for blueprint in (auth_bp, marketplace_bp, bookings_bp, payments_bp, platform_bp, admin_bp, workproof_bp, shop_bp, drive_bp):
         app.register_blueprint(blueprint, url_prefix="/v1")
 
     from .services.storage import local_storage_allowed

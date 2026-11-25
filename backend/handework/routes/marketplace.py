@@ -3,6 +3,7 @@ from math import isfinite
 from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import jwt_required
 from ..services.email_delivery import queue_email
+from ..models import DriveSubmission
 from ..extensions import db, limiter
 from ..models import ArtisanProfile, Availability, FileAsset, PortfolioItem, Role, Verification
 from ..security import current_user, role_required
@@ -112,7 +113,8 @@ def ranked_artisans(service,coordinates,distance_limit,location=None,weekday=Non
 def artisan_detail(artisan_id):
     profile = ArtisanProfile.query.filter_by(id=artisan_id, verification_status="approved").first_or_404()
     portfolio = PortfolioItem.query.filter_by(artisan_id=profile.id, moderation_status="approved").order_by(PortfolioItem.created_at.desc()).all()
-    return jsonify({"artisan": {**profile.search_card(None), "avatar_url":private_download_url(profile.avatar_url,300) if profile.avatar_url else None, "bio": profile.bio, "years_experience": profile.years_experience, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km}, "workproof": public_workproof(profile), "portfolio": [{"id": item.id, "title": item.title, "description": item.description, "service": item.service, "media_url": private_download_url(item.media_url,300), "media_type": item.media_type, "before_after": item.before_after} for item in portfolio]})
+    links = DriveSubmission.query.filter_by(owner_id=profile.user_id, purpose="portfolio", status="approved").order_by(DriveSubmission.title)
+    return jsonify({"external_portfolio": [row.link() for row in links], "artisan": {**profile.search_card(None), "avatar_url":private_download_url(profile.avatar_url,300) if profile.avatar_url else None, "bio": profile.bio, "years_experience": profile.years_experience, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km}, "workproof": public_workproof(profile), "portfolio": [{"id": item.id, "title": item.title, "description": item.description, "service": item.service, "media_url": private_download_url(item.media_url,300), "media_type": item.media_type, "before_after": item.before_after} for item in portfolio]})
 
 
 @bp.route("/artisans/me", methods=["GET", "PATCH"])

@@ -444,6 +444,27 @@ class Course(UUIDMixin, TimestampMixin, db.Model):
     published = db.Column(db.Boolean, nullable=False, default=False, index=True)
 
 
+class DriveSubmission(UUIDMixin, TimestampMixin, db.Model):
+    __tablename__ = "drive_submissions"
+    owner_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False, index=True)
+    course_id = db.Column(db.String(36), db.ForeignKey("courses.id"), index=True)
+    purpose = db.Column(db.String(32), nullable=False)
+    title = db.Column(db.String(180), nullable=False)
+    url = db.Column(db.String(1024), nullable=False)
+    drive_id = db.Column(db.String(256), nullable=False)
+    item_kind = db.Column(db.String(12), nullable=False)
+    status = db.Column(db.String(16), nullable=False, default="pending", index=True)
+    version = db.Column(db.Integer, nullable=False, default=1)
+    reviewer_id = db.Column(db.String(36), db.ForeignKey("users.id"))
+    reviewed_at = db.Column(db.DateTime(timezone=True))
+    review_note = db.Column(db.String(500))
+
+    def link(self):
+        return {"id": self.id, "source": "google_drive", "title": self.title, "url": self.url,
+                "kind": self.item_kind, "purpose": self.purpose, "course_id": self.course_id,
+                "access_checked": False}
+
+
 class SupportTicket(UUIDMixin, TimestampMixin, db.Model):
     __tablename__ = "support_tickets"
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), index=True)
