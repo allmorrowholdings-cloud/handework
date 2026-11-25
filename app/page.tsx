@@ -109,6 +109,45 @@ export default function Home() {
           </div>
         </div>
       </section>
+      {/* HANDEWORK_SAFETY_DRIVE_EMBED_2026 */}
+      <section
+        className="home-safety"
+        aria-labelledby="home-safety-title"
+      >
+        <div className="shell home-safety-inner">
+          <div className="home-safety-heading">
+            <span className="home-safety-eyebrow">
+              SAFETY &amp; TRUST
+            </span>
+
+            <h2 id="home-safety-title">
+              Know how your job is protected.
+            </h2>
+
+            <p>
+              From professional verification to clearer
+              job records and support, see how handEwork
+              helps you manage work with confidence.
+            </p>
+          </div>
+
+          <div className="home-safety-video">
+            <iframe
+              src="https://drive.google.com/file/d/1WkwTiQNtryINCKccY5KNMdhd5ot3y06U/preview"
+              title="handEwork Safety and Trust"
+              loading="lazy"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </div>
+
+          <Link href="/safety" className="home-safety-link">
+            Explore safety and trust
+            <span aria-hidden="true">&rarr;</span>
+          </Link>
+        </div>
+      </section>
       <section className="shell booking-faq" aria-labelledby="home-faq-title">
         <div className="home-faq-heading">
           <h2 id="home-faq-title">Before you book</h2>
