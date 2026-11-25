@@ -1233,3 +1233,62 @@ html[data-theme="dark"] .home-market .home-process-media {
   .home-market .home-process-cta,
   .home-market .hero.hero-light .finder .finder-submit { transition: none; }
 }
+/* HANDEWORK_ORANGE_HOW_IT_WORKS_2026
+   Full-bleed brand orange across both color themes; all text remains legible.
+   The yellow button remains rectangular to match the homepage CTA system. */
+.home-market .home-process,
+html[data-theme="dark"] .home-market .home-process {
+  background: #da6620;
+  color: #fff;
+  border-bottom: 0;
+}
+.home-market .home-process .home-eyebrow,
+html[data-theme="dark"] .home-market .home-process .home-eyebrow {
+  color: #ffcf22;
+}
+.home-market .home-process h2,
+.home-market .home-process .home-steps h3,
+html[data-theme="dark"] .home-market .home-process h2,
+html[data-theme="dark"] .home-market .home-process .home-steps h3 {
+  color: #fff;
+}
+.home-market .home-process .home-steps p,
+html[data-theme="dark"] .home-market .home-process .home-steps p {
+  color: rgba(255,255,255,.9);
+}
+.home-market .home-process .home-step-number,
+html[data-theme="dark"] .home-market .home-process .home-step-number {
+  color: #ffcf22;
+}
+.home-market .home-process .home-steps li,
+.home-market .home-process .home-steps li:last-child {
+  border-color: rgba(255,255,255,.34);
+}
+.home-market .home-process .home-process-media,
+html[data-theme="dark"] .home-market .home-process .home-process-media {
+  background: rgba(20,18,15,.15);
+  border-color: rgba(255,255,255,.28);
+  box-shadow: none;
+}
+.home-market .home-process .home-process-caption,
+.home-market .home-process .home-process-media-head {
+  color: #fff;
+}
+.home-market .home-process .home-process-cta,
+html[data-theme="dark"] .home-market .home-process .home-process-cta {
+  background: #ffcf22;
+  color: #14120f;
+  border: 1px solid #ffcf22;
+  border-radius: 6px;
+  box-shadow: none;
+}
+.home-market .home-process .home-process-cta:hover,
+html[data-theme="dark"] .home-market .home-process .home-process-cta:hover {
+  background: #edbd10;
+  border-color: #edbd10;
+  color: #14120f;
+}
+.home-market .home-process .home-process-cta:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}

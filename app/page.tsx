@@ -33,7 +33,7 @@ export default function Home() {
               <li>
                 <span className="home-step-number" aria-hidden="true">01</span>
                 <div>
-                  <h3>Describe the work</h3>
+                  <h3>Describe your job</h3>
                   <p>Tell us what needs attention, where the job is and when you need help.</p>
                 </div>
               </li>

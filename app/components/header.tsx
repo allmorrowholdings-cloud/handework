@@ -39,7 +39,7 @@ export function Header() {
         </> : (
           <Link href="/auth/sign-in" onClick={() => setOpen(false)}>Sign in</Link>
         )}
-        <Link href="/bookings/new" onClick={() => setOpen(false)}>Describe a job</Link>
+        <Link href="/bookings/new" onClick={() => setOpen(false)}>Describe your job</Link>
       </div>
     </nav>
     <div className="nav-actions"><InstallApp compact /><ThemeToggle compact />
@@ -55,6 +55,6 @@ export function Header() {
             <path d="M5 20c0-4 3-6 7-6s7 2 7 6" />
           </svg>
         </Link>
-      )}<Link className="nav-signin" href={signedIn ? "/my-jobs" : "/auth/sign-in"}>{signedIn ? "Dashboard" : "Sign in"}</Link><Link className="button button-orange nav-cta" href="/bookings/new">Describe a job</Link><button className="menu-button" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen(!open)}><span /><span /></button></div>
+      )}<Link className="nav-signin" href={signedIn ? "/my-jobs" : "/auth/sign-in"}>{signedIn ? "Dashboard" : "Sign in"}</Link><Link className="button button-orange nav-cta" href="/bookings/new">Describe your job</Link><button className="menu-button" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen(!open)}><span /><span /></button></div>
   </div></header>;
 }
