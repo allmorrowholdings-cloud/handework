@@ -1,11 +1,12 @@
 "use client";
 import { LocationPicker } from "../../components/location-picker";
 import Image from "next/image";
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { api } from "../../../lib/api";
 
-type Profile = { latitude?: number | null; longitude?: number | null; display_name: string; trade: string; bio?: string; starting_price?: number; radius_km: number; languages?: string; city?: string; area?: string; instant_booking: boolean; avatar_url?: string | null };
+type Profile = { latitude?: number | null; longitude?: number | null; display_name: string; trade: string; bio?: string; starting_price?: number; radius_km: number; languages?: string; city?: string; area?: string; instant_booking: boolean; avatar_url?: string | null; verification_status?: string; available?: boolean };
 
 export function ProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -27,6 +28,42 @@ export function ProfileEditor() {
   if (!profile) return <div className="loading-line"><span />{notice || "Loading work profile…"}</div>;
   const set = (field: keyof Profile, value: string | number | boolean) => setProfile(current => current ? { ...current, [field]: value } : current);
   return <form className="app-card settings-form" onSubmit={submit}>
+    <div className="data-note" role="status">
+      {profile.verification_status !== "approved" ? (
+        <>
+          <strong>Your profile is not yet publicly listed.</strong>
+          <p>
+            Verification status: {profile.verification_status ?? "not confirmed"}.
+            Complete your checks and await an administrator's approval.
+          </p>
+          <Link href="/artisan/verification">Manage verification</Link>
+        </>
+      ) : !profile.available ? (
+        <>
+          <strong>Your profile is approved but not currently available for search.</strong>
+          <p>
+            Save your working hours to enable availability.
+          </p>
+          <Link href="/artisan/availability">Manage availability</Link>
+        </>
+      ) : profile.latitude == null || profile.longitude == null ? (
+        <>
+          <strong>Your profile is approved and accepting work.</strong>
+          <p>
+            Add a service-location pin so nearby customers can find you
+            in distance-based searches.
+          </p>
+        </>
+      ) : (
+        <>
+          <strong>Your profile is approved and accepting work.</strong>
+          <p>
+            Customers can discover you when your trade, service area,
+            distance and availability match their search.
+          </p>
+        </>
+      )}
+    </div>
     <div className="profile-banner"><div className="profile-avatar">{profile.avatar_url ? <Image src={profile.avatar_url} alt="Profile" width={80} height={80} unoptimized /> : profile.display_name.slice(0, 1)}</div><div><h2>Public artisan profile</h2><p>Approved information is shown to customers.</p><label>Profile picture<input type="file" accept="image/jpeg,image/png,image/webp" onChange={avatar} /></label></div></div>
     <label>Professional display name<input value={profile.display_name} onChange={event => set("display_name", event.target.value)} /></label>
     <label>Main trade<input value={profile.trade} onChange={event => set("trade", event.target.value)} /></label>

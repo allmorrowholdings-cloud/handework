@@ -24,11 +24,29 @@ export function LocationMap({items,coordinates="",onPick,route}:{items:MapPoint[
       instance.current=map;
       map.addControl(new lib.NavigationControl(),"top-right");
       map.on("click",e=>pick.current?.(e.lngLat.lat,e.lngLat.lng));
-      map.on("load",()=>{if(!disposed){setReady(true);setError("")}});
+      let initialLoadCompleted = false;
+      map.on("load", () => {
+        if (disposed) return;
+        initialLoadCompleted = true;
+        setReady(true);
+        setError("");
+      });
       map.on("error", event => {
-        if (!disposed) {
-          console.warn("handEwork map resource error", event.error?.message);
-          setError("The map is having trouble loading. You can retry or enter the address manually.");
+        if (disposed) return;
+
+        console.warn(
+          "handEwork map resource error",
+          event.error?.message
+        );
+
+        if (!initialLoadCompleted) {
+          setError(
+            "The map could not finish loading. Retry or search for your address."
+          );
+        } else {
+          setError(
+            "Some map details could not load. You can continue using the available map or retry."
+          );
         }
       });
       map.on("idle", () => {
@@ -36,7 +54,11 @@ export function LocationMap({items,coordinates="",onPick,route}:{items:MapPoint[
           setError("");
         }
       });
-    }).catch(()=>setError("The interactive map is unavailable on this device."));
+    }).catch(() => {
+      if (!disposed) {
+        setError("The interactive map is unavailable. Search for your address instead.");
+      }
+    });
     return ()=>{disposed=true;instance.current?.remove();instance.current=null};
   },[retry]);
   useEffect(()=>{
