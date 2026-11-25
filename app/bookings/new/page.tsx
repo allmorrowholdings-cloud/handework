@@ -30,6 +30,7 @@ function NewBookingForm() {
   }, [form, step, draftKey]);
   const [media, setMedia] = useState<File[]>([]);
   const [error, setError] = useState("");
+  const [stepOneErrors, setStepOneErrors] = useState<{service?:string;description?:string}>({});
   const [busy, setBusy] = useState(false);
   const [auth, setAuth] = useState<"sign-in" | "create" | null>(null);
   const [artisan, setArtisan] = useState(params.get("artisan") ?? "");
@@ -59,7 +60,14 @@ function NewBookingForm() {
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError("");
-    if (step === 1 && !form.description.trim()) { setError("Describe the job before continuing."); return; }
+    if (step === 1) {
+      const errors = {
+        service: form.service.trim() ? undefined : "Choose a service before continuing.",
+        description: form.description.trim() ? undefined : "Describe the job before continuing.",
+      };
+      setStepOneErrors(errors);
+      if (errors.service || errors.description) return;
+    }
     if (step === 2 && (!form.area.trim() || !form.address.trim())) { setError("Enter the job address and area before continuing."); return; }
     if (step === 2 && !params.get("artisan")) {
       setMatches([]);
@@ -88,7 +96,7 @@ function NewBookingForm() {
     finally { setBusy(false); }
   }
   return <main><Header /><div className="shell public-request"><header><h1>Request skilled work</h1><p>Nothing is charged until the scope and artisan are confirmed.</p></header><section className="app-content narrow-content"><div className="booking-progress"><span className={step>=1?"on":""}>1. Work</span><span className={step>=2?"on":""}>2. Place & time</span><span className={step>=3?"on":""}>3. Budget & review</span></div><form className="app-card booking-form" onSubmit={submit}>
-    {step===1 && <><h2>What needs doing?</h2><label>Service category<ServiceSelect allowUnknown value={form.service} onChange={value => set("service", value)} /></label><label>Job details<textarea required value={form.description} onChange={(event)=>set("description",event.target.value)} rows={6} placeholder="Describe the problem or result you need. Include measurements or useful details." /></label><label className="upload-zone">Photos or short video<input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4" onChange={files} /><span>{media.length ? `${media.length} file${media.length===1?"":"s"} selected` : "Add up to five photos or MP4 clips. Reselect attachments after refreshing."}</span></label></>}
+    {step===1 && <><h2>What needs doing?</h2><label>Service category<ServiceSelect allowUnknown value={form.service} onChange={value => { set("service", value); setStepOneErrors(current => ({...current, service: undefined})); }} />{stepOneErrors.service && <small className="form-error" role="alert">{stepOneErrors.service}</small>}</label><label>Job details<textarea required aria-invalid={Boolean(stepOneErrors.description)} aria-describedby={stepOneErrors.description ? "job-description-error" : undefined} value={form.description} onChange={(event)=>{ set("description",event.target.value); if(event.target.value.trim())setStepOneErrors(current=>({...current,description:undefined})); }} rows={6} placeholder="Describe the problem or result you need. Include measurements or useful details." />{stepOneErrors.description && <small id="job-description-error" className="form-error" role="alert">{stepOneErrors.description}</small>}</label><label className="upload-zone">Photos or short video<input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4" onChange={files} /><span>{media.length ? `${media.length} file${media.length===1?"":"s"} selected` : "Add up to five photos or MP4 clips. Reselect attachments after refreshing."}</span></label></>}
     {step===2 && <><h2>Where and when?</h2><LocationPicker value={coordinates} onSelect={(pin,label)=>setForm(current=>({...current,coordinates:pin,address:label??current.address}))}/><label>Job address<input required value={form.address} onChange={(event)=>set("address",event.target.value)} placeholder="House number, street or landmark" /></label><div className="two-fields"><label>Area<input required value={form.area} onChange={(event)=>set("area",event.target.value)} placeholder="e.g. East Legon" /></label><label>City<select value={form.city} onChange={(event)=>set("city",event.target.value)}><option>Accra</option><option>Kumasi</option><option>Tema</option><option>Takoradi</option><option>Cape Coast</option><option>Tamale</option></select></label></div><div className="two-fields"><label>Date<input required type="date" value={form.scheduled_date} onChange={(event)=>set("scheduled_date",event.target.value)} /></label><label>Time window<select value={form.time_window} onChange={(event)=>set("time_window",event.target.value)}><option value="morning">Morning, 7am–11am</option><option value="midday">Midday, 11am–3pm</option><option value="evening">Evening, 3pm–7pm</option></select></label></div></>}
     {step===3 && <><h2>Budget and review</h2><p><strong>{form.service}</strong> &middot; {form.description}</p><p>{form.address}, {form.area}, {form.city} &middot; {form.scheduled_date}, {form.time_window}</p>
       {!params.get("artisan") && <label>Artisan<select value={artisan} onChange={event => setArtisan(event.target.value)}><option value="">Save without a professional</option>{coordinates&&<option value="smart">Smart Dispatch ? request the highest ranked available artisan</option>}{matches.map(person => <option key={person.id} value={person.id}>{person.display_name}</option>)}</select></label>}
