@@ -29,9 +29,76 @@ def deliver_notification(self, notification_id):
     user=db.session.get(User,row.user_id)
     if row.channel=="push":
         tokens=[x.expo_push_token for x in PushDevice.query.filter_by(user_id=user.id,active=True).all()];send_expo(tokens,row.title,row.body,row.data)
-    elif row.channel=="sms":send_sms(user.phone,row.body)
+    elif row.channel == "sms":
+        return deliver_sms_safely(row.id)
     elif row.channel=="whatsapp":send_whatsapp(user.phone,row.body)
     row.status="sent";row.sent_at=db.func.now();db.session.commit()
+
+
+
+def deliver_sms_safely(notification_id):
+    from .services.arkesel import sms_enabled, normalize_phone
+
+    if not sms_enabled():
+        return
+
+    row = db.session.get(Notification, notification_id)
+
+    if not row or row.channel != "sms" or row.status != "queued":
+        return
+
+    user = db.session.get(User, row.user_id)
+
+    try:
+        phone = normalize_phone(user.phone if user else None)
+    except ValueError:
+        row.status = "failed"
+        db.session.commit()
+        return
+
+    message = row.body
+
+    claimed = Notification.query.filter_by(
+        id=notification_id,
+        channel="sms",
+        status="queued"
+    ).update(
+        {
+            "status": "sending",
+            "attempts": Notification.attempts + 1
+        },
+        synchronize_session=False
+    )
+
+    db.session.commit()
+
+    if claimed != 1:
+        return
+
+    try:
+        send_sms("+" + phone, message)
+    except Exception:
+        Notification.query.filter_by(
+            id=notification_id,
+            status="sending"
+        ).update(
+            {"status": "unknown"},
+            synchronize_session=False
+        )
+        db.session.commit()
+        return
+
+    Notification.query.filter_by(
+        id=notification_id,
+        status="sending"
+    ).update(
+        {
+            "status": "sent",
+            "sent_at": db.func.now()
+        },
+        synchronize_session=False
+    )
+    db.session.commit()
 
 
 @celery.task

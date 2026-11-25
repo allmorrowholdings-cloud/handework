@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import { router } from "expo-router";
 import { api, clearSession, saveSession } from "../api/client";
 
-type User={id:string;first_name:string;last_name:string;email:string;phone:string;role:"customer"|"artisan"|"admin"};
+type User={id:string;first_name:string;last_name:string;email:string;phone:string;phone_verified?:boolean;email_verified?:boolean;role:"customer"|"artisan"|"admin"};
 type Auth={user:User|null;loading:boolean;signIn:(email:string,password:string)=>Promise<void>;register:(data:Record<string,string>)=>Promise<void>;signOut:()=>Promise<void>;refresh:()=>Promise<void>};
 const Context=createContext<Auth|null>(null);
 

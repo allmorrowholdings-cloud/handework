@@ -1,6 +1,7 @@
 import os
 import httpx
 from .email_delivery import enabled
+from .arkesel import send_sms, sms_enabled
 
 
 def send_expo(tokens, title, body, data=None):
@@ -9,13 +10,6 @@ def send_expo(tokens, title, body, data=None):
     if os.getenv("EXPO_ACCESS_TOKEN"): headers["Authorization"] = f"Bearer {os.environ['EXPO_ACCESS_TOKEN']}"
     messages = [{"to": token, "sound": "default", "title": title, "body": body, "data": data or {}} for token in tokens]
     response = httpx.post("https://exp.host/--/api/v2/push/send", headers=headers, json=messages, timeout=20)
-    response.raise_for_status(); return response.json()
-
-
-def send_sms(phone, message):
-    client_id, secret = os.getenv("HUBTEL_CLIENT_ID"), os.getenv("HUBTEL_CLIENT_SECRET")
-    if not client_id or not secret: raise RuntimeError("Hubtel SMS credentials are not configured")
-    response = httpx.get("https://smsc.hubtel.com/v1/messages/send", params={"clientid": client_id, "clientsecret": secret, "from": os.getenv("HUBTEL_SENDER_ID", "handEwork"), "to": phone, "content": message}, timeout=20)
     response.raise_for_status(); return response.json()
 
 
@@ -33,7 +27,7 @@ def queue_notifications(user, title, body, data=None, urgent=False):
     channels = ["in_app"]
     if enabled() and preferences.get("email", True): channels.append("email")
     if preferences.get("push"): channels.append("push")
-    if urgent and preferences.get("sms"): channels.append("sms")
+    if sms_enabled() and urgent and preferences.get("sms"): channels.append("sms")
     if urgent and preferences.get("whatsapp"): channels.append("whatsapp")
     rows = [Notification(user_id=user.id, channel=channel, title=title[:180], body=body[:700], data=data or {}) for channel in channels]
     db.session.add_all(rows); db.session.flush(); return [row.id for row in rows]

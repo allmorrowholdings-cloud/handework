@@ -119,7 +119,10 @@ def logout():
 @bp.route("/auth/me", methods=["GET", "PATCH"])
 @jwt_required()
 def me():
-    user = db.session.get(User, get_jwt_identity())
+    query = User.query.filter_by(id=get_jwt_identity())
+    if request.method == "PATCH":
+        query = query.with_for_update()
+    user = query.first()
     if not user: return jsonify({"message": "Account not found"}), 404
     if request.method == "PATCH":
         data = request.get_json(silent=True) or {}
@@ -132,7 +135,18 @@ def me():
             phone = normalize_phone(data["phone"])
             if not phone: return jsonify({"message": "Enter a valid mobile number"}), 422
             if User.query.filter(User.phone == phone, User.id != user.id).first(): return jsonify({"message": "Another account already uses this mobile number"}), 409
-            user.phone = phone
+            if user.phone != phone:
+                from ..services.phone_verification import (
+                    verification_enabled, invalidate_code
+                )
+                if verification_enabled():
+                    try:
+                        invalidate_code(user.id)
+                    except Exception:
+                        db.session.rollback()
+                        return jsonify(message="Phone update temporarily unavailable"), 503
+                user.phone_verified_at = None
+                user.phone = phone
         if "notification_preferences" in data:
             incoming = data.get("notification_preferences") or {}
             current = user.notification_preferences or {}
@@ -187,3 +201,86 @@ def confirm_account_code(action):
     row.read_at = now
     db.session.commit()
     return jsonify(message="Password updated" if action == "reset" else "Email verified")
+
+
+
+@bp.post("/auth/phone/request")
+@jwt_required()
+@limiter.limit("5 per minute")
+def request_phone_verification():
+    from ..services.phone_verification import (
+        request_code, verification_enabled
+    )
+
+    if not verification_enabled():
+        return jsonify(message="Phone verification is unavailable"), 503
+
+    user = User.query.filter_by(
+        id=get_jwt_identity(), status="active"
+    ).with_for_update().first()
+
+    if not user:
+        return jsonify(message="Account unavailable"), 403
+
+    if user.phone_verified_at:
+        return jsonify(message="Phone already verified"), 200
+
+    try:
+        accepted = request_code(user.id, user.phone)
+    except ValueError:
+        db.session.rollback()
+        return jsonify(message="Unsupported phone number"), 422
+    except Exception:
+        db.session.rollback()
+        return jsonify(message="Verification delivery temporarily unavailable"), 503
+
+    db.session.commit()
+
+    if not accepted:
+        return jsonify(message="Verification limit reached. Try again later."), 429
+
+    return jsonify(message="Verification code submitted"), 202
+
+
+@bp.post("/auth/phone/confirm")
+@jwt_required()
+@limiter.limit("10 per minute")
+def confirm_phone_verification():
+    from ..services.phone_verification import (
+        confirm_code, verification_enabled
+    )
+
+    if not verification_enabled():
+        return jsonify(message="Phone verification is unavailable"), 503
+
+    user = User.query.filter_by(
+        id=get_jwt_identity(), status="active"
+    ).with_for_update().first()
+
+    if not user:
+        return jsonify(message="Account unavailable"), 403
+
+    if user.phone_verified_at:
+        return jsonify(message="Phone already verified", user=user.public())
+
+    data = request.get_json(silent=True) or {}
+
+    if not isinstance(data, dict):
+        return jsonify(message="Invalid request"), 422
+
+    code = str(data.get("code") or "").strip()
+
+    try:
+        verified = confirm_code(user.id, user.phone, code)
+    except Exception:
+        db.session.rollback()
+        return jsonify(message="Verification temporarily unavailable"), 503
+
+    if not verified:
+        db.session.rollback()
+        return jsonify(message="Invalid or expired verification code"), 422
+
+    user.phone_verified_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    return jsonify(message="Phone verified", user=user.public())

@@ -69,7 +69,7 @@ class User(UUIDMixin, TimestampMixin, db.Model):
 
     def set_password(self, value): self.password_hash = generate_password_hash(value, method="scrypt")
     def check_password(self, value): return check_password_hash(self.password_hash, value)
-    def public(self): return {"id": self.id, "email": self.email, "phone": self.phone, "first_name": self.first_name, "last_name": self.last_name, "role": self.role.value, "status": self.status, "country_code": self.country_code, "notification_preferences": self.notification_preferences or {"push": True, "whatsapp": False, "sms": True}}
+    def public(self): return {"id": self.id, "email": self.email, "phone": self.phone, "phone_verified": self.phone_verified_at is not None, "email_verified": self.email_verified_at is not None, "first_name": self.first_name, "last_name": self.last_name, "role": self.role.value, "status": self.status, "country_code": self.country_code, "notification_preferences": self.notification_preferences or {"push": True, "whatsapp": False, "sms": True}}
 
 
 class LoginSession(UUIDMixin, db.Model):
