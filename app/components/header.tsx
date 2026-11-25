@@ -39,7 +39,7 @@ export function Header() {
         </> : (
           <Link href="/auth/sign-in" onClick={() => setOpen(false)}>Sign in</Link>
         )}
-        <Link href="/bookings/new" onClick={() => setOpen(false)}>Describe your job</Link>
+        <Link className="mobile-nav-booking" href="/bookings/new" onClick={() => setOpen(false)}>Describe your job</Link>
       </div>
     </nav>
     <div className="nav-actions"><InstallApp compact /><ThemeToggle compact />

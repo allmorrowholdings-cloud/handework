@@ -38,5 +38,10 @@ export function WorkforceSignal() {
       <circle className="signal-dot" cx="300" cy="35" r="8" />
       <circle className="signal-dot" cx="564" cy="35" r="8" />
     </svg>
+    <div className="signal-benefits" aria-label="Three ways handEwork helps">
+      <div><h3>Discover skilled hands</h3><p>Find professionals for the work you need done.</p></div>
+      <div><h3>Manage the job clearly</h3><p>Keep the quote, schedule and updates together.</p></div>
+      <div><h3>Build work reputation</h3><p>Recognise verified skills and completed work through WorkProof.</p></div>
+    </div>
   </div>;
 }

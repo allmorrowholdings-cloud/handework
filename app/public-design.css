@@ -1342,3 +1342,59 @@ html[data-theme="dark"] .home-market .home-process .home-process-media {
   .home-market .workforce-line .signal-path { stroke-dashoffset:0; animation:none; }
   .home-market .workforce-line .signal-dot { opacity:1; animation:none; }
 }
+/* HANDEWORK_INCREMENTAL_HOME_FIX_2026 */
+html[data-theme] .header-install button {
+  background: #da6620;
+  color: #fff;
+  border-color: #da6620;
+}
+html[data-theme] .header-install button:hover {
+  background: #f58236;
+  color: #fff;
+  border-color: #f58236;
+}
+.home-market .hero.hero-light .finder,
+.home-market .hero.hero-light .finder.compact { box-shadow: none !important; }
+.home-market .hero.hero-light .finder .finder-submit {
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+  border-radius: 6px;
+  min-height: 58px;
+  text-align: center;
+  justify-self: stretch;
+  box-shadow: none !important;
+  font-size: 17px;
+  font-weight: 800;
+}
+.home-market .workforce-line { margin-bottom: 0; }
+.home-market .signal-benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 8px auto 0;
+  max-width: 960px;
+  text-align: center;
+}
+.home-market .signal-benefits > div {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+.home-market .signal-benefits h3 {
+  margin: 0 0 8px;
+  font-size: clamp(15px,1.5vw,19px);
+  color: var(--foreground);
+}
+.home-market .signal-benefits p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--secondary);
+}
+@media (max-width: 680px) {
+  .home-market .signal-benefits { grid-template-columns: 1fr; }
+  .home-market .hero.hero-light .finder .finder-submit { width: 100% !important; }
+}

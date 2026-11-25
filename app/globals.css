@@ -2274,3 +2274,32 @@ html .home-market .hero.hero-light, html[data-theme] .home-market .hero.hero-lig
   .site-header .nav-brand > small { font-size:7px; }
   .site-header .nav-wrap { padding-inline:12px; }
 }
+/* HANDEWORK_INCREMENTAL_HOME_FIX_2026 */
+@media (max-width: 800px) {
+  .site-header .nav-wrap { gap: 8px; min-width: 0; }
+  .site-header .nav-brand { flex: 1 1 auto; min-width: 0; }
+  .site-header .nav-brand > small { white-space: normal; overflow-wrap: anywhere; max-width: 110px; }
+  .site-header .nav-actions { margin-left: auto; flex: 0 0 auto; gap: 6px; }
+  .site-header .nav-links.open .mobile-account-links .mobile-nav-booking {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 48px;
+    padding: 10px 14px;
+    border: 1px solid #ffcf22;
+    border-radius: 6px;
+    background: #ffcf22;
+    color: #14120f !important;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 750;
+  }
+  .site-header .nav-links.open .mobile-account-links .mobile-nav-booking:hover {
+    color: #14120f !important;
+    background: #edbd10;
+  }
+}
+@media (max-width: 370px) {
+  .site-header .nav-actions { gap: 3px; }
+  .site-header .logo-image, .site-header .logo-image .logo-image-wrap { width: 104px; }
+}

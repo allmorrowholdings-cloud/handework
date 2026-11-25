@@ -16,7 +16,7 @@ export default function Home() {
         <div className="shell hero-grid hero-grid-visual">
           <div className="hero-copy">
             <h1>Get it done.</h1>
-            <p className="hero-lede">Find skilled professionals in Ghana for the things you need fixed, made or maintained.</p>
+            <p className="hero-lede">Find skilled professionals for the things you need fixed, made or maintained.</p>
             <LocationSearch />
           </div>
           <div className="home-hammer" aria-hidden="true">
@@ -28,7 +28,7 @@ export default function Home() {
       <section className="home-process" id="how-it-works" aria-labelledby="home-process-title">
         <div className="shell home-process-grid">
           <div className="home-process-copy">
-            <span className="home-eyebrow">A simpler way to get things done</span>
+
             <h2 id="home-process-title">How it works</h2>
             <ol className="home-steps">
               <li>
@@ -101,11 +101,11 @@ export default function Home() {
             <h2 id="home-workproof-title">Good work leaves proof.</h2>
             <p>Skills deserve recognition. Build your work history, portfolio and reputation with every completed job.</p>
             <div className="home-workproof-actions">
-              <Link href="/join/artisan" className="home-process-cta">Build your reputation <span aria-hidden="true">â†’</span></Link>
+              <Link href="/join/artisan" className="home-process-cta">Build your reputation <span aria-hidden="true">&rarr;</span></Link>
             </div>
           </div>
           <div className="home-workproof-illustration">
-            <img src="/workproof-reference.png" width={1448} height={1086} loading="lazy" decoding="async" alt="Illustrative WorkProof interface concept. The person, job counts, reviews and ratings shown are examples, not real handEwork records." />
+            <img src="/workproof-kwame-illustration.png" width={1448} height={1086} loading="lazy" decoding="async" alt="Illustrative WorkProof interface concept. The person, job counts, reviews and ratings shown are examples, not real handEwork records." />
           </div>
         </div>
       </section>
