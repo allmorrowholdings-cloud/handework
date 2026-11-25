@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from flask import abort, Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError
+from ..services.email_delivery import queue_email
 from ..extensions import db, limiter
 from ..models import ArtisanProfile, Booking, BookingStatus, BookingStatusEvent, LedgerEntry, Payment, PaymentStatus, RiskEvent, Role, ShopOrder, WalletAccount
 from ..security import current_user, role_required
@@ -211,6 +212,7 @@ def verify_charge(row):
             if type(data.get("fees")) is int and data["fees"] > 0:
                 post(row.id, "processing_fee", "processing_expense", "provider_receivable", Decimal(data["fees"])/100, row.currency)
             row.status, row.paid_at = "paid", datetime.now(timezone.utc)
+            queue_email(row.buyer, "Shop payment confirmed", f"We received {row.currency} {row.total:.2f} for order {row.reference}.")
             audit(row, "charge.verified")
         elif status in {"failed","abandoned"}:
             row.status = "payment_failed"

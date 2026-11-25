@@ -32,6 +32,14 @@ services:
         sync: false
       - key: PAYSTACK_SECRET_KEY
         sync: false
+      - key: EMAIL_PROVIDER
+        value: gmail_apps_script
+      - key: EMAIL_SERVICE_URL
+        sync: false
+      - key: EMAIL_SERVICE_SECRET
+        sync: false
+      - key: EMAIL_DAILY_RECIPIENT_LIMIT
+        value: "100"
       - key: EXPO_ACCESS_TOKEN
         sync: false
       - key: HUBTEL_CLIENT_ID
@@ -74,7 +82,7 @@ services:
     region: frankfurt
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A handework.tasks.celery worker --loglevel=INFO --concurrency=2
+    startCommand: celery -A handework.tasks.celery worker --beat --loglevel=INFO --concurrency=2
     autoDeployTrigger: checksPass
     envVars:
       - key: SECRET_KEY
@@ -90,6 +98,14 @@ services:
           property: connectionString
       - key: PAYSTACK_SECRET_KEY
         sync: false
+      - key: EMAIL_PROVIDER
+        value: gmail_apps_script
+      - key: EMAIL_SERVICE_URL
+        sync: false
+      - key: EMAIL_SERVICE_SECRET
+        sync: false
+      - key: EMAIL_DAILY_RECIPIENT_LIMIT
+        value: "100"
       - key: EXPO_ACCESS_TOKEN
         sync: false
       - key: HUBTEL_CLIENT_ID

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from flask import abort, jsonify, request
 from sqlalchemy.exc import IntegrityError
+from ..services.email_delivery import queue_email
 from ..extensions import db, limiter
 from ..models import (ArtisanProfile, AuditLog, Dispute, LedgerEntry, Payment, PaymentControl,
                       PaymentOperation, PaymentStatus, PayoutRecipient, Role, ShopOrder)
@@ -266,6 +267,7 @@ def reconcile(op, refund_id=None):
         elif status == "failed":
             op.status = "failed"
     else:
+        previous_status = op.status
         data = remote("GET", "/transfer/verify/" + op.id)
         recipient = data.get("recipient") or {}
         if not matches(data, op.id, op.amount, payment.currency) or recipient.get("recipient_code") != op.recipient:
@@ -283,6 +285,10 @@ def reconcile(op, refund_id=None):
             post(op.id, "returned", "merchant_funds" if op.status == "success" else "pending_payout", "artisan_payable", op.amount, payment.currency)
             movement(wallet_for(artisan.user_id, payment.currency), payment, op, "available", op.amount, "transfer_returned")
             op.status = status
+        if previous_status != op.status:
+            artisan = db.session.get(ArtisanProfile, payment.artisan_id)
+            queue_email(artisan.user, "Payout updated", f"Your {payment.currency} {op.amount:.2f} payout status is {op.status}.",
+                        {"payment_id": payment.id, "operation_id": op.id})
     audit(op, op.kind + ".reconciled", details={"status": op.status})
     return op
 

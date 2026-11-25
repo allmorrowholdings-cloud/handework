@@ -1,5 +1,6 @@
 import os
 import httpx
+from .email_delivery import enabled
 
 
 def send_expo(tokens, title, body, data=None):
@@ -30,6 +31,7 @@ def queue_notifications(user, title, body, data=None, urgent=False):
     from ..models import Notification
     preferences = user.notification_preferences or {"push": True, "sms": True, "whatsapp": False}
     channels = ["in_app"]
+    if enabled() and preferences.get("email", True): channels.append("email")
     if preferences.get("push"): channels.append("push")
     if urgent and preferences.get("sms"): channels.append("sms")
     if urgent and preferences.get("whatsapp"): channels.append("whatsapp")

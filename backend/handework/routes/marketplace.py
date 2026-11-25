@@ -2,6 +2,7 @@ from datetime import date, datetime, timezone
 from math import isfinite
 from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import jwt_required
+from ..services.email_delivery import queue_email
 from ..extensions import db, limiter
 from ..models import ArtisanProfile, Availability, FileAsset, PortfolioItem, Role, Verification
 from ..security import current_user, role_required
@@ -235,6 +236,7 @@ def verifications():
                     old_asset.deleted_at = datetime.now(timezone.utc)
             row.status, row.decision_reason, row.decided_at, row.reviewer_id = "pending", None, None, None
             db.session.add(row)
+            queue_email(profile.user, "Verification submitted", f"Your {kind.replace('_', ' ')} verification is pending review.")
             db.session.commit()
         except Exception:
             db.session.rollback()

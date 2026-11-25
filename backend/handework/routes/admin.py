@@ -1,6 +1,7 @@
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
+from ..services.email_delivery import booking_email
 from ..extensions import db
 from ..models import (ArtisanProfile, AuditLog, Booking, BookingStatus, Dispute, FileAsset, Payment, PaymentStatus, RiskEvent, Role, SupportTicket, Verification, WorkProofEvidence)
 from ..security import current_user, role_required
@@ -33,8 +34,12 @@ def verification_queue():
 @bp.post("/admin/verifications/<verification_id>/decision")
 @role_required(Role.ADMIN)
 def verification_decision(verification_id):
-    admin=current_user();row=Verification.query.get_or_404(verification_id);data=request.get_json(silent=True) or {};decision=str(data.get("decision") or "")
+    admin=current_user();row=Verification.query.filter_by(id=verification_id).with_for_update().first_or_404();data=request.get_json(silent=True) or {};decision=str(data.get("decision") or "")
     if decision not in ("approved","rejected","replacement_required"):return jsonify({"message":"Invalid decision"}),422
+    reason = str(data.get("reason") or "")[:500]
+    if row.status == decision and row.decision_reason == reason:
+        profile = db.session.get(ArtisanProfile, row.artisan_id)
+        return jsonify(status=row.status, profile_status=profile.verification_status)
     before={"status":row.status};row.status,row.reviewer_id,row.decision_reason,row.decided_at=decision,admin.id,str(data.get("reason") or "")[:500],datetime.now(timezone.utc)
     profile = ArtisanProfile.query.filter_by(id=row.artisan_id).with_for_update().one()
     required = {"government_id", "live_selfie", "trade_proof", "payout_name"}
@@ -75,7 +80,10 @@ def dispute_decision(dispute_id):
             if not split.is_finite() or split <= 0 or split != split.quantize(Decimal(".01")): raise ValueError
         except (KeyError,ValueError,InvalidOperation): return jsonify(message="Enter the authorized customer refund amount"),422
     row.status,row.resolution,row.resolved_at,row.assigned_admin_id="resolved",str(data.get("resolution") or "")[:4000],datetime.now(timezone.utc),admin.id
-    db.session.add(AuditLog(actor_id=admin.id,action="dispute.decision",entity_type="dispute",entity_id=row.id,before={"status":"open"},after={"status":"resolved","decision":decision,"refund_amount":str(split) if split else None,"resolution":row.resolution}));db.session.commit()
+    db.session.add(AuditLog(actor_id=admin.id,action="dispute.decision",entity_type="dispute",entity_id=row.id,before={"status":"open"},after={"status":"resolved","decision":decision,"refund_amount":str(split) if split else None,"resolution":row.resolution}))
+    booking = db.session.get(Booking, row.booking_id)
+    booking_email(booking, "Dispute resolved", f"A dispute decision is available for {booking.reference}.")
+    db.session.commit()
     return jsonify({"status":row.status,"financial_action":decision,"message":"Use the signed release or refund endpoint to move funds; the dispute record does not change the ledger by itself."})
 
 

@@ -58,6 +58,7 @@ class User(UUIDMixin, TimestampMixin, db.Model):
     last_name = db.Column(db.String(80), nullable=False)
     role = db.Column(db.Enum(Role), nullable=False, default=Role.CUSTOMER, index=True)
     status = db.Column(db.String(24), nullable=False, default="active", index=True)
+    session_version = db.Column(db.Integer, nullable=False, default=0, server_default='0')
     email_verified_at = db.Column(db.DateTime(timezone=True))
     phone_verified_at = db.Column(db.DateTime(timezone=True))
     last_login_at = db.Column(db.DateTime(timezone=True))
@@ -306,6 +307,8 @@ class WorkProofEvidence(UUIDMixin, TimestampMixin, db.Model):
 class Notification(UUIDMixin, db.Model):
     __tablename__ = "notifications"
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False, index=True)
+    attempts = db.Column(db.Integer, nullable=False, default=0, server_default="0")
+    next_attempt = db.Column(db.DateTime(timezone=True))
     channel = db.Column(db.String(20), nullable=False, default="in_app")
     title = db.Column(db.String(180), nullable=False)
     body = db.Column(db.String(700), nullable=False)
@@ -314,6 +317,14 @@ class Notification(UUIDMixin, db.Model):
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow, index=True)
     sent_at = db.Column(db.DateTime(timezone=True))
     read_at = db.Column(db.DateTime(timezone=True))
+
+
+class EmailQuota(db.Model):
+    __tablename__ = "email_quota"
+    id = db.Column(db.Integer, primary_key=True)
+    window_start = db.Column(db.DateTime(timezone=True))
+    reserved = db.Column(db.Integer, nullable=False, default=0)
+    blocked_until = db.Column(db.DateTime(timezone=True))
 
 
 class PushDevice(UUIDMixin, TimestampMixin, db.Model):

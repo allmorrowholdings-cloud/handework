@@ -7,8 +7,17 @@ from .extensions import jwt
 from .models import LoginSession, User
 
 
+@jwt.additional_claims_loader
+def session_version(identity):
+    user = db.session.get(User, identity)
+    return {"session_version": user.session_version if user else 0}
+
+
 @jwt.token_in_blocklist_loader
 def session_inactive(_header, claims):
+    user = db.session.get(User, claims["sub"])
+    if not user or claims.get("session_version", 0) != user.session_version:
+        return True
     sid = claims.get("sid")
     if not sid:
         return False

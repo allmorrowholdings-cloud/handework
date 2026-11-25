@@ -5,7 +5,8 @@ import phonenumbers
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt, get_jwt_identity, jwt_required
 from ..extensions import db, limiter
-from ..models import ArtisanProfile, LoginSession, Role, User
+from ..models import ArtisanProfile, LoginSession, Notification, Role, User
+from ..services.email_delivery import ACCOUNT_SUBJECTS, CODE_LIFETIME, account_code, enabled, queue_account_email, utc
 
 bp = Blueprint("auth", __name__)
 
@@ -52,6 +53,7 @@ def create_user(data, role):
     if not user.first_name or not user.last_name: return None, (jsonify({"message": "First and last name are required", "code": "missing_name"}), 422)
     user.set_password(password)
     db.session.add(user); db.session.flush()
+    queue_account_email(user, 'verify')
     return user, None
 
 
@@ -135,5 +137,53 @@ def me():
             incoming = data.get("notification_preferences") or {}
             current = user.notification_preferences or {}
             user.notification_preferences = {key: bool(incoming.get(key, current.get(key, False))) for key in ("push", "whatsapp", "sms")}
+            user.notification_preferences = {**user.notification_preferences, "email": bool(incoming.get("email", current.get("email", True)))}
         db.session.commit()
     return jsonify({"user": user.public()})
+
+
+@bp.post("/auth/email/<action>/request")
+@limiter.limit("5 per hour")
+def request_account_code(action):
+    if action not in ACCOUNT_SUBJECTS:
+        return jsonify(message="Unknown account action"), 404
+    if not enabled():
+        return jsonify(message="Email delivery is unavailable"), 503
+    email = normalize_email((request.get_json(silent=True) or {}).get("email"))
+    user = User.query.filter_by(email=email, status="active").with_for_update().first()
+    if user and (action == "reset" or not user.email_verified_at):
+        recent = Notification.query.filter_by(user_id=user.id, channel="email", title=ACCOUNT_SUBJECTS[action]).filter(
+            Notification.created_at > datetime.now(timezone.utc) - timedelta(minutes=2)).first()
+        if not recent:
+            queue_account_email(user, action)
+            db.session.commit()
+    return jsonify(message="If your account is eligible, check your email for a code."), 202
+
+
+@bp.post("/auth/email/<action>/confirm")
+@limiter.limit("10 per hour")
+def confirm_account_code(action):
+    if action not in ACCOUNT_SUBJECTS:
+        return jsonify(message="Unknown account action"), 404
+    data = request.get_json(silent=True) or {}
+    user = User.query.filter_by(email=normalize_email(data.get("email")), status="active").with_for_update().first()
+    row = Notification.query.filter_by(user_id=user.id, channel="email", title=ACCOUNT_SUBJECTS[action],
+                                       read_at=None).order_by(Notification.created_at.desc()).first() if user else None
+    now = datetime.now(timezone.utc)
+    supplied = str(data.get("code") or "").strip().lower().encode()
+    if (not row or row.status not in {"sending", "unknown", "sent"}
+            or utc(row.created_at) + CODE_LIFETIME <= now
+            or not secrets.compare_digest(supplied, account_code(row, user).encode())):
+        return jsonify(message="This code is invalid or expired"), 422
+    if action == "reset":
+        password = data.get("password")
+        if not isinstance(password, str) or len(password) < 8:
+            return jsonify(message="Password must have at least 8 characters"), 422
+        user.set_password(password)
+        user.session_version += 1
+        LoginSession.query.filter_by(user_id=user.id).delete()
+    else:
+        user.email_verified_at = now
+    row.read_at = now
+    db.session.commit()
+    return jsonify(message="Password updated" if action == "reset" else "Email verified")

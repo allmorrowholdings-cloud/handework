@@ -3,6 +3,7 @@ from decimal import Decimal
 from flask import Blueprint, current_app, jsonify, request
 from flask_jwt_extended import decode_token, get_jwt_identity, jwt_required, verify_jwt_in_request
 from flask_socketio import join_room
+from ..services.email_delivery import booking_email
 from ..extensions import db, socketio
 
 from ..models import (ArtisanProfile, AuditLog, Booking, BookingStatus, Conversation, Course, Dispute, FileAsset, LedgerEntry, Message, Notification, Organization, OrganizationMember, PortfolioItem, PromoCode, PushDevice, Referral, Review, Role, ShopProductMedia, Subscription, SupportTicket, TrainingProvider, Verification, WalletAccount, WorkProofEvidence)
@@ -87,7 +88,7 @@ def transactions():
 def notifications():
     user = current_user()
     if request.method == "PATCH":
-        ids = (request.get_json(silent=True) or {}).get("ids", []); Notification.query.filter(Notification.user_id == user.id, Notification.id.in_(ids)).update({Notification.read_at: datetime.now(timezone.utc)}, synchronize_session=False); db.session.commit()
+        ids = (request.get_json(silent=True) or {}).get("ids", []); Notification.query.filter(Notification.user_id == user.id, Notification.channel == 'in_app', Notification.id.in_(ids)).update({Notification.read_at: datetime.now(timezone.utc)}, synchronize_session=False); db.session.commit()
     rows = Notification.query.filter_by(user_id=user.id, channel="in_app").order_by(Notification.created_at.desc()).limit(100).all()
     return jsonify({"items": [{"id": row.id, "title": row.title, "body": row.body, "data": row.data, "created_at": row.created_at.isoformat(), "read_at": row.read_at.isoformat() if row.read_at else None} for row in rows]})
 
@@ -242,7 +243,9 @@ def disputes():
         data = request.get_json(silent=True) or {}; booking = Booking.query.filter_by(id=data.get("booking_id")).with_for_update().first_or_404(); artisan_user = booking.artisan.user_id if booking.artisan else None
         if user.role != Role.ADMIN and user.id not in (booking.customer_id, artisan_user): return jsonify({"message": "Booking not found"}), 404
         if booking.status not in (BookingStatus.FUNDED, BookingStatus.EN_ROUTE, BookingStatus.IN_PROGRESS, BookingStatus.COMPLETION_SUBMITTED): return jsonify({"message": "This booking cannot be disputed from its current state"}), 409
-        row = Dispute(booking_id=booking.id, opened_by_id=user.id, reason=str(data.get("reason") or "other"), description=str(data.get("description") or "").strip()); booking.status = BookingStatus.DISPUTED; db.session.add(row); db.session.commit(); return jsonify({"id": row.id, "status": row.status}), 201
+        row = Dispute(booking_id=booking.id, opened_by_id=user.id, reason=str(data.get("reason") or "other"), description=str(data.get("description") or "").strip()); booking.status = BookingStatus.DISPUTED; db.session.add(row)
+        booking_email(booking, "Dispute opened", f"A dispute has been opened for {booking.reference}.")
+        db.session.commit(); return jsonify({"id": row.id, "status": row.status}), 201
     query = Dispute.query
     if user.role != Role.ADMIN:
         allowed_bookings = db.select(Booking.id).where(db.or_(Booking.customer_id == user.id, Booking.artisan_id.in_(db.select(ArtisanProfile.id).where(ArtisanProfile.user_id == user.id))))
@@ -348,5 +351,6 @@ def dispute_response(dispute_id):
         return jsonify(message="Evidence must belong to this booking"),422
     db.session.add(AuditLog(actor_id=actor.id,action="dispute.response",entity_type="dispute",entity_id=dispute.id,
                             after={"message":message,"asset_id":asset_id}))
+    booking_email(booking, "Dispute response", f"A new response is available for {booking.reference}.", exclude=actor.id)
     db.session.commit()
     return jsonify(status="recorded"),201

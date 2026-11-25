@@ -50,3 +50,15 @@ test("authentication forms use POST and wait for hydration before submission", a
     assert.match(form, /<button[^>]*disabled[^>]*>(?:Sign in securely|Create customer account)/i);
   }
 });
+
+test("account codes and new passwords are submitted by POST after hydration", async () => {
+  for (const action of ["verify", "reset"]) {
+    const html = await (await render("/auth/email/" + action)).text();
+    const forms = html.match(/<form[^>]*>[\s\S]*?<\/form>/gi) ?? [];
+    assert.equal(forms.length, 2);
+    for (const form of forms) {
+      assert.match(form, /<form[^>]*method="post"/i);
+      assert.match(form, /<button[^>]*disabled/i);
+    }
+  }
+});

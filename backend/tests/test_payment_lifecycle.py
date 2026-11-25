@@ -60,6 +60,7 @@ def test_failed_verification_and_wrong_reference(client,customer,artisan,monkeyp
 
 
 def test_partial_refund_release_and_transfer_failure(client,customer,artisan,admin,monkeypatch):
+    monkeypatch.setenv('EMAIL_PROVIDER', 'gmail_apps_script')
     booking,pid=funded(client,customer,artisan,monkeypatch)
     payment=db.session.get(Payment,pid)
     state={"transfer":"failed","refund_id":11}
@@ -119,6 +120,10 @@ def test_partial_refund_release_and_transfer_failure(client,customer,artisan,adm
     assert client.post(f"/v1/admin/payment-operations/{op}/reconcile",headers=admin).json["status"]=="reversed"
     assert client.get("/v1/wallet",headers=artisan["headers"]).json["accounts"][0]["available_balance"]==220
     assert JournalPosting.query.filter_by(event="commission").one().units==3000
+    payouts = Notification.query.filter_by(channel="email", title="Payout updated", user_id=artisan["user"]["id"]).all()
+    assert sorted(item.body.split()[-1] for item in payouts) == ["failed.", "reversed.", "success."]
+    for account in (customer, artisan):
+        assert Notification.query.filter_by(channel="email", title="Payment confirmed", user_id=account["user"]["id"]).count() == 1
 
 
 def test_auto_release_gates(client,customer,artisan,monkeypatch):

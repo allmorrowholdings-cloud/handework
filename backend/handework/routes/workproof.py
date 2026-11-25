@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from flask import Blueprint, current_app, jsonify, request
+from ..services.email_delivery import queue_email
 from ..extensions import db
 from ..models import ArtisanProfile, AuditLog, FileAsset, Role, WorkProofEvidence
 from ..security import current_user, role_required
@@ -67,6 +68,9 @@ def decide_evidence(evidence_id):
     before = row.status; row.status, row.reviewer_id = decision, current_user().id
     row.decision_reason, row.decided_at = str(data.get("reason") or "")[:500], datetime.now(timezone.utc)
     db.session.add(AuditLog(actor_id=current_user().id, action="workproof.decision", entity_type="workproof_evidence", entity_id=row.id, before={"status": before}, after={"status": decision}))
+    if before != decision:
+        profile = db.session.get(ArtisanProfile, row.artisan_id)
+        queue_email(profile.user, "WorkProof verification updated", f"Your WorkProof submission is {decision}.")
     db.session.commit(); return jsonify({"id": row.id, "status": row.status})
 
 
