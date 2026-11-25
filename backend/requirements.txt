@@ -10,7 +10,7 @@ SQLAlchemy==2.0.43
 alembic==1.16.5
 boto3==1.40.21
 celery==5.5.3
-cryptography==45.0.7
+cryptography==50.0.2
 email-validator==2.3.0
 gunicorn==23.0.0
 httpx==0.28.1
@@ -24,3 +24,6 @@ pytest-cov==6.2.1
 pyotp==2.12.1
 qrcode[pil]==8.2
 Pillow==13.0.0
+firebase-admin==7.8.0
+sentry-sdk==3.0.0
+puremagic==2.3.0

@@ -70,6 +70,15 @@ export function clearSession() {
 }
 
 export async function signOut() {
+  if (localStorage.getItem("handework_browser_push_token")) {
+    try {
+      const { disableBrowserPush } = await import("./browser-push");
+      await disableBrowserPush();
+    } catch {
+      // Sign-out must remain available when push services fail.
+    }
+  }
+
   const token = localStorage.getItem(refreshKey) || accessToken();
   clearSession();
   if (token) await fetch(API_URL + "/v1/auth/logout", {

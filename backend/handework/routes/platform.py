@@ -102,6 +102,89 @@ def register_push_device():
     row.user_id, row.platform, row.active = current_user().id, str(data.get("platform") or "unknown"), True; db.session.add(row); db.session.commit(); return jsonify({"id": row.id}), 201
 
 
+
+@bp.post("/push-devices/browser")
+@role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
+def register_browser_push():
+    from ..services.firebase_push import enabled
+
+    if not enabled():
+        return jsonify(message="Browser push is unavailable"), 503
+
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify(message="Invalid request"), 422
+
+    token = data.get("token")
+
+    if (
+        not isinstance(token, str)
+        or not 30 <= len(token) <= 255
+        or any(c.isspace() for c in token)
+        or token.startswith(("ExpoPushToken", "ExponentPushToken"))
+    ):
+        return jsonify(message="Invalid browser push token"), 422
+
+    user = current_user()
+
+    row = PushDevice.query.filter_by(
+        expo_push_token=token
+    ).first()
+
+    if row and (
+        row.user_id != user.id or row.platform != "web"
+    ):
+        return jsonify(
+            message="This device is already registered"
+        ), 409
+
+    if not row:
+        row = PushDevice(
+            expo_push_token=token,
+            user_id=user.id,
+            platform="web"
+        )
+
+    row.active = True
+    db.session.add(row)
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify(message="Device registration failed"), 409
+
+    return jsonify(id=row.id), 201
+
+
+@bp.post("/push-devices/browser/remove")
+@role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
+def remove_browser_push():
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify(message="Invalid request"), 422
+
+    token = data.get("token")
+
+    if not isinstance(token, str):
+        return jsonify(message="Invalid token"), 422
+
+    PushDevice.query.filter_by(
+        user_id=current_user().id,
+        platform="web",
+        expo_push_token=token
+    ).update(
+        {"active": False},
+        synchronize_session=False
+    )
+
+    db.session.commit()
+
+    return jsonify(message="Browser notifications disabled")
+
+
 @bp.post("/uploads")
 @role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
 def upload():

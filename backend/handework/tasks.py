@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from celery import Celery
 from .services.email_delivery import deliver_email, due
 from . import create_app
@@ -28,7 +28,7 @@ def deliver_notification(self, notification_id):
         return deliver_email(row.id)
     user=db.session.get(User,row.user_id)
     if row.channel=="push":
-        tokens=[x.expo_push_token for x in PushDevice.query.filter_by(user_id=user.id,active=True).all()];send_expo(tokens,row.title,row.body,row.data)
+        return deliver_push_safely(row.id)
     elif row.channel == "sms":
         return deliver_sms_safely(row.id)
     elif row.channel=="whatsapp":send_whatsapp(user.phone,row.body)
@@ -65,6 +65,7 @@ def deliver_sms_safely(notification_id):
     ).update(
         {
             "status": "sending",
+            "next_attempt": datetime.now(timezone.utc) + timedelta(minutes=10),
             "attempts": Notification.attempts + 1
         },
         synchronize_session=False
@@ -114,3 +115,109 @@ def drain_email():
         due(now)).order_by(Notification.created_at).limit(100).all()
     for (notification_id,) in ids:
         deliver_notification.delay(notification_id)
+
+
+
+def deliver_push_safely(notification_id):
+    from .services.firebase_push import (
+        enabled as firebase_enabled,
+        send_web_push
+    )
+
+    row = db.session.get(Notification, notification_id)
+
+    if not row or row.channel != "push" or row.status != "queued":
+        return
+
+    user = db.session.get(User, row.user_id)
+
+    if not user or user.status != "active" or not (
+        user.notification_preferences or {}
+    ).get("push", True):
+        row.status = "skipped"
+        db.session.commit()
+        return
+
+    claimed = Notification.query.filter_by(
+        id=notification_id,
+        channel="push",
+        status="queued"
+    ).update(
+        {
+            "status": "sending",
+            "next_attempt": datetime.now(timezone.utc) + timedelta(minutes=10),
+            "attempts": Notification.attempts + 1
+        },
+        synchronize_session=False
+    )
+
+    db.session.commit()
+
+    if claimed != 1:
+        return
+
+    devices = PushDevice.query.filter_by(
+        user_id=user.id,
+        active=True
+    ).all()
+
+    accepted = 0
+    failed = 0
+
+    for device in devices:
+        try:
+            if device.platform == "web":
+                if not firebase_enabled():
+                    continue
+
+                result = send_web_push(device.expo_push_token)
+
+                if result == "expired":
+                    device.active = False
+                elif result == "accepted":
+                    accepted += 1
+
+            elif (
+                os.getenv("EXPO_PUSH_ENABLED", "false").lower() == "true"
+                and device.expo_push_token.startswith(
+                    ("ExpoPushToken", "ExponentPushToken")
+                )
+            ):
+                result = send_expo(
+                    [device.expo_push_token],
+                    "handEwork",
+                    "You have a new account update.",
+                    {}
+                )
+
+                tickets = result.get("data", [])
+
+                if isinstance(tickets, dict):
+                    tickets = [tickets]
+
+                for ticket in tickets:
+                    if ticket.get("status") == "ok":
+                        accepted += 1
+                    elif ticket.get("details", {}).get(
+                        "error"
+                    ) == "DeviceNotRegistered":
+                        device.active = False
+                    else:
+                        failed += 1
+
+                if not tickets:
+                    failed += 1
+
+        except Exception:
+            failed += 1
+
+    row.status = (
+        "unknown" if failed
+        else "sent" if accepted
+        else "skipped"
+    )
+
+    if accepted:
+        row.sent_at = db.func.now()
+
+    db.session.commit()

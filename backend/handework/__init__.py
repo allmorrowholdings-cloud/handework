@@ -8,6 +8,9 @@ from .extensions import db, jwt, limiter, migrate, socketio
 def create_app(config_object=Config, *, seed_development_admin=True):
     app = Flask(__name__)
     app.config.from_object(config_object)
+    if not app.config.get("TESTING"):
+        from .services.monitoring import initialize_monitoring
+        initialize_monitoring()
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
@@ -16,6 +19,7 @@ def create_app(config_object=Config, *, seed_development_admin=True):
     CORS(app, origins=app.config["WEB_ORIGINS"], supports_credentials=False, allow_headers=["Authorization", "Content-Type", "Idempotency-Key"])
 
     from .routes.auth import bp as auth_bp
+    from .routes.scheduler import bp as scheduler_bp
     from .routes.authenticator import bp as authenticator_bp
     from .routes.marketplace import bp as marketplace_bp
     from .routes.bookings import bp as bookings_bp
@@ -25,7 +29,7 @@ def create_app(config_object=Config, *, seed_development_admin=True):
     from .routes.workproof import bp as workproof_bp
     from .routes.shop import bp as shop_bp
     from .routes.drive_submissions import bp as drive_bp
-    for blueprint in (auth_bp, authenticator_bp, marketplace_bp, bookings_bp, payments_bp, platform_bp, admin_bp, workproof_bp, shop_bp, drive_bp):
+    for blueprint in (scheduler_bp, auth_bp, authenticator_bp, marketplace_bp, bookings_bp, payments_bp, platform_bp, admin_bp, workproof_bp, shop_bp, drive_bp):
         app.register_blueprint(blueprint, url_prefix="/v1")
 
     from .services.storage import local_storage_allowed
