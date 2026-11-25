@@ -16,6 +16,7 @@ def create_app(config_object=Config, *, seed_development_admin=True):
     CORS(app, origins=app.config["WEB_ORIGINS"], supports_credentials=False, allow_headers=["Authorization", "Content-Type", "Idempotency-Key"])
 
     from .routes.auth import bp as auth_bp
+    from .routes.authenticator import bp as authenticator_bp
     from .routes.marketplace import bp as marketplace_bp
     from .routes.bookings import bp as bookings_bp
     from .routes.payment_worker import bp as payments_bp
@@ -24,7 +25,7 @@ def create_app(config_object=Config, *, seed_development_admin=True):
     from .routes.workproof import bp as workproof_bp
     from .routes.shop import bp as shop_bp
     from .routes.drive_submissions import bp as drive_bp
-    for blueprint in (auth_bp, marketplace_bp, bookings_bp, payments_bp, platform_bp, admin_bp, workproof_bp, shop_bp, drive_bp):
+    for blueprint in (auth_bp, authenticator_bp, marketplace_bp, bookings_bp, payments_bp, platform_bp, admin_bp, workproof_bp, shop_bp, drive_bp):
         app.register_blueprint(blueprint, url_prefix="/v1")
 
     from .services.storage import local_storage_allowed

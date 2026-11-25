@@ -42,6 +42,19 @@ def role_required(*roles):
                 return jsonify({"message": "Account is unavailable", "code": "account_unavailable"}), 401
             if user.role.value not in allowed:
                 return jsonify({"message": "You do not have access to this action", "code": "forbidden"}), 403
+            if user.role.value == "admin":
+                from .models import UserTotp
+                from .services.totp import admin_totp_required
+
+                if admin_totp_required():
+                    enrollment = db.session.get(UserTotp, user.id)
+
+                    if not enrollment or not enrollment.enabled_at:
+                        return jsonify({
+                            "message": "Set up two-factor authentication in your account security settings.",
+                            "code": "admin_totp_enrollment_required"
+                        }), 403
+
             return fn(*args, **kwargs)
         return wrapped
     return decorator

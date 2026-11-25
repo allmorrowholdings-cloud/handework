@@ -15,6 +15,7 @@ export function AuthForm({ mode, onAuthenticated, onSwitch }: { mode: "sign-in" 
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [secondFactor, setSecondFactor] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,6 +31,18 @@ export function AuthForm({ mode, onAuthenticated, onSwitch }: { mode: "sign-in" 
       if (onAuthenticated) onAuthenticated();
       else router.replace(dashboardPath(session.user.role));
     } catch (caught) {
+      const details = (
+        caught as { details?: { code?: string } }
+      )?.details;
+
+      if (mode === "sign-in" && (
+        details?.code === "totp_required" ||
+        details?.code === "totp_invalid" ||
+        details?.code === "totp_locked"
+      )) {
+        setSecondFactor(true);
+      }
+
       setError(caught instanceof Error ? caught.message : "Could not continue");
     } finally {
       setBusy(false);
@@ -46,6 +59,25 @@ export function AuthForm({ mode, onAuthenticated, onSwitch }: { mode: "sign-in" 
         <button type="button" className="password-toggle" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button>
       </span>
     </label>
+    {mode === "sign-in" && secondFactor && (
+      <section className="phone-verification">
+        <strong>Two-step verification</strong>
+        <p>Open your authenticator app and enter the current code, or use one of your emergency recovery codes.</p>
+        <label>Authentication code
+          <input
+            required
+            name="totp_code"
+            type="text"
+            autoComplete="one-time-code"
+            autoCapitalize="none"
+            spellCheck={false}
+            maxLength={24}
+            autoFocus
+            placeholder="Authenticator or recovery code"
+          />
+        </label>
+      </section>
+    )}
     {mode === "create" && <input type="hidden" name="role" value="customer" />}
     {error && <p className="form-error" role="alert">{error}</p>}
     <button className="button button-orange full-button" disabled={busy || !ready}>{busy ? "Please wait…" : mode === "sign-in" ? "Sign in securely" : "Create customer account"}</button>

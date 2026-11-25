@@ -9,9 +9,13 @@ def app():
     app = create_app(TestConfig)
     with app.app_context():
         db.create_all()
-        yield app
-        db.session.remove()
-        db.drop_all()
+        try:
+            yield app
+        finally:
+            db.session.remove()
+            db.drop_all()
+            db.session.remove()
+            db.engine.dispose()
 
 
 @pytest.fixture()

@@ -651,3 +651,42 @@ class ProviderDispute(db.Model):
     status = db.Column(db.String(32), nullable=False)
     resolution = db.Column(db.String(64))
     deduction_units = db.Column(db.BigInteger, nullable=False, default=0)
+
+
+
+class UserTotp(TimestampMixin, db.Model):
+    __tablename__ = "user_totp"
+
+    user_id = db.Column(
+        db.String(36),
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True
+    )
+    secret_encrypted = db.Column(db.String(512))
+    pending_secret_encrypted = db.Column(db.String(512))
+    pending_expires_at = db.Column(db.DateTime(timezone=True))
+    enabled_at = db.Column(db.DateTime(timezone=True))
+    last_used_step = db.Column(db.BigInteger)
+    failed_attempts = db.Column(
+        db.Integer, nullable=False,
+        default=0, server_default="0"
+    )
+    locked_until = db.Column(db.DateTime(timezone=True))
+
+
+class UserTotpRecoveryCode(UUIDMixin, db.Model):
+    __tablename__ = "user_totp_recovery_codes"
+
+    user_id = db.Column(
+        db.String(36),
+        db.ForeignKey("user_totp.user_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    code_hash = db.Column(db.String(255), nullable=False)
+    used_at = db.Column(db.DateTime(timezone=True))
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=utcnow
+    )

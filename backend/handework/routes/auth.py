@@ -36,8 +36,10 @@ def session_for(user):
     if (request.get_json(silent=True) or {}).get("client") == "web":
         session = LoginSession(user_id=user.id)
         db.session.add(session)
+        db.session.flush()
+        result = {**browser_tokens(user, session.id), "user": user.public()}
         db.session.commit()
-        return {**browser_tokens(user, session.id), "user": user.public()}
+        return result
 
     return {"access_token": create_access_token(identity=user.id, additional_claims={"role": user.role.value}), "refresh_token": create_refresh_token(identity=user.id), "user": user.public()}
 
@@ -80,18 +82,96 @@ def register_artisan():
 @bp.post("/auth/login")
 @limiter.limit("10 per minute")
 def login():
-    data = request.get_json(silent=True) or {}; email = normalize_email(data.get("email"))
-    user = User.query.filter_by(email=email).first() if email else None
-    if not user or not user.check_password(str(data.get("password") or "")): return jsonify({"message": "Email or password is incorrect", "code": "invalid_credentials"}), 401
-    if user.status != "active": return jsonify({"message": "This account cannot sign in", "code": "account_unavailable"}), 403
-    user.last_login_at = datetime.now(timezone.utc); db.session.commit(); return jsonify(session_for(user))
+    from ..models import UserTotp
+    from ..services.totp import authenticate_second_factor
+
+    data = request.get_json(silent=True)
+
+    if not isinstance(data, dict):
+        return jsonify(message="Invalid login request"), 422
+
+    email = normalize_email(data.get("email"))
+
+    user = User.query.filter_by(
+        email=email
+    ).with_for_update().first() if email else None
+
+    if not user or not user.check_password(
+        str(data.get("password") or "")
+    ):
+        return jsonify({
+            "message": "Email or password is incorrect",
+            "code": "invalid_credentials"
+        }), 401
+
+    if user.status != "active":
+        return jsonify({
+            "message": "This account cannot sign in",
+            "code": "account_unavailable"
+        }), 403
+
+    row = db.session.get(UserTotp, user.id)
+
+    if row and row.enabled_at:
+        supplied = str(data.get("totp_code") or "").strip()
+
+        if not supplied:
+            return jsonify({
+                "message": "Enter your authenticator or recovery code",
+                "code": "totp_required"
+            }), 401
+
+        try:
+            result = authenticate_second_factor(
+                row, supplied
+            )
+        except Exception:
+            db.session.rollback()
+            return jsonify({
+                "message": "Authenticator temporarily unavailable",
+                "code": "totp_unavailable"
+            }), 503
+
+        if result != "accepted":
+            db.session.commit()
+
+            if result == "locked":
+                return jsonify({
+                    "message": "Too many attempts. Try again later.",
+                    "code": "totp_locked"
+                }), 429
+
+            return jsonify({
+                "message": "Invalid or previously used authentication code",
+                "code": "totp_invalid"
+            }), 401
+
+    user.last_login_at = datetime.now(timezone.utc)
+
+    result = session_for(user)
+    db.session.commit()
+
+    return jsonify(result)
 
 
 @bp.post("/auth/refresh")
 @jwt_required(refresh=True)
 def refresh():
-    user = db.session.get(User, get_jwt_identity())
-    if not user or user.status != "active": return jsonify({"message": "Account is unavailable"}), 401
+    user = User.query.filter_by(
+        id=get_jwt_identity()
+    ).populate_existing().with_for_update().first()
+
+    if not user or user.status != "active":
+        return jsonify({
+            "message": "Account is unavailable"
+        }), 401
+
+    if get_jwt().get("session_version", 0) != user.session_version:
+        return jsonify({
+            "message": "Your session has expired. Please sign in again.",
+            "code": "session_revoked"
+        }), 401
+
     sid = get_jwt().get("sid")
     if sid:
         now = datetime.now(timezone.utc)
