@@ -64,7 +64,14 @@ def edit_message(message_id):
 @role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
 def wallet():
     rows = WalletAccount.query.filter_by(user_id=current_user().id).all()
-    return jsonify({"accounts": [{"currency": row.currency, "available_balance": float(row.available_balance), "held_balance": float(row.held_balance)} for row in rows]})
+    from ..models import PaymentOperation, Payment
+    transfers = (db.session.query(Payment.currency, db.func.sum(PaymentOperation.amount))
+                 .join(PaymentOperation, PaymentOperation.payment_id == Payment.id)
+                 .join(ArtisanProfile, ArtisanProfile.id == Payment.artisan_id)
+                 .filter(ArtisanProfile.user_id == current_user().id, PaymentOperation.kind == "payout",
+                         PaymentOperation.status == "success").group_by(Payment.currency).all())
+    paid = dict(transfers)
+    return jsonify({"accounts": [{"transferred": float(paid.get(row.currency, 0)), "currency": row.currency, "available_balance": float(row.available_balance), "held_balance": float(row.held_balance)} for row in rows]})
 
 
 @bp.get("/wallet/transactions")
@@ -98,11 +105,13 @@ def register_push_device():
 @role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
 def upload():
     user = current_user(); purpose = str(request.form.get("purpose") or "booking_media"); booking_id = request.form.get("booking_id")
-    if purpose not in {"booking_media", "chat_media"}: return jsonify({"message": "Unsupported attachment type"}), 422
-    if purpose == "booking_media" and not booking_id: return jsonify({"message": "Select a booking for this file"}), 422
+    if purpose not in {"booking_media", "chat_media", "completion_evidence"}: return jsonify({"message": "Unsupported attachment type"}), 422
+    if purpose in {"booking_media","completion_evidence"} and not booking_id: return jsonify({"message": "Select a booking for this file"}), 422
     if booking_id:
         booking = Booking.query.get_or_404(booking_id); artisan_user = booking.artisan.user_id if booking.artisan else None
         if user.role != Role.ADMIN and user.id not in (booking.customer_id, artisan_user): return jsonify({"message": "Booking not found"}), 404
+        if purpose == "completion_evidence" and (user.id != artisan_user or booking.status != BookingStatus.IN_PROGRESS):
+            return jsonify(message="Only the assigned artisan may submit completion evidence during work"), 403
     try: url = upload_file(request.files.get("file"), user.id, purpose, private=True)
     except (ValueError, RuntimeError) as error: return jsonify({"message": str(error)}), 422
     asset = FileAsset(owner_id=user.id, booking_id=booking_id, purpose=purpose, url=url, mime_type=request.files["file"].mimetype); db.session.add(asset); db.session.commit(); return jsonify({"id": asset.id, "url": "asset:" + asset.id if purpose == "chat_media" else private_download_url(url), "scan_status": asset.scan_status}), 201
@@ -113,7 +122,7 @@ def upload():
 def disputes():
     user = current_user()
     if request.method == "POST":
-        data = request.get_json(silent=True) or {}; booking = Booking.query.get_or_404(data.get("booking_id")); artisan_user = booking.artisan.user_id if booking.artisan else None
+        data = request.get_json(silent=True) or {}; booking = Booking.query.filter_by(id=data.get("booking_id")).with_for_update().first_or_404(); artisan_user = booking.artisan.user_id if booking.artisan else None
         if user.role != Role.ADMIN and user.id not in (booking.customer_id, artisan_user): return jsonify({"message": "Booking not found"}), 404
         if booking.status not in (BookingStatus.FUNDED, BookingStatus.EN_ROUTE, BookingStatus.IN_PROGRESS, BookingStatus.COMPLETION_SUBMITTED): return jsonify({"message": "This booking cannot be disputed from its current state"}), 409
         row = Dispute(booking_id=booking.id, opened_by_id=user.id, reason=str(data.get("reason") or "other"), description=str(data.get("description") or "").strip()); booking.status = BookingStatus.DISPUTED; db.session.add(row); db.session.commit(); return jsonify({"id": row.id, "status": row.status}), 201
@@ -204,3 +213,23 @@ def socket_join(data):
     conversation = Conversation.query.get(data.get("conversation_id"))
     if not conversation or user_id not in (conversation.customer_id, conversation.artisan_user_id): return {"ok": False, "error": "forbidden"}
     join_room(f"conversation:{conversation.id}"); return {"ok": True}
+
+@bp.post("/disputes/<dispute_id>/responses")
+@role_required(Role.ARTISAN, Role.CUSTOMER)
+def dispute_response(dispute_id):
+    from ..models import AuditLog
+    dispute = Dispute.query.filter_by(id=dispute_id,status="open").with_for_update().first_or_404()
+    booking = db.get_or_404(Booking,dispute.booking_id)
+    actor = current_user()
+    if actor.id not in {booking.customer_id,booking.artisan.user_id if booking.artisan else None}:
+        return jsonify(message="Dispute unavailable"),404
+    data=request.get_json(silent=True) or {}
+    message=str(data.get("message") or "").strip()
+    if not 1<=len(message)<=4000: return jsonify(message="Enter a response of up to 4,000 characters"),422
+    asset_id=data.get("asset_id")
+    if asset_id and not FileAsset.query.filter_by(id=asset_id,owner_id=actor.id,booking_id=booking.id).first():
+        return jsonify(message="Evidence must belong to this booking"),422
+    db.session.add(AuditLog(actor_id=actor.id,action="dispute.response",entity_type="dispute",entity_id=dispute.id,
+                            after={"message":message,"asset_id":asset_id}))
+    db.session.commit()
+    return jsonify(status="recorded"),201

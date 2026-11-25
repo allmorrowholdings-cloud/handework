@@ -41,7 +41,7 @@ export function ShopClient(){
    const reference=params.get("shop_order");
    if(!reference)return;
    api<{order:{reference:string;status:string}}>(`/v1/shop/orders/${encodeURIComponent(reference)}/verify`,{method:"POST"})
-     .then(body=>{setPaymentResult({reference:body.order.reference,status:body.order.status});if(body.order.status==="paid")setCart({});})
+     .then(body=>{setPaymentResult({reference:body.order.reference,status:body.order.status});if(body.order.status==="paid"){setCart({});sessionStorage.removeItem("handework-checkout");}})
      .catch(()=>api<{order:{reference:string;status:string}}>(`/v1/shop/orders/${encodeURIComponent(reference)}`)
        .then(body=>setPaymentResult({reference:body.order.reference,status:body.order.status}))
        .catch(()=>setPaymentResult({reference,status:"confirming"})));
@@ -59,8 +59,12 @@ export function ShopClient(){
    setBusy(true);
    const form=new FormData(e.currentTarget);
    try{
+     const fingerprint=JSON.stringify([cart,fulfilment,Object.fromEntries(form.entries())]);
+     const saved=JSON.parse(sessionStorage.getItem("handework-checkout")||"null");
+     const key=saved?.fingerprint===fingerprint?saved.key:crypto.randomUUID();
+     sessionStorage.setItem("handework-checkout",JSON.stringify({fingerprint,key}));
      const body=await api<CreatedOrder>("/v1/shop/orders",{
-       method:"POST",
+       method:"POST",headers:{"Idempotency-Key":key},
        body:JSON.stringify({
          items:products.filter(p=>cart[p.id]).map(p=>({product_id:p.id,quantity:cart[p.id]})),
          fulfilment,
@@ -81,7 +85,8 @@ export function ShopClient(){
  }
 
  return <section className="shop-catalog section"><div className="shell">
-   {paymentResult&&<div className={`shop-payment-status ${paymentResult.status}`}><strong>{paymentResult.status==="paid"?"Payment confirmed":"Payment is being confirmed"}</strong><span>Order {paymentResult.reference}. {paymentResult.status==="paid"?"Your order is saved and ready for fulfilment.":"If you just paid, your order status will update when payment is confirmed."}</span></div>}
+   {paymentResult&&<div className={`shop-payment-status ${paymentResult.status}`}><strong>{paymentResult.status==="paid"?"Payment confirmed":paymentResult.status.replaceAll("_"," ")}</strong><span>Order {paymentResult.reference}</span>{paymentResult.status==="paid"&&<button onClick={async()=>{try{const data=await api<{order:{total:number;currency:string;reference:string;paid_at:string}}>("/v1/shop/orders/"+encodeURIComponent(paymentResult.reference));const order=data.order;const url=URL.createObjectURL(new Blob([["handEwork by ALLMORROW","Shop receipt",order.reference,order.paid_at,order.currency+" "+Number(order.total).toFixed(2)].join("\n")],{type:"text/plain"}));const a=document.createElement("a");a.href=url;a.download=order.reference+".txt";a.click();URL.revokeObjectURL(url)}catch(e){setNotice(e instanceof Error?e.message:"Receipt unavailable")}}}>Download receipt</button>}</div>}
+
    <div className="shop-toolbar"><div><h2>Shop by craft.</h2><p>Trade tools and equipment available to order.</p></div><button className="shop-cart-button" onClick={()=>setOpen(true)}>Cart <span>{count}</span></button></div>
    {catalogState==="error" ? <p role="status">The catalogue could not load. <button onClick={()=>setAttempt(attempt+1)}>Try again</button></p> : !products.length && <p role="status">{catalogState==="loading"?"Loading the catalogue...":"No supplier-confirmed products are available to order right now."}</p>}
    <div className="shop-category-tabs">{categories.map(c=><button className={category===c?"active":""} onClick={()=>setCategory(c)} key={c}>{c}</button>)}</div>

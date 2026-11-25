@@ -1,0 +1,25 @@
+name: Payment reconciliation
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *'
+permissions: {}
+concurrency:
+  group: handework-finance-scheduler
+  cancel-in-progress: false
+jobs:
+  tick:
+    if: vars.PAYMENT_SCHEDULER_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Process due financial jobs
+        env:
+          TOKEN: ${{ secrets.PAYMENT_SCHEDULER_TOKEN }}
+        run: |
+          set -eu
+          for i in $(seq 1 50); do
+            result=$(curl --silent --show-error --fail --max-time 90 --retry 2 -X POST \
+              -H "Authorization: Bearer $TOKEN" https://handework-api.onrender.com/v1/internal/payments/tick)
+            echo "$result" | jq -e '.processed == 1' >/dev/null || break
+          done

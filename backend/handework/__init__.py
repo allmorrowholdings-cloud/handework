@@ -18,7 +18,7 @@ def create_app(config_object=Config, *, seed_development_admin=True):
     from .routes.auth import bp as auth_bp
     from .routes.marketplace import bp as marketplace_bp
     from .routes.bookings import bp as bookings_bp
-    from .routes.payments import bp as payments_bp
+    from .routes.payment_worker import bp as payments_bp
     from .routes.platform import bp as platform_bp
     from .routes.admin import bp as admin_bp
     from .routes.workproof import bp as workproof_bp

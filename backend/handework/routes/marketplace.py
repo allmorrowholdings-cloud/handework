@@ -2,13 +2,13 @@ from datetime import date
 from math import isfinite
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
-from ..extensions import db
+from ..extensions import db, limiter
 from ..models import ArtisanProfile, Availability, PortfolioItem, Role, Verification
 from ..security import current_user, role_required
 from ..services.distance import haversine_km
-from ..services.maps import geocode
+from ..services.maps import geocode, places, point, LocationUnavailable
 from ..services.matching import matching_score
-from ..services.storage import upload_file
+from ..services.storage import private_download_url, upload_file
 from ..services.workproof import public_workproof
 
 bp = Blueprint("marketplace", __name__)
@@ -61,42 +61,56 @@ def search_artisans():
     if not isfinite(requested_distance):
         return jsonify({"message": "Distance must be a finite number"}), 422
     distance_limit = min(max(requested_distance, 1), 100)
+    if request.args.get("coordinates") and not coordinates:
+        return jsonify(message="Invalid search coordinates"),422
+    try:
+        weekday = date.fromisoformat(request.args["date"]).weekday() if request.args.get("date") else None
+    except ValueError:
+        return jsonify(message="Date must use YYYY-MM-DD"),422
+    rows = ranked_artisans(service,coordinates,distance_limit,request.args.get("location"),weekday)
+    return jsonify({"items": rows[:50], "meta": {"service": service, "coordinates_used": bool(coordinates), "distance_km": distance_limit}})
+
+
+def ranked_artisans(service,coordinates,distance_limit,location=None,weekday=None):
     query = ArtisanProfile.query.filter_by(verification_status="approved", available=True)
     if service:
         query = query.filter(db.or_(*(
             column.icontains(term, autoescape=True) for term in search_terms(service)
             for column in (ArtisanProfile.trade, ArtisanProfile.secondary_services)
         )))
-    if request.args.get("location") and not coordinates:
-        terms = [part.strip() for part in request.args["location"].split(",") if part.strip()]
+    if location and not coordinates:
+        terms = [part.strip() for part in location.split(",") if part.strip()]
         for term in terms:
             query = query.filter(db.or_(ArtisanProfile.area.icontains(term, autoescape=True), ArtisanProfile.city.icontains(term, autoescape=True)))
     rows = []
-    for profile in query.limit(250).all():
-        if request.args.get("date"):
-            try: requested_weekday = date.fromisoformat(request.args["date"]).weekday()
-            except ValueError: return jsonify({"message": "Date must use YYYY-MM-DD"}), 422
-            if not Availability.query.filter_by(artisan_id=profile.id, weekday=requested_weekday, active=True).first(): continue
+    if coordinates:
+        band = distance_limit/110 + .001
+        query = query.filter(ArtisanProfile.latitude.between(coordinates[0]-band, coordinates[0]+band))
+    if weekday is not None:
+        query=query.filter(ArtisanProfile.id.in_(db.select(Availability.artisan_id).where(
+            Availability.weekday==weekday, Availability.active.is_(True))))
+    for profile in query.yield_per(200):
         if coordinates and profile.latitude is not None and profile.longitude is not None:
             distance = haversine_km(coordinates[0], coordinates[1], profile.latitude, profile.longitude)
         elif coordinates:
             continue
         else:
-            distance = 0.0
-        if distance > min(distance_limit, profile.radius_km): continue
+            distance = None
+        if distance is not None and distance > min(distance_limit, profile.radius_km): continue
         card = profile.search_card(distance)
         card.update(area=profile.area, city=profile.city)
         card["match_score"] = matching_score(text_match=1 if service else .5, distance_km=distance, radius_km=profile.radius_km, rating=profile.rating_average, completion_rate=profile.completion_rate, available=profile.available, response_minutes=profile.response_minutes)
         rows.append(card)
-    rows.sort(key=lambda item: (-item["match_score"], item["distance_km"]))
-    return jsonify({"items": rows[:50], "meta": {"service": service, "coordinates_used": bool(coordinates), "distance_km": distance_limit}})
+    rows.sort(key=lambda item: (-item["match_score"], item["distance_km"] if item["distance_km"] is not None else float("inf"), item["id"]))
+    return rows
+
 
 
 @bp.get("/artisans/<artisan_id>")
 def artisan_detail(artisan_id):
     profile = ArtisanProfile.query.filter_by(id=artisan_id, verification_status="approved").first_or_404()
     portfolio = PortfolioItem.query.filter_by(artisan_id=profile.id, moderation_status="approved").order_by(PortfolioItem.created_at.desc()).all()
-    return jsonify({"artisan": {**profile.search_card(0), "bio": profile.bio, "years_experience": profile.years_experience, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km}, "workproof": public_workproof(profile), "portfolio": [{"id": item.id, "title": item.title, "description": item.description, "service": item.service, "media_url": item.media_url, "media_type": item.media_type, "before_after": item.before_after} for item in portfolio]})
+    return jsonify({"artisan": {**profile.search_card(None), "bio": profile.bio, "years_experience": profile.years_experience, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km}, "workproof": public_workproof(profile), "portfolio": [{"id": item.id, "title": item.title, "description": item.description, "service": item.service, "media_url": private_download_url(item.media_url), "media_type": item.media_type, "before_after": item.before_after} for item in portfolio]})
 
 
 @bp.route("/artisans/me", methods=["GET", "PATCH"])
@@ -109,10 +123,15 @@ def my_artisan_profile():
             if field in data: setattr(profile, field, str(data[field]).strip())
         for field in ("years_experience", "radius_km"):
             if field in data: setattr(profile, field, max(int(data[field]), 0))
+        if data.get("latitude") is not None or data.get("longitude") is not None:
+            try:
+                profile.latitude, profile.longitude = point(data.get("latitude"),data.get("longitude"))
+            except ValueError:
+                return jsonify(message="Invalid service location"),422
         if "starting_price" in data: profile.starting_price = data["starting_price"]
         if "instant_booking" in data: profile.instant_booking = bool(data["instant_booking"])
         db.session.commit()
-    return jsonify({"artisan": {**profile.search_card(0), "bio": profile.bio, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km, "verification_status": profile.verification_status, "available": profile.available}})
+    return jsonify({"artisan": {**profile.search_card(None), "bio": profile.bio, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km, "latitude":float(profile.latitude) if profile.latitude is not None else None,"longitude":float(profile.longitude) if profile.longitude is not None else None,"verification_status": profile.verification_status, "available": profile.available}})
 
 
 @bp.route("/artisans/me/availability", methods=["GET", "PUT"])
@@ -140,9 +159,9 @@ def portfolio():
         try: url = upload_file(file, profile.id, "portfolio")
         except (ValueError, RuntimeError) as error: return jsonify({"message": str(error)}), 422
         item = PortfolioItem(artisan_id=profile.id, title=request.form.get("title", "Untitled work").strip(), description=request.form.get("description", "").strip(), service=request.form.get("service", profile.trade).strip(), media_url=url, media_type="video" if file.mimetype.startswith("video") else "image", before_after=request.form.get("before_after"))
-        db.session.add(item); db.session.commit(); return jsonify({"item": {"id": item.id, "status": item.moderation_status, "media_url": item.media_url}}), 201
+        db.session.add(item); db.session.commit(); return jsonify({"item": {"id": item.id, "status": item.moderation_status, "media_url": private_download_url(item.media_url)}}), 201
     rows = PortfolioItem.query.filter_by(artisan_id=profile.id).order_by(PortfolioItem.created_at.desc()).all()
-    return jsonify({"items": [{"id": row.id, "title": row.title, "service": row.service, "media_url": row.media_url, "status": row.moderation_status} for row in rows]})
+    return jsonify({"items": [{"id": row.id, "title": row.title, "service": row.service, "media_url": private_download_url(row.media_url), "status": row.moderation_status} for row in rows]})
 
 
 @bp.route("/artisans/me/verifications", methods=["GET", "POST"])
@@ -167,3 +186,17 @@ def verifications():
         db.session.add(row); db.session.commit(); return jsonify({"id": row.id, "kind": row.kind, "status": row.status}), 201
     rows = Verification.query.filter_by(artisan_id=profile.id).all()
     return jsonify({"profile_status": profile.verification_status, "items": [{"id": row.id, "kind": row.kind, "status": row.status, "decision_reason": row.decision_reason, "updated_at": row.updated_at.isoformat()} for row in rows]})
+
+@bp.get("/locations/search")
+@bp.get("/locations/reverse")
+@limiter.limit("30 per minute")
+def location_search():
+    coords=parse_coordinates(request.args.get("coordinates",""))
+    query=request.args.get("q","").strip()
+    reverse=request.path.endswith("/reverse")
+    if (reverse and not coords) or (not reverse and not 2<=len(query)<=250):
+        return jsonify(message="Enter a valid address or coordinate pair"),422
+    try:
+        return jsonify(items=places(query=query,coordinates=coords if reverse else None))
+    except LocationUnavailable as exc:
+        return jsonify(message=str(exc)),503

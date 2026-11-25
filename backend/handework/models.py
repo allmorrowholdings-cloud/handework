@@ -104,7 +104,7 @@ class ArtisanProfile(UUIDMixin, TimestampMixin, db.Model):
     user = db.relationship("User", lazy="joined")
 
     def search_card(self, distance_km):
-        return {"id": self.id, "display_name": self.display_name, "trade": self.trade, "rating": float(self.rating_average) if self.rating_average is not None else None, "review_count": self.review_count, "distance_km": round(distance_km, 1), "starting_price": float(self.starting_price) if self.starting_price is not None else None, "currency": self.currency, "verified": self.verification_status == "approved", "instant_booking": self.instant_booking, "avatar_url": self.avatar_url, "latitude": round(float(self.latitude), 3) if self.latitude is not None else None, "longitude": round(float(self.longitude), 3) if self.longitude is not None else None}
+        return {"id": self.id, "display_name": self.display_name, "trade": self.trade, "rating": float(self.rating_average) if self.rating_average is not None else None, "review_count": self.review_count, "distance_km": round(distance_km, 1) if distance_km is not None else None, "starting_price": float(self.starting_price) if self.starting_price is not None else None, "currency": self.currency, "verified": self.verification_status == "approved", "instant_booking": self.instant_booking, "avatar_url": self.avatar_url, "latitude": round(float(self.latitude), 3) if self.latitude is not None else None, "longitude": round(float(self.longitude), 3) if self.longitude is not None else None}
 
 
 class PortfolioItem(UUIDMixin, TimestampMixin, db.Model):
@@ -183,6 +183,7 @@ class JobChange(UUIDMixin, TimestampMixin, db.Model):
 
 
 class Quote(UUIDMixin, TimestampMixin, db.Model):
+    payment_schedule = db.Column(db.JSON)
     __tablename__ = "quotes"
     booking_id = db.Column(db.String(36), db.ForeignKey("bookings.id"), nullable=False, index=True)
     artisan_id = db.Column(db.String(36), db.ForeignKey("artisan_profiles.id"), nullable=False, index=True)
@@ -464,6 +465,7 @@ class AuditLog(UUIDMixin, db.Model):
 
 
 class ShopOrder(UUIDMixin, TimestampMixin, db.Model):
+    platform_fee = db.Column(db.Numeric(12,2))
     __tablename__ = "shop_orders"
     reference = db.Column(db.String(32), nullable=False, unique=True, index=True)
     buyer_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False, index=True)
@@ -529,3 +531,73 @@ class ShopOrderItem(UUIDMixin, db.Model):
             "quantity": self.quantity,
             "line_total": float(self.line_total),
         }
+
+class PaymentControl(db.Model):
+    __tablename__ = "payment_controls"
+    payment_id = db.Column(db.String(36), db.ForeignKey("payments.id"), primary_key=True)
+    booking_claim = db.Column(db.String(36), unique=True)
+    refunded = db.Column(db.Numeric(12, 2), nullable=False, default=Decimal("0"))
+    auto_hours = db.Column(db.Integer)
+    terms_version = db.Column(db.String(100))
+    settlement_id = db.Column(db.String(64))
+    provider_hold = db.Column(db.Boolean, nullable=False, default=False)
+
+
+class PaymentReceipt(db.Model):
+    event = db.Column(db.String(64))
+    reference = db.Column(db.String(120))
+    received_at = db.Column(db.DateTime(timezone=True), default=utcnow)
+    __tablename__ = "payment_receipts"
+    digest = db.Column(db.String(64), primary_key=True)
+
+
+class PayoutRecipient(db.Model):
+    __tablename__ = "payout_recipients"
+    artisan_id = db.Column(db.String(36), db.ForeignKey("artisan_profiles.id"), primary_key=True)
+    code = db.Column(db.String(100), nullable=False)
+    last_four = db.Column(db.String(4), nullable=False)
+
+
+class PaymentOperation(UUIDMixin, db.Model):
+    __tablename__ = "payment_operations"
+    payment_id = db.Column(db.String(36), db.ForeignKey("payments.id"))
+    shop_order_id = db.Column(db.String(36), db.ForeignKey("shop_orders.id"), index=True)
+    kind = db.Column(db.String(16), nullable=False)
+    request_key = db.Column(db.String(100), unique=True, nullable=False)
+    amount = db.Column(db.Numeric(12, 2), nullable=False)
+    recipient = db.Column(db.String(100))
+    provider_id = db.Column(db.String(100))
+    status = db.Column(db.String(24), nullable=False, default="pending")
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    __table_args__ = (db.UniqueConstraint("kind", "provider_id", name="uq_operation_provider_id"),
+                      db.Index("ix_operation_payment", "payment_id"))
+
+class JournalPosting(UUIDMixin, db.Model):
+    __tablename__ = "journal_postings"
+    reference = db.Column(db.String(120), nullable=False)
+    event = db.Column(db.String(48), nullable=False)
+    debit = db.Column(db.String(64), nullable=False)
+    credit = db.Column(db.String(64), nullable=False)
+    units = db.Column(db.BigInteger, nullable=False)
+    currency = db.Column(db.String(3), nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+    __table_args__ = (db.UniqueConstraint("reference", "event", name="uq_journal_reference_event"),)
+
+class PaymentJob(db.Model):
+    cursor = db.Column(db.JSON)
+    __tablename__ = "payment_jobs"
+    key = db.Column(db.String(90), primary_key=True)
+    kind = db.Column(db.String(24), nullable=False)
+    record_id = db.Column(db.String(36), nullable=False)
+    attempts = db.Column(db.Integer, default=0, nullable=False)
+    due_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
+    state = db.Column(db.String(16), default="pending", nullable=False)
+    last_error = db.Column(db.String(100))
+
+class ProviderDispute(db.Model):
+    __tablename__ = "provider_disputes"
+    provider_id = db.Column(db.String(64), primary_key=True)
+    reference = db.Column(db.String(120), nullable=False, index=True)
+    status = db.Column(db.String(32), nullable=False)
+    resolution = db.Column(db.String(64))
+    deduction_units = db.Column(db.BigInteger, nullable=False, default=0)

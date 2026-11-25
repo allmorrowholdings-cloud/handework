@@ -2,12 +2,13 @@
 
 import { ChangeEvent, FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { LocationPicker } from "../../components/location-picker";
 import { Header } from "../../components/header";
 import { AuthForm } from "../../components/auth-form";
 import { ServiceSelect } from "../../components/service-select";
 import { accessToken, api } from "../../../lib/api";
 
-const initial = { requestKey:"", service:"", description:"", address:"", area:"", city:"Accra", scheduled_date:"", time_window:"morning", budget_type:"quote", budget:"", contact_phone:"", instant_booking:false };
+const initial = { coordinates:"", requestKey:"", service:"", description:"", address:"", area:"", city:"Accra", scheduled_date:"", time_window:"morning", budget_type:"quote", budget:"", contact_phone:"", instant_booking:false };
 
 export default function NewBookingPage() {
   return <Suspense fallback={<p className="shell" role="status">Loading job request…</p>}><NewBookingForm /></Suspense>;
@@ -21,7 +22,7 @@ function NewBookingForm() {
   });
   const draftKey = "handework-job:" + params.toString();
   const [form, setForm] = useState(() => {
-    const defaults = {...initial, requestKey: crypto.randomUUID(), description: params.get("problem") ?? "", area: params.get("area") ?? params.get("location") ?? params.get("coordinates") ?? "", service: params.get("service") ?? (params.get("problem") ? "Help me choose" : "")};
+    const defaults = {...initial, coordinates:params.get("coordinates")??"", requestKey: crypto.randomUUID(), description: params.get("problem") ?? "", area: params.get("area") ?? params.get("location") ?? params.get("coordinates") ?? "", service: params.get("service") ?? (params.get("problem") ? "Help me choose" : "")};
     try { return {...defaults, ...JSON.parse(sessionStorage.getItem(draftKey) || "{}").form} as typeof initial; } catch { return defaults; }
   });
   useEffect(() => {
@@ -36,11 +37,11 @@ function NewBookingForm() {
   const [matchStatus, setMatchStatus] = useState("Checking artisan availability...");
   const [createdId, setCreatedId] = useState("");
   const [uploaded, setUploaded] = useState(0);
-  const coordinates = params.get("coordinates");
+  const coordinates = form.coordinates;
   useEffect(() => {
     if (step !== 3 || params.get("artisan")) return;
     const query = new URLSearchParams({service: form.service === "Help me choose" ? form.description : form.service, location: form.area + ", " + form.city, date: form.scheduled_date});
-    if (coordinates && form.area === (params.get("location") ?? params.get("area") ?? coordinates)) query.set("coordinates", coordinates);
+    if (coordinates) query.set("coordinates", coordinates);
     const controller = new AbortController();
     api<{items: {id: string; display_name: string}[]}>(`/v1/artisans/search?${query}`, {signal: controller.signal})
       .then(({items}) => { if (!controller.signal.aborted) { setMatches(items); setMatchStatus(items.length ? "" : "No professional matches this date. An unassigned request stays in My jobs. Contact support if you need help finding someone."); } })
@@ -72,7 +73,7 @@ function NewBookingForm() {
     try {
       let id = createdId;
       if (!id) {
-        const booking = await api<{id:string}>("/v1/bookings", { method:"POST", headers:{"Idempotency-Key":form.requestKey}, body:JSON.stringify({ ...form, artisan_id: artisan || undefined }) });
+        const booking = await api<{id:string}>("/v1/bookings", { method:"POST", headers:{"Idempotency-Key":form.requestKey}, body:JSON.stringify({ ...form, smart_dispatch:artisan==="smart", artisan_id: artisan==="smart"?undefined:artisan || undefined }) });
         id = booking.id;
         setCreatedId(id);
       }
@@ -88,9 +89,9 @@ function NewBookingForm() {
   }
   return <main><Header /><div className="shell public-request"><header><h1>Request skilled work</h1><p>Nothing is charged until the scope and artisan are confirmed.</p></header><section className="app-content narrow-content"><div className="booking-progress"><span className={step>=1?"on":""}>1. Work</span><span className={step>=2?"on":""}>2. Place & time</span><span className={step>=3?"on":""}>3. Budget & review</span></div><form className="app-card booking-form" onSubmit={submit}>
     {step===1 && <><h2>What needs doing?</h2><label>Service category<ServiceSelect allowUnknown value={form.service} onChange={value => set("service", value)} /></label><label>Job details<textarea required value={form.description} onChange={(event)=>set("description",event.target.value)} rows={6} placeholder="Describe the problem or result you need. Include measurements or useful details." /></label><label className="upload-zone">Photos or short video<input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4" onChange={files} /><span>{media.length ? `${media.length} file${media.length===1?"":"s"} selected` : "Add up to five photos or MP4 clips. Reselect attachments after refreshing."}</span></label></>}
-    {step===2 && <><h2>Where and when?</h2><label>Job address<input required value={form.address} onChange={(event)=>set("address",event.target.value)} placeholder="House number, street or landmark" /></label><div className="two-fields"><label>Area<input required value={form.area} onChange={(event)=>set("area",event.target.value)} placeholder="e.g. East Legon" /></label><label>City<select value={form.city} onChange={(event)=>set("city",event.target.value)}><option>Accra</option><option>Kumasi</option><option>Tema</option><option>Takoradi</option><option>Cape Coast</option><option>Tamale</option></select></label></div><div className="two-fields"><label>Date<input required type="date" value={form.scheduled_date} onChange={(event)=>set("scheduled_date",event.target.value)} /></label><label>Time window<select value={form.time_window} onChange={(event)=>set("time_window",event.target.value)}><option value="morning">Morning, 7am–11am</option><option value="midday">Midday, 11am–3pm</option><option value="evening">Evening, 3pm–7pm</option></select></label></div></>}
+    {step===2 && <><h2>Where and when?</h2><LocationPicker value={coordinates} onSelect={(pin,label)=>setForm(current=>({...current,coordinates:pin,address:label??current.address}))}/><label>Job address<input required value={form.address} onChange={(event)=>set("address",event.target.value)} placeholder="House number, street or landmark" /></label><div className="two-fields"><label>Area<input required value={form.area} onChange={(event)=>set("area",event.target.value)} placeholder="e.g. East Legon" /></label><label>City<select value={form.city} onChange={(event)=>set("city",event.target.value)}><option>Accra</option><option>Kumasi</option><option>Tema</option><option>Takoradi</option><option>Cape Coast</option><option>Tamale</option></select></label></div><div className="two-fields"><label>Date<input required type="date" value={form.scheduled_date} onChange={(event)=>set("scheduled_date",event.target.value)} /></label><label>Time window<select value={form.time_window} onChange={(event)=>set("time_window",event.target.value)}><option value="morning">Morning, 7am–11am</option><option value="midday">Midday, 11am–3pm</option><option value="evening">Evening, 3pm–7pm</option></select></label></div></>}
     {step===3 && <><h2>Budget and review</h2><p><strong>{form.service}</strong> &middot; {form.description}</p><p>{form.address}, {form.area}, {form.city} &middot; {form.scheduled_date}, {form.time_window}</p>
-      {!params.get("artisan") && <label>Artisan<select value={artisan} onChange={event => setArtisan(event.target.value)}><option value="">Save without a professional</option>{matches.map(person => <option key={person.id} value={person.id}>{person.display_name}</option>)}</select></label>}
+      {!params.get("artisan") && <label>Artisan<select value={artisan} onChange={event => setArtisan(event.target.value)}><option value="">Save without a professional</option>{coordinates&&<option value="smart">Smart Dispatch ? request the highest ranked available artisan</option>}{matches.map(person => <option key={person.id} value={person.id}>{person.display_name}</option>)}</select></label>}
       {!params.get("artisan") && matchStatus && <p role="status">{matchStatus}</p>}<fieldset className="budget-type-field"><legend>Budget type</legend><div className="budget-type-grid">{[["fixed","Fixed budget"],["quote","I need an estimate"],["hourly","Hourly"]].map(([value,label])=><label className={form.budget_type===value?"selected":""} key={value}><input type="radio" name="budget_type" value={value} checked={form.budget_type===value} onChange={(event)=>set("budget_type",event.target.value)} /><span>{label}</span></label>)}</div></fieldset><label>{form.budget_type === "quote" ? "Budget in GHS (optional)" : "Budget in GHS"}<input required={form.budget_type !== "quote"} type="number" min="1" value={form.budget} onChange={(event)=>set("budget",event.target.value)} inputMode="decimal" placeholder="e.g. 350" /></label><label>Phone for job updates<input required type="tel" value={form.contact_phone} onChange={(event)=>set("contact_phone",event.target.value)} placeholder="+233" /></label>{params.get("instant")==="1"&&<label className="check consent"><input type="checkbox" checked={form.instant_booking} onChange={(event)=>set("instant_booking",event.target.checked)}/> Book instantly at the artisan&apos;s starting price when this date is available.</label>}<label className="check consent"><input required type="checkbox" /> I will keep job changes and approvals in handEwork so support can review the record.</label></>}
     {error && <p className="form-error" role="alert">{error}</p>}<div className="form-actions">{step>1 && !createdId && <button type="button" className="button ghost-button" onClick={()=>setStep(step-1)}>Back</button>}<button className="button button-orange" disabled={busy || Boolean(auth)}>{busy?"Submitting…":step<3?"Continue":createdId?"Finish uploading":"Confirm request"}</button></div>
   </form>

@@ -40,7 +40,7 @@ def upload_file(file, owner_id, purpose, private=False):
     if private:
         return f"s3://{bucket}/{key}"
     base = os.getenv("S3_PUBLIC_BASE_URL", "").rstrip("/")
-    return f"{base}/{key}" if base else client.generate_presigned_url("get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=3600)
+    return f"{base}/{key}" if base else f"s3://{bucket}/{key}"
 
 
 def private_download_url(value, expires=900):

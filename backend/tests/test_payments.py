@@ -12,12 +12,14 @@ def payable_booking(client, customer, artisan):
 
 
 def initiate(client, customer, booking_id, monkeypatch):
+    monkeypatch.setenv("PAYMENTS_ENABLED","true")
     monkeypatch.setenv("PAYSTACK_SECRET_KEY", "local-test-only")
-    monkeypatch.setattr(Paystack, "mobile_money_charge", lambda self, **kwargs: {"status":True,"data":{"status":"pay_offline"}})
+    monkeypatch.setattr(Paystack, "mobile_money_charge", lambda self, **kwargs: {"status":True,"data":{"status":"pay_offline","reference":kwargs["reference"]}})
     return client.post("/v1/payments/mobile-money", json={"booking_id":booking_id,"phone":"0244000001","network":"mtn"}, headers={**customer["headers"],"Idempotency-Key":f"payment-{booking_id}"})
 
 
 def signed_webhook(client, monkeypatch, payload):
+    monkeypatch.setattr(Paystack,"verify_transaction",lambda self, ref: {"data":payload["data"]})
     secret="webhook-test-secret";monkeypatch.setenv("PAYSTACK_SECRET_KEY",secret);raw=json.dumps(payload,separators=(",",":")).encode();signature=hmac.new(secret.encode(),raw,hashlib.sha512).hexdigest()
     return client.post("/v1/webhooks/paystack",data=raw,content_type="application/json",headers={"x-paystack-signature":signature})
 
@@ -42,6 +44,7 @@ def test_webhook_amount_mismatch_does_not_fund(client, customer, artisan, monkey
 
 def test_retry_after_provider_timeout_reuses_reference(client, customer, artisan, monkeypatch):
     booking_id = payable_booking(client, customer, artisan)
+    monkeypatch.setenv("PAYMENTS_ENABLED","true")
     monkeypatch.setenv("PAYSTACK_SECRET_KEY", "unit-test")
     calls = []
 

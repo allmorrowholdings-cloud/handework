@@ -1,3 +1,4 @@
+import os
 import secrets
 from uuid import UUID, uuid5
 from sqlalchemy.exc import IntegrityError
@@ -7,6 +8,8 @@ from flask import Blueprint, jsonify, request
 from ..extensions import db
 from ..models import ArtisanProfile, Availability, FileAsset, Booking, BookingStatus, BookingStatusEvent, Conversation, JobChange, Quote, Role
 from ..security import current_user, role_required
+from ..services.commission import commission_bps
+from ..services.payment_plan import installments, validate_schedule
 from ..services.storage import private_download_url
 from ..services.notifications import dispatch_notifications, queue_notifications
 
@@ -73,9 +76,28 @@ def bookings():
             return jsonify({"message": "Choose a valid job date."}), 422
     booking = Booking(reference=f"VV-{secrets.token_hex(4).upper()}", customer_id=user.id, service=data["service"].strip(), description=data["description"].strip(), address=data["address"].strip(), area=data["area"].strip(), city=data["city"].strip(), scheduled_start=scheduled, budget_type=data.get("budget_type", "quote"), budget_amount=data.get("budget") or None, contact_phone=data["contact_phone"].strip())
     instant_artisan = None
+    if data.get("coordinates"):
+        from .marketplace import parse_coordinates
+        coords=parse_coordinates(data["coordinates"])
+        if coords is None:
+            return jsonify(message="Invalid booking location"),422
+        booking.latitude,booking.longitude=coords
+    if data.get("smart_dispatch") is True:
+        from .marketplace import ranked_artisans
+        if booking.latitude is None:
+            return jsonify(message="Select a job pin for Smart Dispatch"),422
+        matches = ranked_artisans(booking.service if booking.service!="Help me choose" else booking.description,
+                                  (booking.latitude,booking.longitude),100,weekday=scheduled.weekday() if scheduled else None)
+        if not matches:
+            return jsonify(message="No eligible artisan within service radius"),409
+        data["artisan_id"]=matches[0]["id"]
     if data.get("artisan_id"):
         artisan = ArtisanProfile.query.filter_by(id=data["artisan_id"], verification_status="approved", available=True).first()
         if not artisan: return jsonify({"message": "This artisan is not available for booking"}), 409
+        if booking.latitude is not None and artisan.latitude is not None and artisan.longitude is not None:
+            from ..services.distance import haversine_km
+            if haversine_km(booking.latitude,booking.longitude,artisan.latitude,artisan.longitude)>artisan.radius_km:
+                return jsonify(message="The job is outside this artisan's service radius"),409
         booking.artisan_id = artisan.id
         if bool(data.get("instant_booking")):
             if not scheduled: return jsonify({"message": "Choose a date for instant booking"}), 422
@@ -116,8 +138,10 @@ def booking_detail(booking_id):
     artisans = {profile.id: profile for profile in ArtisanProfile.query.filter(ArtisanProfile.id.in_({row.artisan_id for row in quotes})).all()} if quotes else {}
     conversation = Conversation.query.filter_by(booking_id=booking.id).first()
     changes = JobChange.query.filter_by(booking_id=booking.id).order_by(JobChange.created_at.desc()).all()
-    files = FileAsset.query.filter_by(booking_id=booking.id, purpose="booking_media").all()
-    return jsonify({"attachments": [{"id": file.id, "url": private_download_url(file.url), "mime_type": file.mime_type} for file in files], "booking": booking.public(), "changes": [row.public() for row in changes], "conversation_id": conversation.id if conversation else None, "events": [{"from": row.from_status, "to": row.to_status, "note": row.note, "occurred_at": row.occurred_at.isoformat()} for row in events], "quotes": [{"id": row.id, "artisan_id": row.artisan_id, "artisan_name": artisans[row.artisan_id].display_name, "amount": float(row.amount), "currency": row.currency, "note": row.note, "status": row.status, "valid_until": row.valid_until.isoformat() if row.valid_until else None} for row in quotes]})
+    files = FileAsset.query.filter_by(booking_id=booking.id).filter(FileAsset.purpose.in_(["booking_media","completion_evidence"])).all()
+    from ..models import Dispute
+    dispute=Dispute.query.filter_by(booking_id=booking.id,status="open").first()
+    return jsonify({"open_dispute_id":dispute.id if dispute else None,"commission_bps":commission_bps(booking.service), "auto_terms":os.getenv("PAYMENT_AUTO_RELEASE_TERMS_VERSION") if os.getenv("PAYMENT_AUTO_RELEASE_ENABLED","").lower()=="true" else None, "auto_hours":int(os.getenv("PAYMENT_AUTO_RELEASE_HOURS","48")), "installments": installments(booking), "attachments": [{"id": file.id, "url": private_download_url(file.url), "mime_type": file.mime_type} for file in files], "booking": booking.public(), "changes": [row.public() for row in changes], "conversation_id": conversation.id if conversation else None, "events": [{"from": row.from_status, "to": row.to_status, "note": row.note, "occurred_at": row.occurred_at.isoformat()} for row in events], "quotes": [{"id": row.id, "artisan_id": row.artisan_id, "artisan_name": artisans[row.artisan_id].display_name, "amount": float(row.amount), "payment_schedule": row.payment_schedule, "currency": row.currency, "note": row.note, "status": row.status, "valid_until": row.valid_until.isoformat() if row.valid_until else None} for row in quotes]})
 
 
 @bp.post("/bookings/<booking_id>/changes")
@@ -184,7 +208,11 @@ def quote(booking_id):
             raise ValueError
     except (ValueError, InvalidOperation):
         return jsonify({"message": "Enter a positive quote with at most two decimal places."}), 422
-    row = Quote(booking_id=booking.id, artisan_id=profile.id, amount=amount, note=str(data.get("note") or "")); db.session.add(row)
+    try:
+        schedule = validate_schedule(data.get("payment_schedule"), amount)
+    except ValueError:
+        return jsonify(message="Installments must have labels and positive amounts totaling the quote"), 422
+    row = Quote(payment_schedule=schedule, booking_id=booking.id, artisan_id=profile.id, amount=amount, note=str(data.get("note") or "")); db.session.add(row)
     db.session.flush()
     if booking.status == BookingStatus.REQUESTED: transition(booking, BookingStatus.QUOTED, user, "Quote submitted")
     notification_ids=queue_notifications(booking.customer,"New artisan quote",f"{profile.display_name} quoted {row.currency} {amount:.2f} for {booking.service}.",{"booking_id":booking.id,"quote_id":row.id});db.session.commit();dispatch_notifications(notification_ids);return jsonify({"id": row.id, "status": row.status, "amount": float(amount)}), 201
@@ -208,7 +236,8 @@ def accept_quote(booking_id, quote_id):
 @bp.post("/bookings/<booking_id>/status")
 @role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
 def update_status(booking_id):
-    user = current_user(); booking = booking_for_user(booking_id, user)
+    user = current_user(); Booking.query.filter_by(id=booking_id).with_for_update().first_or_404()
+    booking = booking_for_user(booking_id, user)
     if not booking: return jsonify({"message": "Booking not found"}), 404
     data = request.get_json(silent=True) or {}
     target = str(data.get("status") or "")
@@ -220,4 +249,25 @@ def update_status(booking_id):
     if target not in allowed_for_role[user.role]: return jsonify({"message": "Use the dedicated payment, dispute or approval action for this status", "code": "role_transition_forbidden"}), 403
     try: transition(booking, data.get("status"), user, str(data.get("note") or "")[:500])
     except (ValueError, KeyError) as error: return jsonify({"message": str(error), "code": "invalid_transition"}), 409
+    if target == BookingStatus.COMPLETION_SUBMITTED.value:
+        from ..services.payment_jobs import enqueue
+        enqueue("auto_release", booking.id)
     recipient=booking.customer if user.role==Role.ARTISAN else booking.artisan.user if booking.artisan else None;notification_ids=queue_notifications(recipient,"Booking updated",f"{booking.reference} is now {booking.status.value.replace('_',' ')}.",{"booking_id":booking.id},urgent=booking.status in (BookingStatus.EN_ROUTE,BookingStatus.COMPLETION_SUBMITTED)) if recipient else [];db.session.commit();dispatch_notifications(notification_ids);return jsonify({"booking": booking.public()})
+
+@bp.get("/bookings/<booking_id>/route")
+@role_required(Role.CUSTOMER,Role.ARTISAN,Role.ADMIN)
+def job_route(booking_id):
+    from ..services.maps import driving_route, LocationUnavailable
+    booking=booking_for_user(booking_id,current_user())
+    if not booking:
+        return jsonify(message="Booking unavailable"),404
+    artisan=booking.artisan
+    if not artisan or None in (artisan.latitude,artisan.longitude,booking.latitude,booking.longitude):
+        return jsonify(message="A route needs both a service location and a job pin"),409
+    try:
+        route=driving_route((artisan.latitude,artisan.longitude),(booking.latitude,booking.longitude))
+    except LocationUnavailable as exc:
+        return jsonify(message=str(exc)),503
+    if not route:
+        return jsonify(message="No driving route found"),404
+    return jsonify(route)

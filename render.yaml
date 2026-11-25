@@ -32,8 +32,6 @@ services:
         sync: false
       - key: PAYSTACK_SECRET_KEY
         sync: false
-      - key: MAPBOX_SECRET_TOKEN
-        sync: false
       - key: EXPO_ACCESS_TOKEN
         sync: false
       - key: HUBTEL_CLIENT_ID
@@ -58,7 +56,9 @@ services:
         sync: false
       - key: PLATFORM_FEE_BPS
         value: "1200"
-      - key: ESCROW_AUTO_RELEASE_HOURS
+      - key: PAYMENTS_ENABLED
+        value: "false"
+      - key: PAYMENT_AUTO_RELEASE_HOURS
         value: "48"
 
   - type: worker

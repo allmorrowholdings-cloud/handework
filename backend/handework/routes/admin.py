@@ -1,3 +1,4 @@
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 from ..extensions import db
@@ -48,7 +49,15 @@ def verification_decision(verification_id):
 @bp.get("/admin/disputes")
 @role_required(Role.ADMIN)
 def dispute_queue():
-    rows=Dispute.query.order_by(Dispute.created_at).limit(200).all();return jsonify({"items":[{"id":x.id,"booking_id":x.booking_id,"reason":x.reason,"description":x.description,"status":x.status,"created_at":x.created_at.isoformat()} for x in rows]})
+    from ..models import FileAsset
+    def responses(row):
+        result=[]
+        for log in AuditLog.query.filter_by(entity_type="dispute",entity_id=row.id,action="dispute.response").order_by(AuditLog.created_at):
+            details=log.after or {}
+            asset=db.session.get(FileAsset,details["asset_id"]) if details.get("asset_id") else None
+            result.append({"actor":log.actor_id,"message":details.get("message"),"url":private_download_url(asset.url) if asset else None})
+        return result
+    rows=Dispute.query.order_by(Dispute.created_at).limit(200).all();return jsonify({"items":[{"id":x.id,"booking_id":x.booking_id,"responses":responses(x),"reason":x.reason,"description":x.description,"status":x.status,"created_at":x.created_at.isoformat()} for x in rows]})
 
 
 @bp.post("/admin/disputes/<dispute_id>/decision")
@@ -56,8 +65,15 @@ def dispute_queue():
 def dispute_decision(dispute_id):
     admin=current_user();row=Dispute.query.with_for_update().get_or_404(dispute_id);data=request.get_json(silent=True) or {};decision=str(data.get("decision") or "")
     if decision not in ("release_to_artisan","refund_customer","split","no_action"):return jsonify({"message":"Invalid dispute decision"}),422
+    if row.status != "open": return jsonify(message="This dispute already has a decision"),409
+    split = None
+    if decision == "split":
+        try:
+            split = Decimal(str(data["refund_amount"]))
+            if not split.is_finite() or split <= 0 or split != split.quantize(Decimal(".01")): raise ValueError
+        except (KeyError,ValueError,InvalidOperation): return jsonify(message="Enter the authorized customer refund amount"),422
     row.status,row.resolution,row.resolved_at,row.assigned_admin_id="resolved",str(data.get("resolution") or "")[:4000],datetime.now(timezone.utc),admin.id
-    db.session.add(AuditLog(actor_id=admin.id,action="dispute.decision",entity_type="dispute",entity_id=row.id,before={"status":"open"},after={"status":"resolved","decision":decision,"resolution":row.resolution}));db.session.commit()
+    db.session.add(AuditLog(actor_id=admin.id,action="dispute.decision",entity_type="dispute",entity_id=row.id,before={"status":"open"},after={"status":"resolved","decision":decision,"refund_amount":str(split) if split else None,"resolution":row.resolution}));db.session.commit()
     return jsonify({"status":row.status,"financial_action":decision,"message":"Use the signed release or refund endpoint to move funds; the dispute record does not change the ledger by itself."})
 
 

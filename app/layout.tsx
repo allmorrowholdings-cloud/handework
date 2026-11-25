@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./public-design.css";
 import { SessionActivity } from "./components/session-activity";
-import "mapbox-gl/dist/mapbox-gl.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 export const metadata: Metadata = {
   title: { default: "handEwork | Get it done with skilled hands.", template: "%s | handEwork" },

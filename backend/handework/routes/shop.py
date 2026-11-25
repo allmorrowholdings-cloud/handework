@@ -1,11 +1,14 @@
 import os
-import secrets
+from uuid import UUID, uuid5
+from sqlalchemy.exc import IntegrityError
 from decimal import Decimal
 from flask import Blueprint, jsonify, request
 from ..extensions import db, limiter
 from ..models import Role, ShopOrder, ShopOrderItem
 from ..security import current_user, role_required
-from ..services.paystack import Paystack
+from ..services.paystack import Paystack, checkout_enabled, checkout_url
+from .payments import verify_charge
+from ..services.commission import commission, commission_bps
 from ..services.shop_catalog import PRODUCTS
 
 bp = Blueprint("shop", __name__)
@@ -55,22 +58,9 @@ def verify_order(reference):
     order = query.first_or_404()
     if order.status in {"refunded", "paid"}:
         return jsonify({"order": order.public()})
-    try:
-        provider = Paystack().verify_transaction(order.provider_reference or order.reference)
-    except Exception:
-        return jsonify({"message": "Payment verification is temporarily unavailable", "code": "verification_unavailable"}), 502
-    data = provider.get("data") or {}
-    expected_amount = int(round(float(order.total) * 100))
-    if data.get("status") == "success" and data.get("amount") == expected_amount and data.get("currency") == order.currency:
-        from datetime import datetime, timezone
-        order.status = "paid"
-        order.paid_at = order.paid_at or datetime.now(timezone.utc)
-        order.provider_payload = provider
-        db.session.commit()
-        return jsonify({"order": order.public()})
-    order.provider_payload = provider
+    verify_charge(order)
     db.session.commit()
-    return jsonify({"order": order.public(), "message": "Payment has not been confirmed yet"}), 202
+    return jsonify(order=order.public()), 200 if order.status == "paid" else 202
 
 
 @bp.post("/shop/orders")
@@ -79,6 +69,8 @@ def verify_order(reference):
 def create_order():
     user = current_user()
     data = request.get_json(silent=True) or {}
+    if not checkout_enabled(user):
+        return jsonify(message="Payments are disabled"), 503
     requested = data.get("items") or []
     if not requested:
         return jsonify({"message": "Your cart is empty", "code": "empty_cart"}), 422
@@ -117,7 +109,17 @@ def create_order():
 
     delivery_fee = money(os.getenv("SHOP_DELIVERY_FEE_GHS", "35")) if fulfilment == "delivery" else Decimal("0.00")
     total = (subtotal + delivery_fee).quantize(Decimal("0.01"))
-    reference = f"HEW-SHOP-{secrets.token_hex(6).upper()}"
+    key = request.headers.get("Idempotency-Key", "")
+    if not 1 <= len(key) <= 100:
+        return jsonify(message="Idempotency-Key required"), 400
+    reference = "HEW-SHOP-" + uuid5(UUID(user.id), key).hex[:23]
+    existing = ShopOrder.query.filter_by(reference=reference).with_for_update().first()
+    if existing:
+        prior=[(i.product_id,i.quantity) for i in ShopOrderItem.query.filter_by(order_id=existing.id)]
+        if (sorted(prior)!=sorted((i[0],i[2]) for i in normalised) or existing.total!=total or existing.fulfilment!=fulfilment
+                or (existing.full_name,existing.phone,existing.email,existing.area or "",existing.address or "")!=(full_name,phone,email,area,address)):
+            return jsonify(message="Checkout key belongs to a different order"),409
+        return jsonify(order=existing.public(), authorization_url=(existing.provider_payload or {}).get("authorization_url")), 200
     pickup_note = os.getenv("SHOP_PICKUP_NOTE", "Pickup location and collection window will be confirmed after payment.") if fulfilment == "pickup" else None
 
     order = ShopOrder(
@@ -125,6 +127,7 @@ def create_order():
         buyer_id=user.id,
         status="pending_payment",
         currency="GHS",
+        platform_fee=commission(subtotal, commission_bps(shop=True)),
         subtotal=subtotal,
         delivery_fee=delivery_fee,
         total=total,
@@ -138,7 +141,11 @@ def create_order():
         provider_reference=reference,
     )
     db.session.add(order)
-    db.session.flush()
+    try:
+        db.session.flush()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify(message="Checkout already requested"), 409
     for product_id, product, quantity, line_total in normalised:
         db.session.add(ShopOrderItem(
             order_id=order.id,
@@ -150,6 +157,7 @@ def create_order():
             line_total=line_total,
         ))
 
+    db.session.commit()
     callback_base = os.getenv("PUBLIC_WEB_URL", "http://localhost:3000").rstrip("/")
     callback_url = f"{callback_base}/shop?shop_order={reference}"
     try:
@@ -164,7 +172,10 @@ def create_order():
         db.session.rollback()
         return jsonify({"message": "Payment checkout could not be started. Check PAYSTACK_SECRET_KEY and try again.", "code": "provider_unavailable"}), 502
 
-    order.provider_payload = provider
+    result = provider.get("data") or {}
+    if result.get("reference") != reference or not checkout_url(result):
+        return jsonify(message="Checkout requires reconciliation"), 502
+    order.provider_payload = {"authorization_url": checkout_url(result)}
     db.session.commit()
     provider_data = provider.get("data") or {}
     return jsonify({
