@@ -31,7 +31,29 @@ export function Header() {
       <Link href="/how-it-works" onClick={() => setOpen(false)}>How it works</Link>
       {signedIn && <Link href="/my-jobs" onClick={() => setOpen(false)}>My jobs</Link>}
       <Link href="/join/artisan" onClick={() => setOpen(false)}>For professionals</Link>
+      <div className="mobile-account-links">
+        {signedIn ? <>
+          <Link href="/my-jobs" onClick={() => setOpen(false)}>My jobs</Link>
+          <Link href="/settings" onClick={() => setOpen(false)}>Account & settings</Link>
+        </> : (
+          <Link href="/auth/sign-in" onClick={() => setOpen(false)}>Sign in</Link>
+        )}
+        <Link href="/bookings/new" onClick={() => setOpen(false)}>Describe a job</Link>
+      </div>
     </nav>
-    <div className="nav-actions"><ThemeToggle compact /><Link className="nav-signin" href={signedIn ? "/my-jobs" : "/auth/sign-in"}>{signedIn ? "Dashboard" : "Sign in"}</Link><Link className="button button-orange nav-cta" href="/bookings/new">Describe a job</Link><button className="menu-button" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen(!open)}><span /><span /></button></div>
+    <div className="nav-actions"><ThemeToggle compact />
+      {signedIn && (
+        <Link
+          className="account-avatar"
+          href="/settings"
+          aria-label="Account and settings"
+          title="Account and settings"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+            <circle cx="12" cy="8" r="3.5" />
+            <path d="M5 20c0-4 3-6 7-6s7 2 7 6" />
+          </svg>
+        </Link>
+      )}<Link className="nav-signin" href={signedIn ? "/my-jobs" : "/auth/sign-in"}>{signedIn ? "Dashboard" : "Sign in"}</Link><Link className="button button-orange nav-cta" href="/bookings/new">Describe a job</Link><button className="menu-button" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen(!open)}><span /><span /></button></div>
   </div></header>;
 }

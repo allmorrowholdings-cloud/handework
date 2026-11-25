@@ -721,7 +721,7 @@ html[data-theme="dark"] .shop-category-tabs button.active { color:#17130f; backg
 @media(max-width:800px){.service-visual-grid{grid-template-columns:1fr}.service-visual-card{min-height:0}.service-visual-media{height:260px}.shop-teaser-grid,.shop-hero-grid{grid-template-columns:1fr;gap:25px}.shop-teaser-grid{padding-block:70px}.shop-teaser-art{min-height:310px}.shop-hero{padding-top:95px}.shop-hero-grid{min-height:0}.shop-hero-art img{width:112%;margin-left:-6%}.shop-product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.shop-toolbar{align-items:flex-start;flex-direction:column}.shop-artisan-cta>.shell{align-items:flex-start;flex-direction:column}.fulfilment-toggle{grid-template-columns:1fr}}
 @media(max-width:520px){.service-visual-media{height:210px}.service-visual-copy{grid-template-columns:38px 1fr 24px;padding:16px}.service-visual-copy h3{font-size:18px}.shop-product-grid{grid-template-columns:1fr}.shop-product-media{height:270px}.shop-checkout-card{padding:26px 20px}.shop-drawer{padding:20px}.auth-artisan-cta{align-items:flex-start;flex-direction:column;gap:8px}}
 
-/* 2026-08-25 V4 — continuous relief wall, contrast pass, premium trust signals */
+/* 2026-08-25 V4 Ã¢â‚¬â€ continuous relief wall, contrast pass, premium trust signals */
 .hero.hero-light {
   background-color: #f2ebde;
   background-image:
@@ -885,7 +885,7 @@ html[data-theme="dark"] .auth-artisan-cta span { color:#b5aa9e; }
   .hero.hero-light { background-position: 45% center, 64% center; }
 }
 
-/* 2026-08-25 V5 — dark-first, plain relief hero, focused services, live shop checkout */
+/* 2026-08-25 V5 Ã¢â‚¬â€ dark-first, plain relief hero, focused services, live shop checkout */
 .eyebrow,.app-kicker { display:none !important; }
 
 /* Plain hero surface: all crack/relief detail now comes from the supplied transparent hero artwork. */
@@ -1206,7 +1206,7 @@ html[data-theme="dark"] .hero.hero-light .hero-quick a {
 }
 
 /* ================================================================
-   handEwork V8 — dark logo + centered responsive hero composition
+   handEwork V8 Ã¢â‚¬â€ dark logo + centered responsive hero composition
    ================================================================ */
 .logo-image .logo-image-wrap {
   position: relative;
@@ -1352,7 +1352,7 @@ html[data-theme="dark"] .home-header .logo-image.logo-light .logo-image-wrap {
 }
 
 /* ================================================================
-   handEwork V10 — organic hero artwork edge blending
+   handEwork V10 Ã¢â‚¬â€ organic hero artwork edge blending
    Keeps the supplied transparent relief artwork intact while
    dissolving the outer canvas into the plain hero background.
    ================================================================ */
@@ -1680,7 +1680,7 @@ html .home-market .hero.hero-light, html[data-theme] .home-market .hero.hero-lig
   overflow-wrap: anywhere;
 }
 
-/* handEwork — Account experience */
+/* handEwork Ã¢â‚¬â€ Account experience */
 
 .hw-settings {
   display: grid;
@@ -2052,4 +2052,194 @@ html .home-market .hero.hero-light, html[data-theme] .home-market .hero.hero-lig
   color: inherit;
   background: transparent;
   cursor: pointer;
+}
+
+
+/* HANDEWORK_NAVIGATION_RELEASE_2026 */
+
+.mobile-account-links {
+  display: none;
+}
+
+.nav-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.nav-brand > small {
+  font-size: 9px;
+  line-height: 1.3;
+  letter-spacing: .07em;
+  opacity: .7;
+  white-space: nowrap;
+}
+
+.site-header .logo-image.logo-light .logo-image-wrap {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.account-avatar {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #da6620;
+  background: rgba(218,102,32,.09);
+  border: 1px solid rgba(218,102,32,.3);
+  border-radius: 50%;
+}
+
+.account-avatar:hover {
+  background: rgba(218,102,32,.18);
+}
+
+.account-avatar:focus-visible {
+  outline: 2px solid #da6620;
+  outline-offset: 3px;
+}
+
+@media (max-width: 800px) {
+  .nav-wrap {
+    gap: 9px;
+  }
+
+  .nav-brand {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .site-header .logo-image,
+  .site-header .logo-image .logo-image-wrap {
+    width: clamp(110px, 30vw, 150px);
+    min-height: 0;
+  }
+
+  .nav-brand > small {
+    font-size: 8px;
+  }
+
+  .nav-actions {
+    gap: 8px;
+    flex: none;
+  }
+
+  .site-header .nav-links.open {
+    display: grid;
+    background: #17130f;
+    color: #f7f0e6;
+  }
+
+  html[data-theme="light"] .site-header .nav-links.open a,
+  html[data-theme="dark"] .site-header .nav-links.open a {
+    color: #f7f0e6;
+  }
+
+  .site-header .nav-links.open a:hover,
+  .site-header .nav-links.open a:focus-visible {
+    color: #f27a2e;
+  }
+
+  .mobile-account-links {
+    display: grid;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,.18);
+  }
+
+  .mobile-account-links a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 370px) {
+  .site-header .logo-image,
+  .site-header .logo-image .logo-image-wrap {
+    width: 110px;
+  }
+
+  .nav-actions {
+    gap: 5px;
+  }
+}
+
+
+/* HANDEWORK_PWA_INSTALL_RELEASE */
+
+.footer-install {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 28px 0;
+  border-top: 1px solid rgba(255,255,255,.15);
+}
+
+.footer-install strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.footer-install p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  opacity: .75;
+}
+
+.footer-install button,
+.video-enable-sound {
+  border: 0;
+  border-radius: 9px;
+  padding: 13px 22px;
+  background: #da6620;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.footer-install button:focus-visible,
+.video-enable-sound:focus-visible {
+  outline: 2px solid #f27a2e;
+  outline-offset: 3px;
+}
+
+.footer-install-help {
+  flex-basis: 100%;
+}
+
+.demo-video {
+  position: relative;
+}
+
+.video-enable-sound {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  transform: translateX(-50%);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .footer-install {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .footer-install button {
+    width: 100%;
+  }
 }
