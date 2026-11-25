@@ -960,3 +960,109 @@ html[data-theme="dark"] .home-market .home-process-media {
     font-size: 14px;
   }
 }
+
+
+/* HANDEWORK_GH_LOCATION_RELEASE_2026 */
+.home-market .hero.hero-light .finder,
+.home-market .hero.hero-light .finder.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  width: 100%;
+  max-width: 820px;
+  box-shadow: none;
+  border-radius: 16px;
+  overflow: visible;
+}
+.home-market .hero.hero-light .finder > .finder-service,
+.home-market .hero.hero-light .finder > .finder-place {
+  min-width: 0;
+  border-bottom: 1px solid #e3ddd4;
+}
+.home-market .hero.hero-light .finder .finder-place-input {
+  display: block;
+  position: relative;
+  margin: 0;
+  border: 0;
+  padding: 9px 14px 8px;
+  min-height: 61px;
+}
+.home-market .finder .finder-place-input > span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #60594e;
+}
+.home-market .finder .finder-place-input input {
+  padding-right: 82px;
+  width: 100%;
+  min-width: 0;
+}
+.home-market .finder .finder-place-input .locate {
+  bottom: 9px;
+  right: 10px;
+  min-height: 34px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+.finder-place { min-width: 0; position: relative; }
+.finder-place .finder-browse { padding: 4px 14px 12px; }
+.finder-browse summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: #b55218;
+  line-height: 1.6;
+}
+.finder-admin-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.finder-admin-grid select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 7px 10px;
+  border: 1px solid #d3c9bc;
+  border-radius: 9px;
+  background: #fff;
+  color: #17130f;
+  font-size: 13px;
+}
+.finder-admin-grid select:disabled { opacity: .55; }
+.finder-browse p { margin: 8px 0 0; font-size: 11px; line-height: 1.5; color: #60594e; }
+.home-market .hero.hero-light .finder .finder-submit {
+  grid-column: 1 / -1;
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 390px);
+  min-height: 56px;
+  margin: 12px auto 6px;
+  border-radius: 999px;
+  box-shadow: none;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+}
+.home-market .hero.hero-light .finder .finder-location-error {
+  grid-column: 1/-1;
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+@media (max-width: 720px) {
+  .home-market .hero.hero-light .finder,
+  .home-market .hero.hero-light .finder.compact { grid-template-columns: minmax(0,1fr); }
+  .home-market .hero.hero-light .finder > .finder-service,
+  .home-market .hero.hero-light .finder > .finder-place { border-right: 0; }
+  .home-market .hero.hero-light .finder .finder-submit {
+    width: calc(100% - 16px);
+    min-height: 56px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-market .hero.hero-light .finder .finder-submit { transition: none; }
+}

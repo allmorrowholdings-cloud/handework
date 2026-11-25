@@ -2,70 +2,146 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { api } from "../../lib/api";
+import ghPlaces from "../../lib/ghana-places.json";
 import { ServiceSelect } from "./service-select";
+
+type Town = { name: string };
+type District = { id: string; name: string; towns: Town[] };
+type Region = { id: string; name: string; districts: District[] };
+const regions: Region[] = ghPlaces;
+type LocationResult = { label: string; lat: number; lon: number };
 
 export function LocationSearch({ compact = false, initialService = "", initialLocation = "", initialCoordinates = "" }: { compact?: boolean; initialService?: string; initialLocation?: string; initialCoordinates?: string }) {
   const router = useRouter();
   const [describe, setDescribe] = useState(false);
   const [problem, setProblem] = useState("");
   const [service, setService] = useState(initialService);
-  const [location, setLocation] = useState(initialLocation || (initialCoordinates ? "Current location" : ""));
-  const [locating, setLocating] = useState(false);
+  const [location, setLocation] = useState(initialLocation || (initialCoordinates ? "GPS location selected" : ""));
   const [coordinates, setCoordinates] = useState(initialCoordinates);
+  const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
+  const [regionId, setRegionId] = useState("");
+  const [districtId, setDistrictId] = useState("");
   const locationRequest = useRef(0);
+  const region = regions.find(item => item.id === regionId);
+  const district = region?.districts.find(item => item.id === districtId);
+
+  async function reverseLocation(lat: number, lon: number, request: number) {
+    try {
+      const response = await api<{items: LocationResult[]}>(
+        `/v1/locations/reverse?coordinates=${encodeURIComponent(`${lat},${lon}`)}`
+      );
+      if (locationRequest.current !== request) return;
+      const name = response.items?.[0]?.label;
+      setLocation(name || "GPS location selected");
+      if (!name) setLocationError("GPS found your position. Add your area or landmark for a clearer address.");
+    } catch {
+      if (locationRequest.current !== request) return;
+      setLocation("GPS location selected");
+      setLocationError("GPS found your position, but the address could not be identified. Add your area or landmark if needed.");
+    } finally {
+      if (locationRequest.current === request) setLocating(false);
+    }
+  }
 
   function locate() {
     if (!window.isSecureContext || !navigator.geolocation) {
-      setLocationError("GPS is unavailable here. Enter your area or landmark instead.");
+      setLocationError("GPS is unavailable here. Choose a Ghana region and town, or type a landmark.");
       return;
     }
     const request = ++locationRequest.current;
-    setLocationError("");
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        if (request !== locationRequest.current) return;
-        setCoordinates(`${coords.latitude},${coords.longitude}`);
-        setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+    setLocationError("handEwork is requesting location access. Please choose Allow when your browser asks.");
+    navigator.geolocation.getCurrentPosition(({ coords }) => {
+      if (locationRequest.current !== request) return;
+      const {latitude:lat, longitude:lon} = coords;
+      // Quick Ghana bounds check, not an official administrative boundary test.
+      if (lat < 4.5 || lat > 11.3 || lon < -3.5 || lon > 1.4) {
         setLocating(false);
-      },
-      (error) => {
-        if (request !== locationRequest.current) return;
-        setLocationError(error.code === 1
-          ? "Allow location for this site in your browser, or enter your area below."
-          : error.code === 3
-            ? "Finding your location took too long. Try again or enter your area."
-            : "Your device could not determine its location. Check location services or enter your area.");
-        setLocating(false);
-      },
-      { enableHighAccuracy: false, maximumAge: 60_000, timeout: 15_000 }
-    );
+        setCoordinates("");
+        setLocationError("Your current position appears to be outside Ghana. Choose the Ghana location where the job will take place.");
+        return;
+      }
+      setCoordinates(`${lat},${lon}`);
+      setLocation("Finding your neighborhoodâ€¦");
+      void reverseLocation(lat,lon,request);
+    }, error => {
+      if (locationRequest.current !== request) return;
+      setLocating(false);
+      setLocationError(error.code === 1
+        ? "Location access for handEwork is blocked. Tap the location icon beside handEwork's web address and allow location access, or choose a region below. On iPhone, check Safari's Website Settings for Location."
+        : error.code === 3
+          ? "handEwork could not locate you in time. Try GPS again or choose a town below."
+          : "Your device could not provide a location. Choose a region, district and town below.");
+    }, {enableHighAccuracy: false, maximumAge: 60000, timeout: 15000});
   }
 
-  function submit(event: FormEvent) {
+  function updateRegion(id: string) {
+    locationRequest.current++;
+    setLocating(false); setRegionId(id); setDistrictId("");
+    setCoordinates(""); setLocation(""); setLocationError("");
+  }
+  function updateDistrict(id: string) {
+    locationRequest.current++;
+    setLocating(false); setDistrictId(id);
+    setCoordinates(""); setLocation(""); setLocationError("");
+  }
+  function chooseTown(name: string) {
+    if (!region || !district) return;
+    locationRequest.current++;
+    setLocating(false);
+    setCoordinates("");
+    setLocation(`${name}, ${district.name}, ${region.name}, Ghana`);
+    setLocationError("");
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (locating) return;
     if (describe && !problem.trim()) { setLocationError("Describe what you need help with."); return; }
     if ((!describe && !service) || (!location.trim() && !coordinates)) {
-      setLocationError(!service && !location.trim() ? "Choose a service and enter the job location." : !service ? "Choose a service to continue." : "Enter the job location or use GPS to continue.");
-      (event.currentTarget as HTMLFormElement).querySelector<HTMLElement>(!service ? "select" : "input")?.focus();
+      setLocationError(!service && !location.trim() ? "Choose a service and job location." : !service ? "Choose a service to continue." : "Choose a job location or use GPS to continue.");
       return;
     }
     const query = new URLSearchParams();
-    if (describe) query.set("problem", problem.trim());
-    else if (service.trim()) query.set("service", service.trim());
-    if (!coordinates && location.trim()) query.set("location", location.trim());
-    if (coordinates) query.set("coordinates", coordinates);
+    if (describe) query.set("problem",problem.trim());
+    else query.set("service", service.trim());
+    if (coordinates) query.set("coordinates",coordinates);
+    else query.set("location",location.trim());
     router.push(`${compact && !describe ? "/marketplace" : "/bookings/new"}?${query.toString()}`);
   }
 
   return <form className={compact ? "finder compact" : "finder"} onSubmit={submit} noValidate>
-    <label><span>What do you need done?</span>{describe ? <input value={problem} onChange={event=>setProblem(event.target.value)} placeholder="e.g. My tap is leaking" /> : <ServiceSelect value={service} onChange={value => { setService(value); setLocationError(""); }} />}<button className="finder-mode" type="button" onClick={()=>{setDescribe(!describe);setLocationError("");}}>{describe ? "Choose a service" : "Describe a problem"}</button></label>
-    <label><span>Where is the job?</span><input list="ghana-job-areas" required value={location} onChange={(e) => { locationRequest.current++; setLocating(false); setLocation(e.target.value); setCoordinates(""); setLocationError(""); }} placeholder="e.g. Osu, Accra" aria-label="Job location" aria-describedby={locationError ? "finder-location-error" : undefined} /><button type="button" className="locate" disabled={locating} onClick={locate}>{locating ? "Locating…" : "Use GPS"}</button></label>
-    <datalist id="ghana-job-areas">{["Osu, Accra","East Legon, Accra","Labone, Accra","Tema","Kumasi","Takoradi","Cape Coast","Tamale"].map(place => <option key={place} value={place} />)}</datalist>
-    {locationError && <p id="finder-location-error" className="finder-location-error" role="status">{locationError}</p>}
-    <button className="finder-submit" type="submit" disabled={locating}>Find an artisan</button>
+    <label className="finder-service"><span>What do you need done?</span>
+      {describe ? <input value={problem} onChange={e=>setProblem(e.target.value)} placeholder="e.g. My tap is leaking"/> : <ServiceSelect value={service} onChange={value=>{setService(value);setLocationError("");}}/>}
+      <button className="finder-mode" type="button" onClick={()=>{setDescribe(!describe);setLocationError("");}}>{describe ? "Choose a service" : "Describe a problem"}</button>
+    </label>
+    <div className="finder-place">
+      <label className="finder-place-input"><span>Where is the job?</span>
+        <input value={location} onChange={e=>{locationRequest.current++;setLocating(false);setCoordinates("");setLocation(e.target.value);setLocationError("");}} placeholder="Town, neighborhood or landmark in Ghana" aria-label="Job location" />
+        <button type="button" className="locate" onClick={locate} disabled={locating}>{locating ? "Findingâ€¦" : "Use GPS"}</button>
+      </label>
+      <details className="finder-browse">
+        <summary>Browse all 16 regions, districts and towns</summary>
+        <div className="finder-admin-grid">
+          <select aria-label="Ghana region" value={regionId} onChange={e=>updateRegion(e.target.value)}>
+            <option value="">Choose region</option>
+            {regions.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+          <select aria-label="Ghana district" value={districtId} disabled={!region} onChange={e=>updateDistrict(e.target.value)}>
+            <option value="">Choose district</option>
+            {region?.districts.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+          <select aria-label="Ghana town" value="" disabled={!district} onChange={e=>chooseTown(e.target.value)}>
+            <option value="">Choose town</option>
+            {district?.towns.map((item,i)=><option key={`${item.name}-${i}`} value={item.name}>{item.name}</option>)}
+          </select>
+        </div>
+        <p>Can't find your community? Type its name or nearest landmark above. Directory: <a href="https://openadmindata.org/api/gh/" target="_blank" rel="noopener noreferrer">Open Admin Data (CC BY 4.0)</a>.</p>
+      </details>
+    </div>
+    {locationError && <p className="finder-location-error" role="status">{locationError}</p>}
+    <button type="submit" className="finder-submit" disabled={locating}>Find an artisan</button>
   </form>;
 }
