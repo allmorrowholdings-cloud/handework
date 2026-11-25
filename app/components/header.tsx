@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { accessToken } from "../../lib/api";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "./theme-toggle";
+import { InstallApp } from "./install-app";
 
 export function Logo({ light = false }: { light?: boolean }) {
   return <Link className={`logo logo-image ${light ? "logo-light" : ""}`} href="/" aria-label="handEwork home">
@@ -41,7 +42,7 @@ export function Header() {
         <Link href="/bookings/new" onClick={() => setOpen(false)}>Describe a job</Link>
       </div>
     </nav>
-    <div className="nav-actions"><ThemeToggle compact />
+    <div className="nav-actions"><InstallApp compact /><ThemeToggle compact />
       {signedIn && (
         <Link
           className="account-avatar"

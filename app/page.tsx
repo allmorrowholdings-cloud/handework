@@ -24,6 +24,50 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="home-process" id="how-it-works" aria-labelledby="home-process-title">
+        <div className="shell home-process-grid">
+          <div className="home-process-copy">
+            <span className="home-eyebrow">A simpler way to get things done</span>
+            <h2 id="home-process-title">How it works</h2>
+            <ol className="home-steps">
+              <li>
+                <span className="home-step-number" aria-hidden="true">01</span>
+                <div>
+                  <h3>Describe the work</h3>
+                  <p>Tell us what needs attention, where the job is and when you need help.</p>
+                </div>
+              </li>
+              <li>
+                <span className="home-step-number" aria-hidden="true">02</span>
+                <div>
+                  <h3>Agree on the details</h3>
+                  <p>Review the professional, scope and quote before committing to payment.</p>
+                </div>
+              </li>
+              <li>
+                <span className="home-step-number" aria-hidden="true">03</span>
+                <div>
+                  <h3>Review the result</h3>
+                  <p>Follow the job record, check the finished work and approve completion or raise a concern.</p>
+                </div>
+              </li>
+            </ol>
+            <Link className="home-process-cta" href="/bookings/new">
+              Describe your job <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+          <div className="home-process-media">
+            <div className="home-process-media-head">
+              <span>See handEwork in action</span>
+              <span aria-hidden="true">●</span>
+            </div>
+            <DemoVideo />
+            <p className="home-process-caption">
+              From the first request to the finishing touches.
+            </p>
+          </div>
+        </div>
+      </section>
       <nav className="trust-links shell" aria-label="Booking safeguards">
         <Link href="/safety">Professional verification</Link><Link href="/how-it-works">Agreed quotations</Link><Link href="/safety">Completion approval</Link>
       </nav>
@@ -45,16 +89,6 @@ export default function Home() {
 
       <Professionals />
 
-      <section className="shell journey-story" id="how-it-works">
-        <h2>How it works</h2>
-        <ol><li><strong>Describe the work</strong><p>Tell us what needs attention, where the job is and when you need help.</p></li>
-          <li><strong>Agree on the details</strong><p>Review the professional, scope and quote before committing to payment.</p></li>
-          <li><strong>Review the result</strong><p>Follow the job record, check the finished work and approve completion or raise a concern.</p></li></ol>
-      </section>
-      <section className="demo-band"><div className="shell demo-layout">
-        <div><h2>See good work<br />in action.</h2><p>Follow a job from the first request to the finishing touches.</p><Link className="text-link" href="/bookings/new">Describe your job</Link></div>
-        <DemoVideo />
-      </div></section>
       <section className="shell reputation-story">
         <div><h2>Good work leaves proof.</h2><p>Look for WorkProof on a professional&apos;s profile. It brings together completed bookings, reviewed work evidence and customer feedback so you can see the experience behind the name.</p><Link className="text-link" href="/marketplace">Explore professionals</Link></div>
         <div><h2>Your skill. Your future.</h2><p>Set your service area, respond to requests and build a record of the work you deliver.</p><Link className="text-link" href="/join/artisan">Join as a professional</Link></div>

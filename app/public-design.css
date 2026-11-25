@@ -151,3 +151,436 @@ html[data-theme="dark"] .hero.hero-light .finder .finder-mode { color: #e8ddc5; 
     font-size: 12px;
   }
 }
+
+
+/* HANDEWORK_HOME_COMPACT_2026 */
+
+/* Header installation — compact and conditional */
+.header-install {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+.header-install button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(218,102,32,.5);
+  border-radius: 999px;
+  background: rgba(218,102,32,.1);
+  color: #da6620;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.header-install button:hover {
+  background: #da6620;
+  color: #fff;
+}
+
+.header-install-help {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 50;
+  width: min(260px, 75vw);
+  padding: 14px;
+  border: 1px solid #b7aa96;
+  border-radius: 12px;
+  background: #201d18;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: 0 12px 35px rgba(0,0,0,.18);
+}
+
+@media (max-width: 800px) {
+  .header-install button {
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+    padding: 0;
+  }
+  .header-install-label {
+    display: none;
+  }
+}
+
+/* Unified journey: clear three-step explanation + video */
+.home-market .home-process {
+  padding: clamp(60px, 7vw, 100px) 0;
+  background: var(--surface);
+  color: var(--foreground);
+  border-bottom: 1px solid var(--divider);
+}
+
+.home-market .home-process-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  align-items: center;
+  gap: clamp(36px, 7vw, 110px);
+}
+
+.home-market .home-eyebrow {
+  display: block;
+  margin-bottom: 14px;
+  color: #da6620;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.home-market .home-process h2 {
+  margin: 0 0 34px;
+  font-size: clamp(38px, 4.8vw, 66px);
+  font-weight: 760;
+  line-height: 1.02;
+  letter-spacing: -.055em;
+  color: var(--foreground);
+}
+
+.home-market .home-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+
+.home-market .home-steps li {
+  display: grid;
+  grid-template-columns: 46px minmax(0,1fr);
+  gap: 18px;
+  padding: 21px 0;
+  border-top: 1px solid var(--divider);
+}
+
+.home-market .home-steps li:last-child {
+  border-bottom: 1px solid var(--divider);
+}
+
+.home-market .home-step-number {
+  padding-top: 4px;
+  color: #da6620;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-market .home-steps h3 {
+  margin: 0 0 7px;
+  color: var(--foreground);
+  font-size: clamp(18px, 1.65vw, 23px);
+  font-weight: 750;
+  letter-spacing: -.025em;
+}
+
+.home-market .home-steps p {
+  margin: 0;
+  max-width: 43ch;
+  color: var(--secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.home-market .home-process-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  min-height: 46px;
+  margin-top: 28px;
+  padding: 0 21px;
+  border-radius: 999px;
+  background: #da6620;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.home-market .home-process-cta:hover {
+  background: #bf5118;
+}
+
+.home-market .home-process-media {
+  width: 100%;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--divider);
+  border-radius: 24px;
+  background: var(--surface-raised);
+  box-shadow: 0 20px 55px rgba(0,0,0,.055);
+}
+
+.home-market .home-process-media-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.home-market .home-process-media-head span:last-child {
+  color: #da6620;
+}
+
+.home-market .home-process .demo-video {
+  width: min(100%, 260px);
+  margin: 0 auto;
+  position: relative;
+}
+
+.home-market .home-process .demo-video video {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 440px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: #141414;
+}
+
+.home-market .home-process-caption {
+  margin: 16px 0 0;
+  color: var(--secondary);
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Small, modern service cards */
+.home-market .service-showcase {
+  padding-block: clamp(64px, 7vw, 92px);
+}
+
+.home-market .service-showcase .section-head {
+  margin-bottom: 28px;
+  gap: 20px;
+}
+
+.home-market .service-showcase .section-head h2 {
+  font-size: clamp(36px, 4.3vw, 60px);
+  line-height: 1.05;
+  letter-spacing: -.05em;
+}
+
+.home-market .service-showcase .section-head p {
+  margin-top: 10px;
+  font-size: 15px;
+  color: var(--secondary);
+}
+
+.home-market .service-visual-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.home-market .service-visual-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--divider);
+  border-radius: 15px;
+  background: var(--surface-raised);
+  color: var(--foreground);
+  box-shadow: none;
+  text-decoration: none;
+  transition: transform .2s ease, border-color .2s ease;
+}
+
+.home-market .service-visual-card:hover {
+  transform: translateY(-3px);
+  border-color: #da6620;
+  box-shadow: none;
+}
+
+.home-market .service-visual-media {
+  height: 195px;
+  flex: none;
+  overflow: hidden;
+  background: #eee7dc;
+}
+
+.home-market .service-visual-media::after {
+  display: none;
+}
+
+.home-market .service-visual-media picture,
+.home-market .service-visual-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.home-market .service-visual-media img {
+  object-fit: contain;
+  object-position: center;
+  transform: none;
+  transition: transform .25s ease;
+}
+
+.home-market .service-visual-card:hover img {
+  transform: scale(1.035);
+}
+
+.home-market .service-visual-copy {
+  display: block;
+  min-height: 0;
+  padding: 15px 17px 18px;
+  background: var(--surface-raised);
+}
+
+.home-market .service-visual-copy h3 {
+  margin: 0 0 5px;
+  font-size: 19px;
+  font-weight: 720;
+  letter-spacing: -.025em;
+  color: var(--foreground);
+}
+
+.home-market .service-visual-copy p {
+  margin: 0;
+  color: var(--secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* Less underlining — retain hover and keyboard affordances */
+.home-market .trust-links a,
+.home-market .ecosystem-links a,
+.home-market .text-link,
+.home-market .service-visual-card,
+.home-market .professional-index a,
+.home-market .reputation-story a {
+  text-decoration: none;
+}
+
+.home-market .text-link {
+  font-weight: 700;
+}
+
+.home-market .text-link:hover,
+.home-market .reputation-story a:hover,
+.home-market .ecosystem-links a:hover,
+.home-market .trust-links a:hover {
+  color: #da6620;
+  text-decoration: none;
+}
+
+/* Theme coherence */
+html[data-theme="dark"] .home-market .home-process-media,
+html[data-theme="dark"] .home-market .service-visual-card,
+html[data-theme="dark"] .home-market .service-visual-copy {
+  background: #201d18;
+}
+
+html[data-theme="dark"] .home-market .service-visual-media {
+  background: #29241f;
+}
+
+@media (min-width: 1200px) {
+  .home-market .service-visual-grid {
+    grid-template-columns: repeat(4, minmax(0,1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .home-market .home-process-grid {
+    grid-template-columns: minmax(0,1fr);
+    gap: 36px;
+  }
+
+  .home-market .home-process .demo-video {
+    width: min(100%, 285px);
+  }
+
+  .home-market .service-visual-grid {
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    gap: 14px;
+  }
+
+  .home-market .service-visual-media {
+    height: 165px;
+  }
+}
+
+@media (max-width: 650px) {
+  .home-market .home-process {
+    padding-block: 60px;
+  }
+
+  .home-market .home-process h2 {
+    margin-bottom: 20px;
+  }
+
+  .home-market .home-steps li {
+    grid-template-columns: 32px minmax(0,1fr);
+    gap: 12px;
+    padding: 17px 0;
+  }
+
+  .home-market .home-steps p {
+    font-size: 14px;
+  }
+
+  .home-market .home-process-media {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .home-market .service-showcase .section-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .home-market .service-visual-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+    gap: 12px;
+  }
+
+  .home-market .service-visual-media {
+    height: clamp(125px, 35vw, 175px);
+  }
+
+  .home-market .service-visual-copy {
+    padding: 12px;
+  }
+
+  .home-market .service-visual-copy h3 {
+    font-size: 16px;
+  }
+
+  .home-market .service-visual-copy p {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 350px) {
+  .home-market .service-visual-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-market .service-visual-media {
+    height: 180px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-market .service-visual-card,
+  .home-market .service-visual-media img {
+    transition: none;
+  }
+}
