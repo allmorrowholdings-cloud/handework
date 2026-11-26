@@ -17,6 +17,7 @@ export function PwaHomeGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let active = true;
     const standalone = standaloneMode();
+    if (standalone && !accessToken()) { router.replace("/app-welcome"); return; }
     const makePublic = (pwa: boolean) => {
       if (!active) return;
       document.documentElement.dataset.pwaPublic = pwa ? "true" : "false";

@@ -65,7 +65,7 @@ def google_login():
         existing = User.query.filter_by(email=normalize_email(claims["email"])).first()
         if existing:
             return jsonify(message="Sign in with your password, then connect Google in Account security.", code="google_link_required"), 409
-        return jsonify(message="Complete account registration to continue.", code="google_registration_required"), 404
+        return jsonify(message="Complete account registration to continue.", code="google_registration_required", profile={"first_name": str(claims.get("given_name") or "")[:80], "last_name": str(claims.get("family_name") or "")[:80], "email": normalize_email(claims.get("email"))}), 404
     user = db.session.get(User, linked.user_id)
     if not user or user.status != "active":
         return jsonify(message="Account unavailable", code="account_unavailable"), 403
@@ -135,3 +135,35 @@ def google_link():
     db.session.add(GoogleIdentity(user_id=user.id, google_sub=claims["sub"]))
     db.session.commit()
     return jsonify(message="Google sign-in connected successfully")
+
+
+@bp.post("/auth/google/verify-and-link")
+@limiter.limit("5 per minute")
+def google_verify_and_link():
+    """Link an existing password account after Google proof + password + any enabled MFA.
+
+    No account is created, no email-only linking and no MFA bypass.
+    """
+    data = request.get_json(silent=True) or {}
+    claims = verified_identity(data.get("credential"))
+    if not claims:
+        return jsonify(message="Google identity could not be verified", code="invalid_google_token"), 401
+    email = normalize_email(claims.get("email"))
+    user = User.query.filter_by(email=email).with_for_update().first()
+    if not user or not user.check_password(str(data.get("password") or "")):
+        return jsonify(message="Existing account password is incorrect", code="invalid_credentials"), 401
+    if user.status != "active":
+        return jsonify(message="Account unavailable", code="account_unavailable"), 403
+    existing_google = GoogleIdentity.query.filter_by(google_sub=claims["sub"]).first()
+    if existing_google:
+        return jsonify(message="Google identity already linked", code="already_linked"), 409
+    if GoogleIdentity.query.filter_by(user_id=user.id).first():
+        return jsonify(message="Another Google account is already linked", code="already_linked"), 409
+    factor = requires_totp(user, data)
+    if factor:
+        return factor
+    db.session.add(GoogleIdentity(user_id=user.id, google_sub=claims["sub"]))
+    user.last_login_at = datetime.now(timezone.utc)
+    result = session_for(user)
+    db.session.commit()
+    return jsonify(result)

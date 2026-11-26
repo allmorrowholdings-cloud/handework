@@ -15,7 +15,7 @@ export function AppWelcomeClient() {
     let active = true;
     const started = Date.now();
     async function continueToApp() {
-      let destination = "/";
+      let destination = installedApp() ? "/auth/sign-in?app=1" : "/";
       if (installedApp() && accessToken()) {
         try {
           const result = await api<{ user: { role: string } }>("/v1/auth/me");
@@ -27,7 +27,7 @@ export function AppWelcomeClient() {
           destination = "/auth/sign-in";
         }
       }
-      const remaining = Math.max(0, 1100 - (Date.now() - started));
+      const remaining = Math.max(0, 1900 - (Date.now() - started));
       window.setTimeout(() => { if (active) router.replace(destination); }, remaining);
     }
     void continueToApp();

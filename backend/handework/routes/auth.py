@@ -25,19 +25,20 @@ def normalize_phone(value):
 
 
 
-def browser_tokens(user, session_id):
+def browser_tokens(user, session_id, installed=False):
     return {
-        "access_token": create_access_token(identity=user.id, additional_claims={"sid": session_id, "role": user.role.value}),
-        "refresh_token": create_refresh_token(identity=user.id, additional_claims={"sid": session_id}, expires_delta=timedelta(days=1)),
+        "access_token": create_access_token(identity=user.id, additional_claims={"sid": session_id, "role": user.role.value, "installed": installed}),
+        "refresh_token": create_refresh_token(identity=user.id, additional_claims={"sid": session_id, "installed": installed}, expires_delta=timedelta(days=30 if installed else 1)),
     }
 
 
 def session_for(user):
-    if (request.get_json(silent=True) or {}).get("client") == "web":
+    if (request.get_json(silent=True) or {}).get("client") in ("web", "installed"):
+        installed = (request.get_json(silent=True) or {}).get("client") == "installed"
         session = LoginSession(user_id=user.id)
         db.session.add(session)
         db.session.flush()
-        result = {**browser_tokens(user, session.id), "user": user.public()}
+        result = {**browser_tokens(user, session.id, installed=installed), "user": user.public()}
         db.session.commit()
         return result
 
@@ -176,11 +177,11 @@ def refresh():
     if sid:
         now = datetime.now(timezone.utc)
         updated = LoginSession.query.filter(LoginSession.id == sid, LoginSession.user_id == user.id,
-                                            LoginSession.last_active > now - timedelta(days=1)).update({"last_active": now}, synchronize_session=False)
+                                            LoginSession.last_active > now - timedelta(days=30 if get_jwt().get("installed") else 1)).update({"last_active": now}, synchronize_session=False)
         if not updated:
             return jsonify({"message": "Please sign in again."}), 401
         db.session.commit()
-        return jsonify(browser_tokens(user, sid))
+        return jsonify(browser_tokens(user, sid, installed=bool(get_jwt().get("installed"))))
     if (request.get_json(silent=True) or {}).get("client") == "web":
         return jsonify(session_for(user))
     return jsonify({"access_token": create_access_token(identity=user.id, additional_claims={"role": user.role.value})})
