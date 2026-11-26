@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/** Keep the original video on Drive. Only create its iframe once the
+/** Keep the original video on Canva. Only create its iframe once the
  *  section is visible; remove it when the section leaves view so it stops.
- *  Google Drive and the browser control whether autoplay is permitted. */
+ *  Canva and the browser control whether autoplay is permitted. */
 export function SafetyVideo() {
   const section = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -25,7 +25,7 @@ export function SafetyVideo() {
     <div className="home-safety-video" ref={section}>
       {visible ? (
         <iframe
-          src="https://drive.google.com/file/d/1WkwTiQNtryINCKccY5KNMdhd5ot3y06U/preview?autoplay=1"
+          src="https://www.canva.com/design/DAHb9Ap4-yw/ihwbUlvlby3reXo9-PZEkg/watch?embed"
           title="handEwork Safety and Trust"
           allow="autoplay; fullscreen"
           allowFullScreen

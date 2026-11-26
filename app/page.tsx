@@ -9,7 +9,7 @@ import { DemoVideo } from "./components/demo-video";
 import { WorkforceSignal } from "./components/workforce-signal";
 import { PlatformTicker } from "./components/platform-ticker";
 import { SafetyVideo } from "./components/safety-video";
-import { TechnologyTicker } from "./components/technology-ticker";
+
 
 export default function Home() {
   return (
@@ -141,8 +141,8 @@ export default function Home() {
           </Link>
         </div>
       </section>
-      {/* HANDEWORK_VIEWPORT_FAQ_TECH_2026 */}
-      <TechnologyTicker />
+
+
       <section className="shell booking-faq" aria-labelledby="home-faq-title">
         <div className="home-faq-heading">
           <h2 id="home-faq-title">Before you book</h2>

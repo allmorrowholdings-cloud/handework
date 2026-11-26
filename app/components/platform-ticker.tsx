@@ -1,14 +1,33 @@
+const platforms = [
+  { name: "Gmail", src: "/platform-logos/gmail.png" },
+  { name: "Vercel", src: "/platform-logos/vercel.png" },
+  { name: "Firebase", src: "/platform-logos/firebase.png" },
+  { name: "Paystack", src: "/platform-logos/paystack.png" },
+];
+
 export function PlatformTicker() {
-  const providers = ["Supabase", "Vercel", "Gmail", "Paystack", "Firebase"];
-  return <section className="hw-platforms" aria-labelledby="hw-platforms-heading">
-    <div className="shell hw-platforms-intro">
-      <h2 id="hw-platforms-heading">Technology behind handEwork</h2>
-      <p>Platforms and services referenced by our application. Their inclusion does not imply endorsement.</p>
-    </div>
-    <div className="hw-platforms-window" aria-label="Supabase, Vercel, Gmail, Paystack, Firebase">
-      <div className="hw-platforms-track">
-        {[...providers, ...providers].map((name, index) => <span className="hw-platform-chip" key={`${name}-${index}`} aria-hidden={index >= providers.length}>{name}</span>)}
+  return (
+    <section className="hw-platforms hw-platform-logos" aria-label="Platforms used by handEwork">
+      <div className="hw-platforms-window">
+        <div className="hw-platforms-track">
+          {[0, 1].map(group => (
+            <ul className="hw-platform-logo-list" key={group} aria-hidden={group === 1 ? "true" : undefined}>
+              {platforms.map(platform => (
+                <li key={platform.name}>
+                  <img
+                    src={platform.src}
+                    alt={group === 0 ? platform.name : ""}
+                    width={2048}
+                    height={682}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </li>
+              ))}
+            </ul>
+          ))}
+        </div>
       </div>
-    </div>
-  </section>;
+    </section>
+  );
 }

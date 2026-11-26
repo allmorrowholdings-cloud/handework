@@ -34,11 +34,11 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
       );
       if (locationRequest.current !== request) return;
       const name = response.items?.[0]?.label;
-      setLocation(name || "Location confirmed via GPS");
+      setLocation(name || "Location confirmed");
       setLocationError("");
     } catch {
       if (locationRequest.current !== request) return;
-      setLocation("Location confirmed via GPS");
+      setLocation("Location confirmed");
       setLocationError("");
     } finally {
       if (locationRequest.current === request) setLocating(false);
@@ -57,16 +57,23 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
       if (locationRequest.current !== request) return;
       const {latitude:lat, longitude:lon} = coords;
       setCoordinates(`${lat},${lon}`);
-      setLocation("Location confirmed via GPS"); setLocationError(""); setLocating(false);
+      setLocation("Location confirmed"); setLocationError(""); setLocating(false);
       void reverseLocation(lat,lon,request);
     }, error => {
       if (locationRequest.current !== request) return;
       setLocating(false);
+      const android = /Android/i.test(navigator.userAgent);
+      const iphone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const permissionHelp = android
+        ? "Location is blocked for this site. In your Android browser, open site settings and allow Location, then tap Use GPS again. Check your phone's Location setting too. Or select a town below."
+        : iphone
+          ? "Location is blocked. On iPhone, allow Location for this website in Safari's Website Settings (or your browser's site permissions), then tap Use GPS again. Check iPhone Settings > Privacy & Security > Location Services too. Or select a town below."
+          : "Location is blocked for this site. Allow Location in your browser's site settings, then tap Use GPS again, or select a town below.";
       setLocationError(error.code === 1
-        ? "Location access for handEwork is blocked. Tap the location icon beside handEwork's web address and allow location access, or choose a region below. On iPhone, check Safari's Website Settings for Location."
+        ? permissionHelp
         : error.code === 3
-          ? "handEwork could not locate you in time. Try GPS again or choose a town below."
-          : "Your device could not provide a location. Choose a region, district and town below.");
+          ? "GPS timed out. Try Use GPS again or select a town below."
+          : "Your device could not provide a location. Please check location settings or choose a town below.");
     }, {enableHighAccuracy: false, maximumAge: 60000, timeout: 15000});
   }
 
@@ -115,7 +122,7 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
         <input className={coordinates ? "gps-location-confirmed" : undefined} value={location} onChange={e=>{locationRequest.current++;setLocating(false);setCoordinates("");setLocation(e.target.value);setLocationError("");}} placeholder="Town, neighbourhood or landmark" aria-label="Job location" />
         <button type="button" className="locate" onClick={locate} disabled={locating} aria-label="Use GPS to find the job location">{locating ? "Finding..." : "Use GPS"}</button>
       </label>
-      {coordinates && <p className="finder-gps-confirmed" role="status">✓ Location detected successfully</p>}`n      <details className="finder-browse">
+      <details className="finder-browse">
         <summary>Choose region, district and town</summary>
         <div className="finder-admin-grid">
           <select aria-label="Ghana region" value={regionId} onChange={e=>updateRegion(e.target.value)}>
