@@ -34,11 +34,11 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
       );
       if (locationRequest.current !== request) return;
       const name = response.items?.[0]?.label;
-      setLocation(name || "GPS location selected");
+      setLocation(name || "Location confirmed via GPS");
       setLocationError("");
     } catch {
       if (locationRequest.current !== request) return;
-      setLocation("GPS location selected");
+      setLocation("Location confirmed via GPS");
       setLocationError("");
     } finally {
       if (locationRequest.current === request) setLocating(false);
@@ -57,7 +57,7 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
       if (locationRequest.current !== request) return;
       const {latitude:lat, longitude:lon} = coords;
       setCoordinates(`${lat},${lon}`);
-      setLocation("GPS location selected"); setLocationError(""); setLocating(false);
+      setLocation("Location confirmed via GPS"); setLocationError(""); setLocating(false);
       void reverseLocation(lat,lon,request);
     }, error => {
       if (locationRequest.current !== request) return;
@@ -112,10 +112,10 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
     </label>
     <div className="finder-place">
       <label className="finder-place-input"><span>Where is the job?</span>
-        <input value={location} onChange={e=>{locationRequest.current++;setLocating(false);setCoordinates("");setLocation(e.target.value);setLocationError("");}} placeholder="Town, neighbourhood or landmark" aria-label="Job location" />
+        <input className={coordinates ? "gps-location-confirmed" : undefined} value={location} onChange={e=>{locationRequest.current++;setLocating(false);setCoordinates("");setLocation(e.target.value);setLocationError("");}} placeholder="Town, neighbourhood or landmark" aria-label="Job location" />
         <button type="button" className="locate" onClick={locate} disabled={locating} aria-label="Use GPS to find the job location">{locating ? "Finding..." : "Use GPS"}</button>
       </label>
-      <details className="finder-browse">
+      {coordinates && <p className="finder-gps-confirmed" role="status">✓ Location detected successfully</p>}`n      <details className="finder-browse">
         <summary>Choose region, district and town</summary>
         <div className="finder-admin-grid">
           <select aria-label="Ghana region" value={regionId} onChange={e=>updateRegion(e.target.value)}>

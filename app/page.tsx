@@ -7,6 +7,7 @@ import { services } from "../lib/services";
 import { Professionals } from "./components/professionals";
 import { DemoVideo } from "./components/demo-video";
 import { WorkforceSignal } from "./components/workforce-signal";
+import { PlatformTicker } from "./components/platform-ticker";
 import { SafetyVideo } from "./components/safety-video";
 import { TechnologyTicker } from "./components/technology-ticker";
 
@@ -65,6 +66,8 @@ export default function Home() {
         </div>
       </section>
 
+      {/* HANDEWORK_PWA_GPS_INTEGRATIONS_2026 */}
+      <PlatformTicker />
       <section className="section shell service-showcase" id="services">
         <div className="section-head"><div><h2>What needs doing?</h2><p>Start with the work. We’ll help you find the right hands.</p></div><Link className="text-link" href="/marketplace">View all services</Link></div>
         <div className="service-visual-grid">{services.filter((service) => service.name !== "Catering").map((service) => (

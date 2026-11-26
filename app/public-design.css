@@ -1844,3 +1844,40 @@ html[data-theme] .home-market .home-safety-video {
   .home-market .home-technology-track { animation: none; }
   .home-market .home-technology-window { overflow-x: auto; mask-image: none; }
 }
+/* HANDEWORK_PWA_GPS_INTEGRATIONS_2026 */
+.home-market .hw-platforms { position: relative; overflow: hidden; padding: clamp(28px,4vw,48px) 0; background: #fffaf3; border-block: 1px solid #e8dfd0; color: #1c1b19; }
+.home-market .hw-platforms-intro { text-align: center; margin-bottom: 18px; }
+.home-market .hw-platforms-intro h2 { margin: 0 0 5px; font-size: clamp(19px,2.2vw,27px); color: #1c1b19; letter-spacing: -.03em; }
+.home-market .hw-platforms-intro p { margin: 0; font-size: 12px; color: #666056; }
+.home-market .hw-platforms-window { overflow: hidden; mask-image: linear-gradient(to right,transparent,#000 9%,#000 91%,transparent); }
+.home-market .hw-platforms-track { display: flex; gap: 16px; width: max-content; animation: hw-platform-scroll 30s linear infinite; }
+.home-market .hw-platforms-window:hover .hw-platforms-track,
+.home-market .hw-platforms-window:focus-within .hw-platforms-track { animation-play-state: paused; }
+.home-market .hw-platform-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 150px; min-height: 56px; padding: 10px 28px; border: 1px solid #dfd4c3; border-radius: 12px; background: #fff; box-shadow: 0 8px 23px rgba(32,20,10,.06); font-size: 18px; font-weight: 800; letter-spacing: -.025em; white-space: nowrap; }
+.home-market .hw-platform-chip:nth-child(5n+1) { color: #3b275e; }
+.home-market .hw-platform-chip:nth-child(5n+2) { color: #151515; }
+.home-market .hw-platform-chip:nth-child(5n+3) { color: #df4437; }
+.home-market .hw-platform-chip:nth-child(5n+4) { color: #16a34a; }
+.home-market .hw-platform-chip:nth-child(5n+5) { color: #2456ae; }
+@keyframes hw-platform-scroll { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .home-market .hw-platforms-track { animation: none; } .home-market .hw-platforms-window { overflow-x: auto; mask-image: none; } }
+/* On any browser, the install control remains present; instructions are device-specific. */
+.header-install { position: relative; z-index: 60; }
+.header-install-help, .footer-install-help { text-align: left; font-weight: 400; }
+.header-install-help strong, .footer-install-help strong { display:block; margin-bottom: 8px; font-size: 14px; }
+.header-install-help p, .footer-install-help p { margin: 8px 0 0; font-size: 12px; line-height: 1.6; }
+.header-install-help .install-help-hint, .footer-install-help .install-help-hint { opacity: .8; }
+.header-install-help .install-help-close, .footer-install-help .install-help-close { position: absolute; top: 4px; right: 4px; border: 0!important; background: transparent!important; color: inherit!important; min-width: 32px; min-height: 32px; padding: 0!important; font-size: 22px; cursor: pointer; }
+.footer-install-help { position: relative; flex-basis: 100%; max-width: 460px; padding: 14px 42px 14px 16px; border: 1px solid #8c7a64; border-radius: 10px; }
+.home-market .finder input.gps-location-confirmed, .marketplace-page .finder input.gps-location-confirmed { color: #16733e !important; font-weight: 800; }
+.home-market .finder .finder-gps-confirmed, .marketplace-page .finder .finder-gps-confirmed { margin: 0 18px 7px; font-size: 12px; font-weight: 800; color: #16733e; }
+@media (max-width: 1024px) {
+  .site-header .shell.nav-wrap { padding-left: 6px !important; padding-right: 12px; }
+  .site-header .nav-brand { margin-left: 0 !important; padding-left: 0 !important; }
+  .site-header .nav-brand .logo-image { margin-left: 0 !important; }
+  .site-header .nav-brand .logo-image-wrap { overflow: hidden; }
+}
+@media (max-width: 400px) {
+  .site-header .shell.nav-wrap { padding-left: 3px !important; padding-right: 8px !important; }
+  .site-header .nav-actions { gap: 4px; }
+}
