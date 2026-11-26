@@ -1,6 +1,8 @@
 import React,{useEffect,useState}from"react";
 import{Animated,Pressable,SafeAreaView,StyleSheet,Text,View}from"react-native";
 import{router}from"expo-router";
+import {WebView} from "react-native-webview";
+import {handeworkOpeningVideo} from "../src/assets/handework-opening";
 import{useAuth}from"../src/auth/context";
 import{AllmorrowMark,Button,Logo}from"../src/components/ui";
 import{colors,space}from"../src/theme";
@@ -9,6 +11,7 @@ export default function Welcome(){
   const{user,loading}=useAuth();const[ready,setReady]=useState(false);const [fade]=useState(()=>new Animated.Value(0));
   useEffect(()=>{Animated.timing(fade,{toValue:1,duration:1000,useNativeDriver:true}).start();const timer=setTimeout(()=>setReady(true),1800);return()=>clearTimeout(timer)},[fade]);
   useEffect(()=>{if(!ready||loading)return;if(user?.role==="artisan")router.replace("/artisan/dashboard");else if(user)router.replace("/(tabs)")},[ready,loading,user]);
+  if(!ready||loading) return <SafeAreaView style={{flex:1,backgroundColor:"#fff"}}><WebView originWhitelist={["*"]} allowsInlineMediaPlayback mediaPlaybackRequiresUserAction={false} scrollEnabled={false} style={{flex:1,backgroundColor:"#fff"}} source={{html:`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" /></head><body style="margin:0;background:#fff;display:flex;align-items:center;justify-content:center;height:100vh"><video autoplay muted playsinline style="width:100%;max-width:960px;height:auto" src="data:video/mp4;base64,${handeworkOpeningVideo}"></video></body></html>`}} /></SafeAreaView>;
   return <SafeAreaView style={s.safe}><View style={s.page}><Animated.View style={[s.brand,{opacity:fade}]}><Logo light/><View style={s.bar}/><Text style={s.sub}>from ALLMORROW</Text></Animated.View>{ready&&!loading&&!user&&<View style={s.actions}><Text style={s.title}>Ready when you are.</Text><Text style={s.body}>Your work. One simple place.</Text><Button label="Sign in" onPress={()=>router.push("/(auth)/sign-in")}/><Pressable accessibilityRole="button" style={s.secondary} onPress={()=>router.push("/(auth)/register")}><Text style={s.secondaryText}>Create customer account</Text></Pressable><Pressable accessibilityRole="button" style={s.professional} onPress={()=>router.push("/(auth)/register?role=artisan")}><Text style={s.professionalText}>Work with handEwork</Text></Pressable></View>}{(!ready||loading)&&<Text style={s.opening}>Opening handEwork…</Text>}<AllmorrowMark/></View></SafeAreaView>
 }
 const s=StyleSheet.create({safe:{flex:1,backgroundColor:colors.ink},page:{flex:1,padding:space.lg,justifyContent:"space-between",alignItems:"stretch"},brand:{marginTop:90,alignItems:"center",gap:18},bar:{height:3,width:70,backgroundColor:colors.orange},sub:{fontSize:10,color:"#FFFFFF99",letterSpacing:2},opening:{textAlign:"center",fontSize:12,color:"#FFFFFFAA"},actions:{gap:13},title:{fontSize:39,lineHeight:43,fontWeight:"700",color:colors.white,letterSpacing:-1.8},body:{fontSize:15,color:"#FFFFFFBB",marginBottom:8},secondary:{minHeight:52,borderRadius:10,borderWidth:1,borderColor:"#FFFFFF77",alignItems:"center",justifyContent:"center"},secondaryText:{fontSize:14,fontWeight:"700",color:colors.white},professional:{minHeight:52,alignItems:"center",justifyContent:"center"},professionalText:{fontSize:14,fontWeight:"700",color:colors.orange}})

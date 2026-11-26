@@ -2262,3 +2262,41 @@ html[data-theme="dark"] .auth-page .auth-form input::placeholder { color: #a7a09
 .hw-app-home-book{background:var(--surface-raised,#222);padding:clamp(20px,4vw,38px);border:1px solid var(--divider,#555);border-radius:18px;margin-bottom:28px}.hw-app-home-book h2{font-size:clamp(32px,5vw,52px);line-height:1.05;letter-spacing:-.055em;margin:0 0 17px}.hw-app-home-book p{font-size:15px;color:var(--secondary,#aaa);margin:0 0 19px}.hw-app-home-book a{display:inline-flex;align-items:center;justify-content:center;min-height:54px;padding:12px 25px;border-radius:12px;background:#ffcf22;color:#121212;text-decoration:none;font-weight:800}
 @media(max-width:550px){.hw-app-booking{padding:15px 17px 100px}.hw-app-services{grid-template-columns:1fr 1fr;gap:8px}.hw-app-services button{min-height:60px;font-size:13px;padding:12px}.hw-app-flow-body h1{font-size:38px}.hw-app-flow-actions{position:sticky;bottom:12px;background:var(--surface,#141414);padding-block:10px;z-index:3}.hw-app-primary{min-width:0}}
 @media(prefers-reduced-motion:reduce){.hw-app-progress span{transition:none}}
+/* handEwork installed app UX polish 2026-11-26 */
+.hw-pwa-welcome{background:#fff!important;color:#333!important;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0;padding:0 15px}
+.hw-app-splash-video{display:block;width:min(100%,960px);height:auto;max-height:55dvh;object-fit:contain;background:#fff}
+.hw-app-splash-brand{font-size:11px;font-weight:700;letter-spacing:.15em;color:#68635a;margin-top:8px}
+.hw-app-page-loader{display:flex;align-items:center;justify-content:center;width:100%;min-height:65dvh;background:var(--surface,#141414)}
+.hw-app-page-loader img{display:block;width:min(45vw,240px);height:auto;animation:hw-app-pulse 1.25s ease-in-out infinite alternate}
+@keyframes hw-app-pulse{from{opacity:.55;transform:scale(.985)}to{opacity:1;transform:scale(1)}}
+.hw-native-app-shell{min-height:100dvh;display:flex;flex-direction:column;background:var(--surface,#141414);color:var(--foreground,#f5f3ee);padding-bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+.hw-native-app-top{height:68px;display:flex;align-items:center;justify-content:space-between;padding:12px clamp(18px,4vw,38px);border-bottom:1px solid var(--divider,#444);position:sticky;top:0;z-index:12;background:var(--surface,#141414)}
+.hw-app-location{font-weight:750;font-size:16px;letter-spacing:-.025em}
+.hw-native-avatar{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;color:var(--foreground,#fff);background:var(--surface-raised,#222);border:1px solid var(--divider,#555)}
+.hw-native-app-content{width:100%;max-width:1080px;margin:0 auto;flex:1;padding:clamp(20px,3vw,32px)}
+.hw-native-app-content .app-content{padding:0!important;max-width:none}
+.hw-native-app-content .hw-app-home-book{max-width:680px;margin:clamp(20px,8vh,100px) auto 0;padding:clamp(25px,6vw,48px);background:transparent;border:0;text-align:left}
+.hw-native-app-content .hw-app-home-book h1{font-size:clamp(42px,7vw,70px);letter-spacing:-.065em;line-height:1.02;margin:0 0 32px}
+.hw-native-app-content .hw-app-home-book a{min-width:210px;max-width:100%;border-radius:14px}
+.hw-app-bottom-nav{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);width:min(calc(100% - 24px),520px);z-index:40;display:grid;grid-template-columns:repeat(3,1fr);min-height:66px;padding:5px;background:var(--surface-raised,#222);border:1px solid var(--divider,#555);border-radius:22px;box-shadow:0 8px 40px #0005}
+.hw-app-bottom-nav a,.hw-app-bottom-nav button{min-width:0;color:var(--foreground,#fff);border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:650 11px/1.2 Arial,sans-serif;text-decoration:none;border-radius:15px;cursor:pointer}
+.hw-app-bottom-nav a[aria-current="page"],.hw-app-bottom-nav button[aria-expanded="true"]{background:#ffcf22;color:#161616}
+.hw-app-menu-overlay{position:fixed;inset:0;z-index:30;background:#0007;display:flex;align-items:flex-end;justify-content:center;padding:20px 15px calc(94px + env(safe-area-inset-bottom,0px))}
+.hw-app-menu{width:min(100%,510px);background:var(--surface-raised,#222);border:1px solid var(--divider,#555);border-radius:20px;padding:18px;box-shadow:0 10px 45px #0005;max-height:60dvh;overflow:auto;display:grid;gap:0}
+.hw-app-menu h2{font-size:21px;margin:0 0 12px;letter-spacing:-.035em}
+.hw-app-menu a,.hw-app-menu button{display:block;padding:13px 5px;border:0;border-bottom:1px solid var(--divider,#555);color:var(--foreground,#fff);background:transparent;text-align:left;text-decoration:none;font:600 14px Arial,sans-serif;min-height:44px}
+.hw-app-flow-head button{min-height:44px;min-width:60px;color:inherit;background:transparent;border:0;font-weight:700;cursor:pointer;text-align:left}
+.hw-app-flow-head strong{font-size:15px}
+.hw-app-gps-success{color:#0f7a4d!important;background:#e5fff1!important;border-color:#27aa70!important;font-size:16px!important;min-height:58px!important}
+.hw-app-location-edit{background:transparent;border:0;color:var(--foreground,#fff);text-decoration:underline;text-underline-offset:4px;padding:8px 0;cursor:pointer;text-align:left}
+.hw-auth-utility{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px 22px;margin:16px 0 0;font-size:13px;line-height:1.5}
+.hw-auth-utility a{color:var(--secondary,#a99f94);text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.hw-auth-utility a:hover{text-decoration:underline}
+.auth-artisan-cta{display:flex!important;gap:12px!important;flex-wrap:wrap!important;align-items:center!important;justify-content:space-between!important;min-height:58px}
+.auth-artisan-cta a{min-height:44px;display:inline-flex;align-items:center}
+.hw-google-auth,.hw-google-container{background:transparent!important;box-shadow:none!important;border:0!important;padding:0!important;max-width:100%;min-width:0;overflow:visible}
+.hw-google-auth{display:flex;align-items:center;justify-content:center;width:100%}
+.hw-google-container{width:min(100%,400px);display:flex;justify-content:center}
+.hw-google-container>div{max-width:100%}
+@media(max-width:550px){.hw-native-app-content{padding:16px}.hw-native-app-content .hw-app-home-book{margin-top:12vh;padding:20px 4px}.hw-native-app-content .hw-app-home-book a{width:100%}.auth-artisan-cta{flex-direction:column!important;align-items:stretch!important;gap:0!important}.auth-artisan-cta a{justify-content:flex-start}.hw-auth-utility{justify-content:space-between;gap:8px}.hw-auth-utility a{font-size:12px}.hw-app-flow-actions{bottom:calc(10px + env(safe-area-inset-bottom,0px))}}
+@media(prefers-reduced-motion:reduce){.hw-app-page-loader img{animation:none}}

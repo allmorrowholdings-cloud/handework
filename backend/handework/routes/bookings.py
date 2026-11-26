@@ -4,6 +4,7 @@ from uuid import UUID, uuid5
 from sqlalchemy.exc import IntegrityError
 from decimal import Decimal, InvalidOperation
 from datetime import date, datetime, time, timezone
+import re
 from flask import Blueprint, jsonify, request
 from ..extensions import db
 from ..models import ArtisanProfile, Availability, FileAsset, Booking, BookingStatus, BookingStatusEvent, Conversation, JobChange, Quote, Role
@@ -71,13 +72,19 @@ def bookings():
     if data.get("scheduled_date"):
         try:
             hour = {"morning": 8, "midday": 12, "evening": 16}.get(data.get("time_window", "morning"), 8)
+            minute = 0
+            if data.get("start_time") is not None:
+                value = str(data["start_time"])
+                if not re.fullmatch(r"(?:0[6-9]|1[0-9]|20):(?:00|30)", value) or value.startswith("20:") and value != "20:00":
+                    return jsonify(message="Start time must be from 6:00 AM to 8:00 PM in 30-minute intervals"), 422
+                hour, minute = map(int, value.split(":"))
             selected_date = date.fromisoformat(data["scheduled_date"])
             if selected_date < datetime.now(timezone.utc).date():
                 return jsonify({
                     "message": "Choose today or a future date for your job.",
                     "code": "past_booking_date"
                 }), 422
-            scheduled = datetime.combine(selected_date, time(hour, 0), tzinfo=timezone.utc)
+            scheduled = datetime.combine(selected_date, time(hour, minute), tzinfo=timezone.utc)
         except (TypeError, ValueError):
             return jsonify({"message": "Choose a valid job date."}), 422
     booking = Booking(reference=f"VV-{secrets.token_hex(4).upper()}", customer_id=user.id, service=data["service"].strip(), description=data["description"].strip(), address=data["address"].strip(), area=data["area"].strip(), city=data["city"].strip(), scheduled_start=scheduled, budget_type=data.get("budget_type", "quote"), budget_amount=data.get("budget") or None, contact_phone=data["contact_phone"].strip())
