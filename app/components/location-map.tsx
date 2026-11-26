@@ -4,7 +4,13 @@ import type { Map as InteractiveMap, Marker } from "maplibre-gl";
 import type { LineString, MultiLineString } from "geojson";
 export type MapPoint={id:string;display_name:string;trade?:string;latitude?:number|null;longitude?:number|null};
 export type RouteGeometry=LineString|MultiLineString;
-const styleUrl=process.env.NEXT_PUBLIC_MAP_STYLE_URL || (process.env.NEXT_PUBLIC_MAPTILER_KEY ? `https://api.maptiler.com/maps/streets-v2/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}` : "https://tiles.openfreemap.org/styles/liberty");
+// HANDEWORK_GEOAPIFY_MAP_2026
+// Geoapify free tier permits commercial use with visible attribution.
+// A browser key is intentionally public; restrict its domains in Geoapify.
+const geoapifyKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY?.trim();
+const styleUrl = geoapifyKey
+  ? `https://maps.geoapify.com/v1/styles/osm-bright-smooth/style.json?apiKey=${encodeURIComponent(geoapifyKey)}`
+  : null;
 
 export function LocationMap({items,coordinates="",onPick,route}:{items:MapPoint[];coordinates?:string;onPick?:(lat:number,lon:number)=>void;route?:RouteGeometry}){
   const container=useRef<HTMLDivElement>(null);
@@ -20,6 +26,13 @@ export function LocationMap({items,coordinates="",onPick,route}:{items:MapPoint[
     setReady(false);
     setError("");
     setFallback(false);
+    // A viewable fallback works before an API key is configured; never reuse
+    // an unreliable or unauthorized public tile endpoint automatically.
+    if (!styleUrl) {
+      setFallback(true);
+      setError("Interactive professional pins will be available after the Geoapify map key is configured.");
+      return;
+    }
     void import("maplibre-gl").then(lib=>{
       if(disposed||!container.current)return;
       const map=new lib.Map({container:container.current,style:styleUrl,center:[-1.1,7.9],zoom:5});
@@ -98,7 +111,7 @@ export function LocationMap({items,coordinates="",onPick,route}:{items:MapPoint[
   const googleUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${center.lat},${center.lon}`)}`;
   return <><div className="real-map" style={{minHeight:290,display:fallback ? "none" : undefined}} ref={container} aria-label="Interactive location map"/>
     {fallback && <div className="hw-map-backup"><iframe src={fallbackUrl} title="Backup location map" loading="lazy" referrerPolicy="strict-origin-when-cross-origin"/><p>Backup map view. <a href={googleUrl} target="_blank" rel="noopener noreferrer">Open in Google Maps</a></p></div>}
-    {error && <div className="hw-map-notice" role="status">'
+    {error && <div className="hw-map-notice" role="status">
       <span>{error}</span>
       <button type="button" onClick={() => setRetry(value => value + 1)}>
         Retry map
