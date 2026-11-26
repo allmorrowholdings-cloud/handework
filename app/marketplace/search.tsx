@@ -117,7 +117,7 @@ export function MarketplaceSearch() {
 
       <div className="market-layout market-layout-refined">
         <aside className="market-filter-column" aria-label="Professional search filters">
-          <details className="market-filter-drawer" open={undefined}>
+          <details className="market-filter-drawer" open>
             <summary><span>Refine results {activeFilterCount > 0 ? `(${activeFilterCount})` : ""}</span><span className="market-filter-chevron" aria-hidden="true">+</span></summary>
             <div className="filters market-filters">
               <div className="filter-title"><b>Filters</b><button type="button" onClick={reset}>Reset all</button></div>

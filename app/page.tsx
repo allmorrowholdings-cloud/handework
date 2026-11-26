@@ -116,9 +116,6 @@ export default function Home() {
       >
         <div className="shell home-safety-inner">
           <div className="home-safety-heading">
-            <span className="home-safety-eyebrow">
-              SAFETY &amp; TRUST
-            </span>
 
             <h2 id="home-safety-title">
               Know how your job is protected.

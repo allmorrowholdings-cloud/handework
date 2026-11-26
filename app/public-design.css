@@ -1784,3 +1784,26 @@ html[data-theme] .header-install button:hover {
   .marketplace-page .finder *,
   .home-market .hero.hero-light .finder * { transition: none !important; }
 }
+/* HANDEWORK_GPS_MARKET_REPAIR_2026 */
+/* The original Drive file remains hosted externally. */
+.home-market .home-safety-video,
+html[data-theme] .home-market .home-safety-video {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+/* Make the filter panel always visible on desktop; mobile starts expanded and can be collapsed. */
+@media (min-width: 821px) {
+  .marketplace-page .market-filter-drawer > .market-filters,
+  .marketplace-page .market-filter-drawer:not([open]) > .market-filters {
+    display: block !important;
+  }
+}
+@media (max-width: 820px) {
+  .marketplace-page .market-filter-drawer[open] > .market-filters {
+    display: block !important;
+  }
+  .marketplace-page .market-filter-drawer > summary {
+    min-height: 52px;
+  }
+}

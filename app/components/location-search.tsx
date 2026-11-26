@@ -35,11 +35,11 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
       if (locationRequest.current !== request) return;
       const name = response.items?.[0]?.label;
       setLocation(name || "GPS location selected");
-      if (!name) setLocationError("GPS found your position. Add your area or landmark for a clearer address.");
+      setLocationError("");
     } catch {
       if (locationRequest.current !== request) return;
       setLocation("GPS location selected");
-      setLocationError("GPS found your position, but the address could not be identified. Add your area or landmark if needed.");
+      setLocationError("");
     } finally {
       if (locationRequest.current === request) setLocating(false);
     }
@@ -56,15 +56,8 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
     navigator.geolocation.getCurrentPosition(({ coords }) => {
       if (locationRequest.current !== request) return;
       const {latitude:lat, longitude:lon} = coords;
-      // Quick Ghana bounds check, not an official administrative boundary test.
-      if (lat < 4.5 || lat > 11.3 || lon < -3.5 || lon > 1.4) {
-        setLocating(false);
-        setCoordinates("");
-        setLocationError("Your current position appears to be outside Ghana. Choose the Ghana location where the job will take place.");
-        return;
-      }
       setCoordinates(`${lat},${lon}`);
-      setLocation("Finding your neighborhood...");
+      setLocation("GPS location selected"); setLocationError(""); setLocating(false);
       void reverseLocation(lat,lon,request);
     }, error => {
       if (locationRequest.current !== request) return;
@@ -109,7 +102,7 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
     else query.set("service", service.trim());
     if (coordinates) query.set("coordinates",coordinates);
     else query.set("location",location.trim());
-    router.push(`${describe ? "/bookings/new" : "/marketplace"}?${query.toString()}`);
+    router.push(`${describe || !compact ? "/bookings/new" : "/marketplace"}?${query.toString()}`);
   }
 
   return <form className={compact ? "finder compact" : "finder"} onSubmit={submit} noValidate>
