@@ -49,7 +49,7 @@ def create_user(data, role):
     if not email: return None, (jsonify({"message": "Enter a valid email address", "code": "invalid_email"}), 422)
     if not phone: return None, (jsonify({"message": "Enter a valid mobile number", "code": "invalid_phone"}), 422)
     password = str(data.get("password") or "")
-    if len(password) < 8: return None, (jsonify({"message": "Password must have at least 8 characters", "code": "weak_password"}), 422)
+    if len(password) < 12 or len(password) > 128: return None, (jsonify({"message": "Choose a unique password or passphrase of 12 to 128 characters", "code": "weak_password"}), 422)
     if User.query.filter((User.email == email) | (User.phone == phone)).first(): return None, (jsonify({"message": "An account already uses this email or mobile number", "code": "account_exists"}), 409)
     user = User(email=email, phone=phone, first_name=str(data.get("first_name") or "").strip(), last_name=str(data.get("last_name") or "").strip(), role=role, referral_code=secrets.token_hex(4).upper())
     if not user.first_name or not user.last_name: return None, (jsonify({"message": "First and last name are required", "code": "missing_name"}), 422)
@@ -271,8 +271,8 @@ def confirm_account_code(action):
         return jsonify(message="This code is invalid or expired"), 422
     if action == "reset":
         password = data.get("password")
-        if not isinstance(password, str) or len(password) < 8:
-            return jsonify(message="Password must have at least 8 characters"), 422
+        if not isinstance(password, str) or not 12 <= len(password) <= 128:
+            return jsonify(message="Password must contain 12 to 128 characters"), 422
         user.set_password(password)
         user.session_version += 1
         LoginSession.query.filter_by(user_id=user.id).delete()

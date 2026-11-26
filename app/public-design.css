@@ -2113,3 +2113,64 @@ html[data-theme="light"] .site-header .theme-toggle svg { color: #1e201d !import
 @keyframes hw-welcome-pulse { to { opacity: .25; transform: scaleX(.65); } }
 @media (prefers-reduced-motion: reduce) { .hw-pwa-welcome-progress { animation: none; } }
 @media (max-width: 560px) { .hw-pwa-welcome, .hw-pwa-checking { padding: 22px; } }
+/* HANDEWORK_PWA_PRIVACY_INSTALL_CI_2026 */
+/* Only the installed, signed-out PWA receives a minimal landing screen. */
+html[data-pwa-public="true"] .home-market > section:not(.hero),
+html[data-pwa-public="true"] .home-market > footer,
+html[data-pwa-public="true"] .home-market .home-hammer {
+  display: none !important;
+}
+html[data-pwa-public="true"] .home-market .hero-grid-visual {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  padding-top: clamp(104px, 14vh, 165px) !important;
+  min-height: calc(100dvh - 84px);
+}
+html[data-pwa-public="true"] .home-market .hero-copy {
+  width: min(100%, 850px) !important;
+  max-width: 850px !important;
+  margin-inline: auto !important;
+}
+.hw-pwa-quick-nav { display: none; }
+@media (max-width: 820px) {
+  html[data-pwa-public="true"] .home-market .hero-grid-visual {
+    min-height: calc(100dvh - 140px);
+    padding-top: 105px !important;
+    padding-bottom: 98px !important;
+  }
+  .hw-pwa-quick-nav {
+    display: flex;
+    position: fixed;
+    z-index: 1000;
+    bottom: 0;
+    inset-inline: 0;
+    gap: 6px;
+    padding: 10px 12px max(12px,env(safe-area-inset-bottom));
+    align-items: stretch;
+    justify-content: center;
+    background: #17130f;
+    border-top: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 -5px 25px rgba(0,0,0,.14);
+  }
+  .hw-pwa-quick-nav a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 45px;
+    padding: 8px 5px;
+    font-size: clamp(11px, 2.9vw, 14px);
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.25;
+    border-radius: 6px;
+    color: #f7f0e6;
+    background: #29231f;
+  }
+  .hw-pwa-quick-nav a:last-child { background: #ffcf22; color: #14120f; }
+}
+@media (min-width:821px) {
+  html[data-pwa-public="true"] .home-market .hero-copy h1,
+  html[data-pwa-public="true"] .home-market .hero-copy .hero-lede { text-align: left !important; margin-left: 0 !important; }
+}

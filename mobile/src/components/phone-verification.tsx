@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { api } from "../api/client";
 import { useAuth } from "../auth/context";
@@ -15,11 +15,14 @@ export function PhoneVerification() {
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
-    setCode("");
-    setRequested(false);
-    setNotice("");
-    setResendAt(0);
-    setSeconds(0);
+    const timer = setTimeout(() => {
+      setCode("");
+      setRequested(false);
+      setNotice("");
+      setResendAt(0);
+      setSeconds(0);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [user?.id, user?.phone]);
 
   useEffect(() => {

@@ -34,7 +34,7 @@ export function ProfileEditor() {
           <strong>Your profile is not yet publicly listed.</strong>
           <p>
             Verification status: {profile.verification_status ?? "not confirmed"}.
-            Complete your checks and await an administrator's approval.
+            Complete your checks and await an administrator&apos;s approval.
           </p>
           <Link href="/artisan/verification">Manage verification</Link>
         </>

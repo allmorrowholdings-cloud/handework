@@ -25,5 +25,6 @@ pyotp==2.12.1
 qrcode[pil]==8.2
 Pillow==13.0.0
 firebase-admin==7.8.0
+google-auth>=2.36,<3
 sentry-sdk==3.0.0
 puremagic==2.3.0

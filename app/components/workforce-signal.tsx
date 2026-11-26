@@ -8,7 +8,7 @@ export function WorkforceSignal() {
   useEffect(() => {
     const root = ref.current;
     if (!root) return;
-    if (!("IntersectionObserver" in window)) { setVisible(true); return; }
+    if (typeof IntersectionObserver === "undefined") { const frame = requestAnimationFrame(() => setVisible(true)); return () => cancelAnimationFrame(frame); }
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) { setVisible(true); observer.disconnect(); }
     }, { threshold: 0.3 });
@@ -25,7 +25,6 @@ export function WorkforceSignal() {
       setNumber(Math.round(eased * 16) / 10);
       if (fraction < 1) frame = requestAnimationFrame(animate);
     };
-    setNumber(0);
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
   }, [visible]);

@@ -138,7 +138,7 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
             {district?.towns.map((item,i)=><option key={`${item.name}-${i}`} value={item.name}>{item.name}</option>)}
           </select>
         </div>
-        <p>Can't find your community? Enter the town or nearest landmark above.</p>
+        <p>Can&apos;t find your community? Enter the town or nearest landmark above.</p>
       </details>
     </div>
     {locationError && <p className="finder-location-error" role="status">{locationError}</p>}

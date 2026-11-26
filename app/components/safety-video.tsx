@@ -11,7 +11,7 @@ export function SafetyVideo() {
   useEffect(() => {
     const element = target.current;
     if (!element) return;
-    if (!("IntersectionObserver" in window)) { setVisible(true); return; }
+    if (typeof IntersectionObserver === "undefined") { const frame = requestAnimationFrame(() => setVisible(true)); return () => cancelAnimationFrame(frame); }
     const observer = new IntersectionObserver(([entry]) => setVisible(entry.intersectionRatio >= 0.3), {threshold:[0,0.3,0.65]});
     observer.observe(element);
     return () => observer.disconnect();
