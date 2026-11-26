@@ -2,41 +2,29 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/** Keep the original video on Canva. Only create its iframe once the
- *  section is visible; remove it when the section leaves view so it stops.
- *  Canva and the browser control whether autoplay is permitted. */
-export function SafetyVideo() {
-  const section = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
+const videoUrl = "https://www.canva.com/design/DAHb9Ap4-yw/ihwbUlvlby3reXo9-PZEkg/watch?embed";
+const publicUrl = "https://www.canva.com/design/DAHb9Ap4-yw/ihwbUlvlby3reXo9-PZEkg/watch";
 
+export function SafetyVideo() {
+  const target = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
   useEffect(() => {
-    const node = section.current;
-    if (!node) return;
-    if (!("IntersectionObserver" in window)) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setVisible(entry.isIntersecting && entry.intersectionRatio >= 0.3),
-      { threshold: [0, 0.3, 0.65] }
-    );
-    observer.observe(node);
+    const element = target.current;
+    if (!element) return;
+    if (!("IntersectionObserver" in window)) { setVisible(true); return; }
+    const observer = new IntersectionObserver(([entry]) => setVisible(entry.intersectionRatio >= 0.3), {threshold:[0,0.3,0.65]});
+    observer.observe(element);
     return () => observer.disconnect();
   }, []);
-
-  return (
-    <div className="home-safety-video" ref={section}>
-      {visible ? (
-        <iframe
-          src="https://www.canva.com/design/DAHb9Ap4-yw/ihwbUlvlby3reXo9-PZEkg/watch?embed&autoplay=1&muted=1"
-          title="handEwork Safety and Trust"
-          allow="autoplay; fullscreen"
-          allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
-        />
-      ) : (
-        <div className="home-safety-video-idle" role="status">
-          <span className="home-safety-video-play" aria-hidden="true">&#9654;</span>
-
-        </div>
-      )}
-    </div>
-  );
+  return <div className="home-safety-video" ref={target}>
+    {visible && <iframe
+      loading="eager"
+      src={videoUrl}
+      title="handEwork safety and trust film"
+      allow="autoplay; fullscreen; encrypted-media"
+      allowFullScreen
+      referrerPolicy="strict-origin-when-cross-origin"
+    />}
+    <a className="hw-canva-direct-link" href={publicUrl} target="_blank" rel="noopener noreferrer">Watch the film on Canva</a>
+  </div>;
 }
