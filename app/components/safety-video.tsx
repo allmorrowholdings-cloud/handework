@@ -25,7 +25,7 @@ export function SafetyVideo() {
     <div className="home-safety-video" ref={section}>
       {visible ? (
         <iframe
-          src="https://www.canva.com/design/DAHb9Ap4-yw/ihwbUlvlby3reXo9-PZEkg/watch?embed&autoplay=1"
+          src="https://www.canva.com/design/DAHb9Ap4-yw/ihwbUlvlby3reXo9-PZEkg/watch?embed&autoplay=1&muted=1"
           title="handEwork Safety and Trust"
           allow="autoplay; fullscreen"
           allowFullScreen

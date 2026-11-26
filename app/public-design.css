@@ -2001,3 +2001,40 @@ html[data-theme="light"] .marketplace-page .site-header .nav-brand > small { col
 .home-market .home-process-cta > span[aria-hidden="true"],
 .home-market .home-safety-link > span[aria-hidden="true"],
 .marketplace-page .market-describe-link > span[aria-hidden="true"] { display: none !important; }
+
+/* HANDEWORK_MAP_NAV_HERO_2026 */
+.home-market .hero.hero-light .hero-copy h1,
+.home-market .hero.hero-light .hero-lede {
+  text-align: center !important;
+  margin-inline: auto !important;
+}
+/* Marketplace header must have readable navigation in light mode. */
+html[data-theme="light"] .marketplace-page .site-header {
+  background: #f7f4ee !important;
+  color: #171615 !important;
+}
+@media (min-width:1025px) {
+  html[data-theme="light"] .marketplace-page .site-header .nav-links > a,
+  html[data-theme="light"] .marketplace-page .site-header .nav-signin {
+    color: #241c17 !important;
+    opacity: 1 !important;
+  }
+  html[data-theme="light"] .marketplace-page .site-header .nav-links > a:hover,
+  html[data-theme="light"] .marketplace-page .site-header .nav-signin:hover {
+    color: #ac4917 !important;
+  }
+}
+html[data-theme="light"] .marketplace-page .site-header .header-install button {
+  color: white !important;
+  background: #da6620 !important;
+}
+.home-market .home-safety-video-idle { background: transparent !important; }
+.hw-map-backup iframe { display:block; width:100%; min-height:320px; border:0; border-radius:6px; }
+.hw-map-backup p { margin:10px 0; font-size:13px; line-height:1.5; }
+.hw-map-backup a { color:#aa4c18; text-decoration:underline; }
+@media (max-width:1024px) {
+  .site-header .shell.nav-wrap { padding-left: 0 !important; margin-left:0 !important; }
+  .site-header .nav-brand { padding-left:0 !important; margin-left:0 !important; }
+  .site-header .nav-brand .logo-image-wrap { overflow:hidden; }
+  .site-header .nav-brand .logo-image-wrap > img { transform: translateX(-11px) scale(1.09) !important; transform-origin:left center; }
+}
