@@ -2,6 +2,7 @@ import { BrowserPushSettings } from "./browser-push-settings";
 import { AuthenticatorSettings } from "./authenticator-settings";
 import { AppShell } from "../components/app-shell";
 import { AccountSettings } from "./account-settings";
+import { GoogleLinkSettings } from "./google-link-settings";
 
 export default function Settings() {
   return (
@@ -22,7 +23,7 @@ export default function Settings() {
         </aside>
         <div className="hw-settings-body">
           <div id="personal"><AccountSettings /></div>
-          <div id="security"><AuthenticatorSettings /></div>
+          <div id="security"><AuthenticatorSettings /><GoogleLinkSettings /></div>
           <div id="notifications"><BrowserPushSettings /></div>
         </div>
       </section>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
@@ -32,11 +32,14 @@ export function PhoneVerification({
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
-    setCode("");
-    setRequested(false);
-    setNotice("");
-    setResendAt(0);
-    setSeconds(0);
+    const timer = window.setTimeout(() => {
+      setCode("");
+      setRequested(false);
+      setNotice("");
+      setResendAt(0);
+      setSeconds(0);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [phone]);
 
   useEffect(() => {

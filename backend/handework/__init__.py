@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from .config import Config
 from .extensions import db, jwt, limiter, migrate, socketio
@@ -18,7 +18,18 @@ def create_app(config_object=Config, *, seed_development_admin=True):
     socketio.init_app(app, cors_allowed_origins=app.config["WEB_ORIGINS"])
     CORS(app, origins=app.config["WEB_ORIGINS"], supports_credentials=False, allow_headers=["Authorization", "Content-Type", "Idempotency-Key"])
 
+    @app.after_request
+    def privacy_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        if request.path.startswith("/v1/"):
+            response.headers["Cache-Control"] = "private, no-store"
+            response.headers["Pragma"] = "no-cache"
+        return response
+
     from .routes.auth import bp as auth_bp
+    from .routes.google_auth import bp as google_auth_bp
     from .routes.scheduler import bp as scheduler_bp
     from .routes.authenticator import bp as authenticator_bp
     from .routes.marketplace import bp as marketplace_bp
@@ -29,7 +40,7 @@ def create_app(config_object=Config, *, seed_development_admin=True):
     from .routes.workproof import bp as workproof_bp
     from .routes.shop import bp as shop_bp
     from .routes.drive_submissions import bp as drive_bp
-    for blueprint in (scheduler_bp, auth_bp, authenticator_bp, marketplace_bp, bookings_bp, payments_bp, platform_bp, admin_bp, workproof_bp, shop_bp, drive_bp):
+    for blueprint in (scheduler_bp, auth_bp, google_auth_bp, authenticator_bp, marketplace_bp, bookings_bp, payments_bp, platform_bp, admin_bp, workproof_bp, shop_bp, drive_bp):
         app.register_blueprint(blueprint, url_prefix="/v1")
 
     from .services.storage import local_storage_allowed

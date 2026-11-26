@@ -62,8 +62,6 @@ function InteractiveMap({items,coordinates="",onPick,route}: Props) {
   useEffect(() => {
     let cancelled = false;
     let map: MapLibreMap | null = null;
-    setReady(false);
-    setFailed(false);
     void import("maplibre-gl").then(lib => {
       if (cancelled || !container.current) return;
       map = new lib.Map({container: container.current,style: styleUrl, center: [-1.1, 7.9], zoom: 5});
@@ -111,7 +109,7 @@ function InteractiveMap({items,coordinates="",onPick,route}: Props) {
     return <div className="hw-interactive-map-recovery">
       <EmbeddedMap items={items} coordinates={coordinates}/>
       {onPick && <p>Pin selection is temporarily unavailable. Use GPS or enter the location manually.</p>}
-      <button type="button" onClick={() => setAttempt(value=>value+1)}>Try interactive map</button>
+      <button type="button" onClick={() => { setReady(false); setFailed(false); setAttempt(value=>value+1); }}>Try interactive map</button>
     </div>;
   }
   return <div ref={container} className="real-map" style={{minHeight:290}} aria-label="Interactive map" />;

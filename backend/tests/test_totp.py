@@ -1,4 +1,4 @@
-﻿import time
+import time
 
 import pyotp
 import pytest
@@ -65,7 +65,7 @@ def enroll(client, customer, clock):
         "data:image/png;base64,"
     )
 
-    assert response.headers["Cache-Control"] == "no-store"
+    assert "no-store" in {part.strip().lower() for part in response.headers["Cache-Control"].split(",")}
 
     response = client.post(
         "/v1/auth/totp/enable",

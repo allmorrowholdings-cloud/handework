@@ -16,8 +16,11 @@ export function BrowserPushSettings() {
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
-    setAvailable(browserPushAvailable());
-    setEnabled(browserPushRegistered());
+    const frame = window.requestAnimationFrame(() => {
+      setAvailable(browserPushAvailable());
+      setEnabled(browserPushRegistered());
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   async function toggle() {

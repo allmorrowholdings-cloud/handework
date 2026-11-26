@@ -164,7 +164,7 @@ export default function Home() {
           </details>
           <details>
             <summary>How can I tell whether a professional has been verified?</summary>
-            <p>Look for a verified status on the professional's profile. Verification involves reviewing identity and trade information, but it is not a guarantee of a particular outcome. Review their work details and keep your agreements inside the booking.</p>
+            <p>Look for a verified status on the professional&apos;s profile. Verification involves reviewing identity and trade information, but it is not a guarantee of a particular outcome. Review their work details and keep your agreements inside the booking.</p>
           </details>
           <details>
             <summary>What if I cannot find someone available for my job?</summary>

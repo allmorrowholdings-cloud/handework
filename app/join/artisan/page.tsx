@@ -118,7 +118,7 @@ function Application() {
             <label>Email address<input required name="email" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} autoComplete="email" /></label>
             <label>Create password
               <span className="password-field">
-                <input required minLength={8} name="password" type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => set("password", e.target.value)} autoComplete="new-password" />
+                <input required minLength={12} maxLength={128} name="password" type={showPassword ? "text" : "password"} value={form.password} onChange={(e) => set("password", e.target.value)} autoComplete="new-password" />
                 <button type="button" className="password-toggle" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button>
               </span>
             </label>

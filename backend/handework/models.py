@@ -72,6 +72,13 @@ class User(UUIDMixin, TimestampMixin, db.Model):
     def public(self): return {"id": self.id, "email": self.email, "phone": self.phone, "phone_verified": self.phone_verified_at is not None, "email_verified": self.email_verified_at is not None, "first_name": self.first_name, "last_name": self.last_name, "role": self.role.value, "status": self.status, "country_code": self.country_code, "notification_preferences": self.notification_preferences or {"push": True, "whatsapp": False, "sms": True}}
 
 
+class GoogleIdentity(db.Model):
+    __tablename__ = "google_identities"
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    google_sub = db.Column(db.String(255), nullable=False, unique=True)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=utcnow)
+
+
 class LoginSession(UUIDMixin, db.Model):
     __tablename__ = "login_sessions"
     user_id = db.Column(db.String(36), db.ForeignKey("users.id"), nullable=False)
