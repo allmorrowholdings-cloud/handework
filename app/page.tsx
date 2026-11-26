@@ -9,11 +9,12 @@ import { DemoVideo } from "./components/demo-video";
 import { WorkforceSignal } from "./components/workforce-signal";
 import { PlatformTicker } from "./components/platform-ticker";
 import { SafetyVideo } from "./components/safety-video";
+import { PwaHomeGate } from "./components/pwa-home-gate";
 
 
 export default function Home() {
   return (
-    <main className="home-market">
+    <PwaHomeGate><main className="home-market">
       <Header />
       <section className="hero hero-light" id="top">
         <div className="shell hero-grid hero-grid-visual">
@@ -110,7 +111,7 @@ export default function Home() {
             </div>
           </div>
           <div className="home-workproof-illustration">
-            <img src="/workproof-kwame-illustration.png" width={1448} height={1086} loading="lazy" decoding="async" alt="Illustrative WorkProof interface concept. The person, job counts, reviews and ratings shown are examples, not real handEwork records." />
+            <img src="/workproof-kwame-illustration.png" width={1122} height={1402} loading="lazy" decoding="async" alt="Illustrative WorkProof interface concept. The person, job counts, reviews and ratings shown are examples, not real handEwork records." />
           </div>
         </div>
       </section>
@@ -173,6 +174,6 @@ export default function Home() {
       </section>
       <section className="final-cta"><div className="shell final-inner"><div><h2>Ready to get it done?</h2></div><Link className="button button-cream" href="/marketplace">Find an artisan</Link></div></section>
       <Footer />
-    </main>
+    </main></PwaHomeGate>
   );
 }

@@ -2073,3 +2073,43 @@ html[data-theme="light"] .marketplace-page .site-header .header-install button {
   html[data-theme="light"] .marketplace-page .site-header .nav-links > a,
   html[data-theme="light"] .marketplace-page .site-header .nav-signin {color:#241c17 !important;opacity:1 !important;}
 }
+
+/* HANDEWORK_PWA_WELCOME_SAFETY_EDITION_2026 */
+.home-market .home-safety {
+  background-color: #162721 !important;
+  background-image: repeating-linear-gradient(115deg, rgba(245,226,175,.035) 0, rgba(245,226,175,.035) 1px, transparent 1px, transparent 12px),
+    radial-gradient(ellipse at 88% 10%, rgba(218,102,32,.15), transparent 48%),
+    linear-gradient(145deg, #142820, #20332d 70%, #142520) !important;
+  color: #f5f0e5 !important;
+  border-top: 1px solid rgba(255,255,255,.12);
+  border-bottom: 1px solid rgba(255,255,255,.12);
+}
+.home-market .home-safety h2, .home-market .home-safety p, .home-market .home-safety .home-safety-link { color: #f5f0e5 !important; }
+html[data-theme="light"] .home-market .home-safety {
+  background-color: #eae4d6 !important;
+  background-image: repeating-linear-gradient(120deg, rgba(76,66,45,.055) 0, rgba(76,66,45,.055) 1px, transparent 1px, transparent 13px),
+   radial-gradient(ellipse at 90% 8%, rgba(218,102,32,.09), transparent 56%),
+   linear-gradient(145deg, #eee9dd, #e2e8dd) !important;
+  color: #191b17 !important;
+  border-color: rgba(40,40,34,.13);
+}
+html[data-theme="light"] .home-market .home-safety h2,
+html[data-theme="light"] .home-market .home-safety p,
+html[data-theme="light"] .home-market .home-safety .home-safety-link { color: #191b17 !important; }
+.home-market .home-workproof-illustration img { display: block; width: 100%; height: auto; object-fit: contain; }
+.home-market .home-safety-video .hw-canva-direct-link { display: none !important; }
+html[data-theme="light"] .site-header .theme-toggle { color: #1e201d !important; border-color: #c7c4bd !important; }
+html[data-theme="light"] .site-header .theme-toggle svg { color: #1e201d !important; stroke: #1e201d !important; opacity: 1 !important; }
+.hw-pwa-welcome, .hw-pwa-checking {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  min-height: 100dvh; padding: clamp(24px,6vw,56px);
+  background: #f8f5ef; color: #14120f;
+}
+.hw-pwa-welcome img { display: block; width: min(83vw, 560px); height: auto; max-height: 38dvh; object-fit: contain; }
+.hw-pwa-checking img { display: block; width: min(76vw, 420px); height: auto; max-height: 32dvh; object-fit: contain; }
+.hw-pwa-welcome-subline { margin-top: 14px; font-size: clamp(11px, 2.4vw, 14px); font-weight: 700; letter-spacing: .13em; }
+.hw-pwa-welcome-progress { position: absolute; bottom: max(35px,env(safe-area-inset-bottom)); width: 44px; height: 3px; border-radius: 12px; background: #da6620; animation: hw-welcome-pulse 1.1s ease-in-out infinite alternate; }
+@keyframes hw-welcome-pulse { to { opacity: .25; transform: scaleX(.65); } }
+@media (prefers-reduced-motion: reduce) { .hw-pwa-welcome-progress { animation: none; } }
+@media (max-width: 560px) { .hw-pwa-welcome, .hw-pwa-checking { padding: 22px; } }

@@ -2,7 +2,7 @@
   "id": "/",
   "name": "handEwork",
   "short_name": "handEwork",
-  "start_url": "/",
+  "start_url": "/app-welcome",
   "scope": "/",
   "display": "standalone",
   "background_color": "#111111",

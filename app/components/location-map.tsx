@@ -37,11 +37,11 @@ function EmbeddedMap({items, coordinates}: Props) {
   const center = mapCenter(coordinates ?? "", items);
   const bbox = [center.lon - 0.19, center.lat - 0.12, center.lon + 0.19, center.lat + 0.12].join(",");
   const src = `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent(bbox)}&layer=mapnik&marker=${encodeURIComponent(`${center.lat},${center.lon}`)}`;
-  const hasSearchPin = (coordinates ?? "").split(",").length === 2;
+
   return (
     <div className="hw-osm-primary">
       <iframe title="Location map" src={src} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" />
-      <p className="hw-osm-credit">Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>{!hasSearchPin && items.length === 0 ? " · Showing Ghana until a location is selected" : ""}</p>
+
     </div>
   );
 }

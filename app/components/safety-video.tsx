@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const videoUrl = "https://www.canva.com/design/DAHb9Ap4-yw/ihwbUlvlby3reXo9-PZEkg/watch?embed";
-const publicUrl = "https://www.canva.com/design/DAHb9Ap4-yw/ihwbUlvlby3reXo9-PZEkg/watch";
+
 
 export function SafetyVideo() {
   const target = useRef<HTMLDivElement>(null);
@@ -25,6 +25,6 @@ export function SafetyVideo() {
       allowFullScreen
       referrerPolicy="strict-origin-when-cross-origin"
     />}
-    <a className="hw-canva-direct-link" href={publicUrl} target="_blank" rel="noopener noreferrer">Watch the film on Canva</a>
+
   </div>;
 }

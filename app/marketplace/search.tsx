@@ -203,7 +203,7 @@ export function MarketplaceSearch() {
           <div className="market-map-frame">
             <LocationMap items={visible} coordinates={coordinates} />
           </div>
-          <p className="market-map-footnote">Map pins and distances are approximate. No artificial professionals are shown.</p>
+
         </aside>      </div>
     </div>
   </>;
