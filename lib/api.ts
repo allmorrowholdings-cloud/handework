@@ -52,11 +52,16 @@ const accessKey = "handework_access_token";
 const refreshKey = "handework_refresh_token";
 const activityKey = "handework_last_active";
 const idleLimit = 24 * 60 * 60 * 1000;
+const installedIdleLimit = 30 * 24 * 60 * 60 * 1000;
+function currentIdleLimit(){
+  if(typeof window==="undefined")return idleLimit;
+  return window.matchMedia("(display-mode: standalone)").matches || (navigator as Navigator&{standalone?:boolean}).standalone===true ? installedIdleLimit : idleLimit;
+}
 
 export function accessToken() {
   if (typeof window === "undefined") return null;
   const lastActive = Number(localStorage.getItem(activityKey));
-  if (lastActive && Date.now() - lastActive >= idleLimit) return null;
+  if (lastActive && Date.now() - lastActive >= currentIdleLimit()) return null;
   return localStorage.getItem(accessKey);
 }
 
@@ -105,7 +110,7 @@ async function renew() {
   const refresh = localStorage.getItem(refreshKey);
   if (!refresh || !accessToken()) return null;
   const response = await fetch(API_URL + "/v1/auth/refresh", {
-    method: "POST", headers: { Authorization: `Bearer ${refresh}`, "Content-Type": "application/json" }, body: JSON.stringify({client: "web"}), signal: AbortSignal.timeout(15000),
+    method: "POST", headers: { Authorization: `Bearer ${refresh}`, "Content-Type": "application/json" }, body: JSON.stringify({client: typeof window!=="undefined"&&window.matchMedia("(display-mode: standalone)").matches?"installed":"web"}), signal: AbortSignal.timeout(15000),
   });
   if (localStorage.getItem(refreshKey) !== refresh) return accessToken();
   if (response.status === 401 || response.status === 422) { clearSession(); return null; }
