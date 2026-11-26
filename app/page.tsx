@@ -106,7 +106,7 @@ export default function Home() {
             <h2 id="home-workproof-title">Good work leaves proof.</h2>
             <p>Skills deserve recognition. Build your work history, portfolio and reputation with every completed job.</p>
             <div className="home-workproof-actions">
-              <Link href="/join/artisan" className="home-process-cta">Build your reputation <span aria-hidden="true">&rarr;</span></Link>
+              <Link href="/join/artisan" className="home-process-cta">Build your reputation</Link>
             </div>
           </div>
           <div className="home-workproof-illustration">
@@ -137,7 +137,7 @@ export default function Home() {
 
           <Link href="/safety" className="home-safety-link">
             Explore safety and trust
-            <span aria-hidden="true">&rarr;</span>
+
           </Link>
         </div>
       </section>

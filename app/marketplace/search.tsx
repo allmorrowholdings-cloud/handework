@@ -47,7 +47,7 @@ export function MarketplaceSearch() {
   const [distance, setDistance] = useState("25");
   const [minRating, setMinRating] = useState(false);
   const [sort, setSort] = useState("nearest");
-  const [showMap, setShowMap] = useState(false);
+
   const [result, setResult] = useState<SearchResult | null>(null);
 
   const search = useMemo(() => {
@@ -91,8 +91,8 @@ export function MarketplaceSearch() {
   if (coordinates) bookingQuery.set("coordinates", coordinates);
   if (location) bookingQuery.set("area", location);
   const bookingHref = `/bookings/new${bookingQuery.toString() ? `?${bookingQuery}` : ""}`;
-  const hasMappedProfessionals = visible.some(item => item.latitude != null && item.longitude != null);
-  const mapAvailable = visible.length > 0 && (hasMappedProfessionals || Boolean(coordinates));
+
+
   const activeFilterCount = Number(when !== "any") + Number(distance !== "25") + Number(minRating);
 
   function reset() {
@@ -102,7 +102,7 @@ export function MarketplaceSearch() {
   return <>
     <section className="market-head">
       <div className="shell market-head-inner">
-        <p className="market-kicker">FIND THE RIGHT HANDS</p>
+
         <h1>Find skilled hands near you.</h1>
         <p className="market-lede">Search by skill and location, then explore available professionals. Or describe the job and request help.</p>
         <LocationSearch key={params.toString()} compact initialService={service} initialLocation={location} initialCoordinates={coordinates}/>
@@ -111,8 +111,8 @@ export function MarketplaceSearch() {
 
     <div className="marketplace-content shell">
       <div className="market-intro-bar">
-        <div><h2>Explore professionals</h2><p>Filter by availability, distance and reviews. Only real profiles appear here.</p></div>
-        <Link href={bookingHref} className="market-describe-link">Describe your job <span aria-hidden="true">&rarr;</span></Link>
+        <div><h2>Explore professionals</h2></div>
+        <Link href={bookingHref} className="market-describe-link">Describe your job</Link>
       </div>
 
       <div className="market-layout market-layout-refined">
@@ -192,16 +192,19 @@ export function MarketplaceSearch() {
                 </div>
               </article>)}
             </div>
-            {mapAvailable && <div className="market-map-area">
-              <button type="button" className="market-map-toggle" aria-expanded={showMap} onClick={() => setShowMap(value => !value)}>
-                {showMap ? "Hide map" : "View professionals on map"}
-                <span aria-hidden="true">{showMap ? "−" : "+"}</span>
-              </button>
-              {showMap && <div className="market-map-frame"><LocationMap items={visible} coordinates={coordinates}/><p>Map pins are approximate to protect privacy. Distances are estimates.</p></div>}
-            </div>}
+
           </>}
         </div>
-      </div>
+        <aside className="market-map-sidebar" aria-label="Search location map">
+          <div className="market-map-sidebar-heading">
+            <h2>Location map</h2>
+            <p>Explore the selected area. Professional pins appear only when locations are available.</p>
+          </div>
+          <div className="market-map-frame">
+            <LocationMap items={visible} coordinates={coordinates} />
+          </div>
+          <p className="market-map-footnote">Map pins and distances are approximate. No artificial professionals are shown.</p>
+        </aside>      </div>
     </div>
   </>;
 }

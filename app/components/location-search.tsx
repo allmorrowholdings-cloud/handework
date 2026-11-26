@@ -52,7 +52,7 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
     }
     const request = ++locationRequest.current;
     setLocating(true);
-    setLocationError("handEwork is requesting location access. Please choose Allow when your browser asks.");
+    setLocationError("");
     navigator.geolocation.getCurrentPosition(({ coords }) => {
       if (locationRequest.current !== request) return;
       const {latitude:lat, longitude:lon} = coords;
@@ -65,10 +65,10 @@ export function LocationSearch({ compact = false, initialService = "", initialLo
       const android = /Android/i.test(navigator.userAgent);
       const iphone = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       const permissionHelp = android
-        ? "Location is blocked for this site. In your Android browser, open site settings and allow Location, then tap Use GPS again. Check your phone's Location setting too. Or select a town below."
+        ? "Your browser denied this request. Open site settings for handEwork, set Location to Allow or Ask, then retry. Also enable Location for your browser in Android Settings."
         : iphone
-          ? "Location is blocked. On iPhone, allow Location for this website in Safari's Website Settings (or your browser's site permissions), then tap Use GPS again. Check iPhone Settings > Privacy & Security > Location Services too. Or select a town below."
-          : "Location is blocked for this site. Allow Location in your browser's site settings, then tap Use GPS again, or select a town below.";
+          ? "Your browser denied this request. In Safari, open Website Settings, change Location to Ask or Allow, then retry. Check Settings > Privacy & Security > Location Services if needed."
+          : "Your browser denied this request. Change this site's Location permission to Ask or Allow in browser settings, then retry.";
       setLocationError(error.code === 1
         ? permissionHelp
         : error.code === 3

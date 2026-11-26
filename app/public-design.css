@@ -1945,3 +1945,59 @@ html[data-theme] .home-market .home-safety-video {
     mask-image: none;
   }
 }
+/* HANDEWORK_MARKET_MAP_LIGHT_LOGO_RESET_2026 */
+/* Make the map a stable third-column feature, not conditional on results. */
+.marketplace-page .market-layout-refined {
+  grid-template-columns: minmax(195px, .22fr) minmax(0, 1fr) minmax(240px, .29fr);
+  gap: clamp(14px, 1.8vw, 26px);
+}
+.marketplace-page .market-map-sidebar {
+  min-width: 0;
+  position: sticky;
+  top: 18px;
+  padding: 16px;
+  border: 1px solid #ded4c4;
+  border-radius: 10px;
+  background: #fff;
+  color: #171615;
+}
+.marketplace-page .market-map-sidebar-heading h2 { margin: 0 0 6px; font-size: 18px; color: #171615; }
+.marketplace-page .market-map-sidebar-heading p,
+.marketplace-page .market-map-footnote { margin: 0 0 12px; font-size: 12px; line-height: 1.5; color: #6c6257; }
+.marketplace-page .market-map-footnote { margin: 10px 0 0; }
+.marketplace-page .market-map-sidebar .market-map-frame { margin: 0; padding: 0; border: 0; }
+.marketplace-page .market-map-sidebar .real-map { width: 100%; min-height: 340px; border-radius: 6px; overflow: hidden; }
+/* The header and hero follow the selected light mode. */
+html[data-theme="light"] .marketplace-page .market-head { background: #f7f4ee; color: #171615; }
+html[data-theme="light"] .marketplace-page .market-head h1 { color: #171615; }
+html[data-theme="light"] .marketplace-page .market-lede { color: #665f54; }
+html[data-theme="light"] .marketplace-page .site-header { background: #f7f4ee; color: #171615; }
+html[data-theme="light"] .marketplace-page .site-header .nav-brand > small { color: #5d5147; }
+/* Uploaded logos sit on their shared background, without card boundaries. */
+.home-market .hw-platform-logo-list li {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.home-market .hw-platform-logos .hw-platforms-window { mask-image: none; }
+/* Clear internal/outer logo whitespace on narrow screens without changing assets. */
+@media (max-width: 1024px) {
+  .site-header .shell.nav-wrap { padding-left: 0 !important; }
+  .site-header .nav-brand, .site-header .nav-brand .logo-image, .site-header .nav-brand .logo-image-wrap { margin-left: 0 !important; padding-left: 0 !important; }
+  .site-header .nav-brand .logo-image-wrap > img { transform: translateX(-5px) scale(1.035); transform-origin: left center; }
+}
+@media (max-width: 1160px) {
+  .marketplace-page .market-layout-refined { grid-template-columns: minmax(180px, .26fr) minmax(0, 1fr); }
+  .marketplace-page .market-map-sidebar { grid-column: 2; position: static; }
+}
+@media (max-width: 820px) {
+  .marketplace-page .market-layout-refined { grid-template-columns: minmax(0, 1fr); }
+  .marketplace-page .market-map-sidebar { grid-column: 1; }
+  .marketplace-page .market-map-sidebar .real-map { min-height: 290px; }
+}
+/* Remove decorative arrows from homepage and marketplace action links. */
+.home-market .home-process-cta > span[aria-hidden="true"],
+.home-market .home-safety-link > span[aria-hidden="true"],
+.marketplace-page .market-describe-link > span[aria-hidden="true"] { display: none !important; }
