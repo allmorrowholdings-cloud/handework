@@ -23,7 +23,7 @@ export default function Register(){
  {artisan&&step===1&&<><Field label="Main trade" value={data.trade} onChangeText={v=>set("trade",v)} placeholder="Plumbing, tailoring, painting…"/><Field label="Years of experience" keyboardType="number-pad" value={data.years_experience} onChangeText={v=>set("years_experience",v)}/></>}
  {artisan&&step===2&&<><Field label="City" value={data.city} onChangeText={v=>set("city",v)}/><Field label="Home area" value={data.area} onChangeText={v=>set("area",v)}/><Field label="Travel radius in kilometres" keyboardType="number-pad" value={data.radius_km} onChangeText={v=>set("radius_km",v)}/><Text style={s.subtitle}>Your public profile requires identity and trade verification before it can receive work.</Text></>}
  {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
- <Button label={busy?"Please wait…":artisan&&step<2?"Continue →":artisan?"Create professional profile →":"Create account →"} onPress={()=>void continueWithAccount()} disabled={busy}/>
+ <Button label={busy?"Please wait…":artisan&&step<2?"Continue →":artisan?"Create professional profile →":"Create account"} onPress={()=>void continueWithAccount()} disabled={busy}/>
  {artisan&&step>0&&<Pressable accessibilityRole="button" style={s.back} onPress={()=>setStep(x=>x-1)}><Text style={s.backText}>← Back</Text></Pressable>}
  <Pressable accessibilityRole="button" style={s.back} onPress={()=>router.replace("/(auth)/sign-in")}><Text style={s.backText}>Already registered? Sign in</Text></Pressable><AllmorrowMark/></ScrollView></KeyboardAvoidingView></SafeAreaView>
 }

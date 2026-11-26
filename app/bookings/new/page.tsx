@@ -4,6 +4,8 @@ import { ChangeEvent, FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { LocationPicker } from "../../components/location-picker";
+import {AppBookingFlow} from "../../components/app-booking-flow";
+import {useInstalledApp} from "../../components/installed-app-mode";
 import { Header } from "../../components/header";
 import { AuthForm } from "../../components/auth-form";
 import { ServiceSelect } from "../../components/service-select";
@@ -16,6 +18,8 @@ function bookingToday() {
 const initial = { coordinates:"", requestKey:"", service:"", description:"", address:"", area:"", city:"Accra", scheduled_date:"", time_window:"morning", budget_type:"quote", budget:"", contact_phone:"", instant_booking:false };
 
 export default function NewBookingPage() {
+  const installed=useInstalledApp();
+  if(installed)return <AppBookingFlow/>;
   return <Suspense fallback={<p className="shell" role="status">Loading job request…</p>}><NewBookingForm /></Suspense>;
 }
 

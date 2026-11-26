@@ -27,7 +27,7 @@ export function AppWelcomeClient() {
           destination = "/auth/sign-in";
         }
       }
-      const remaining = Math.max(0, 1900 - (Date.now() - started));
+      const remaining = Math.max(0, 1950 - (Date.now() - started));
       window.setTimeout(() => { if (active) router.replace(destination); }, remaining);
     }
     void continueToApp();
@@ -35,8 +35,7 @@ export function AppWelcomeClient() {
   }, [router]);
 
   return <main className="hw-pwa-welcome" aria-label="handEwork welcome screen">
-    <img src="/app-welcome-logo.svg" alt="handEwork" width={680} height={227} />
-    <span className="hw-pwa-welcome-subline">from ALLMORROW</span>
-    <span className="hw-pwa-welcome-progress" role="status" aria-label="Opening handEwork" />
+    <video className="hw-app-splash-video" aria-label="Opening handEwork" src="/handework-opening.mp4" poster="/handework-opening-poster.png" autoPlay muted playsInline preload="auto" />
+    <span className="hw-app-splash-brand">from ALLMORROW</span>
   </main>;
 }
