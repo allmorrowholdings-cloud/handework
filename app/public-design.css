@@ -1807,3 +1807,40 @@ html[data-theme] .home-market .home-safety-video {
     min-height: 52px;
   }
 }
+
+/* HANDEWORK_VIEWPORT_FAQ_TECH_2026 */
+.home-market .home-safety-video { background: transparent !important; box-shadow: none !important; }
+.home-market .home-safety-video-idle { display: grid; place-content: center; justify-items: center; gap: 18px; width: 100%; height: 100%; min-height: 180px; padding: 24px; background: #292622; color: #eee6d9; text-align: center; font-size: clamp(13px,1.5vw,16px); }
+.home-market .home-safety-video-play { display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid rgba(255,207,34,.55); border-radius: 50%; color: #ffcf22; font-size: 22px; }
+.home-market .home-technology { padding: clamp(52px,7vw,90px) 0; overflow: hidden; background: #f3f0e9; color: #171615; }
+.home-market .home-technology-heading { display: flex; justify-content: space-between; align-items: end; gap: 34px; margin-bottom: 30px; }
+.home-market .home-technology-kicker { margin: 0 0 9px; color: #9d461d; font-size: 11px; font-weight: 800; letter-spacing: .13em; }
+.home-market .home-technology-heading h2 { margin: 0; max-width: 18ch; color: #171615; font-size: clamp(28px,3vw,42px); font-weight: 800; letter-spacing: -.045em; line-height: 1.12; }
+.home-market .home-technology-heading > p { margin: 0; max-width: 34ch; color: #5c554b; font-size: 13px; line-height: 1.6; }
+.home-market .home-technology-window { position: relative; overflow: hidden; width: min(calc(100% - 40px),1300px); margin: 0 auto; mask-image: linear-gradient(to right, transparent 0, black 6%, black 94%, transparent 100%); }
+.home-market .home-technology-track { display: flex; width: max-content; gap: 14px; animation: hew-technology-marquee 42s linear infinite; }
+.home-market .home-technology-window:hover .home-technology-track, .home-market .home-technology-window:focus-within .home-technology-track { animation-play-state: paused; }
+.home-market .home-technology-list { display: flex; gap: 14px; flex: none; padding: 10px 0; margin: 0; list-style: none; }
+.home-market .home-technology-list li { display: inline-flex; align-items: center; gap: 14px; min-width: 156px; min-height: 72px; padding: 15px 24px; border: 1px solid #ded4c4; border-radius: 12px; background: #fffdfa; box-shadow: 0 10px 22px rgba(31,26,20,.055); color: #231e19; white-space: nowrap; font-size: 17px; font-weight: 750; }
+.home-market .home-technology-glyph { width: 10px; height: 10px; flex: none; transform: rotate(45deg); border-radius: 2px; background: #da6620; }
+@keyframes hew-technology-marquee { to { transform: translateX(calc(-50% - 7px)); } }
+.home-market .booking-faq { padding-block: clamp(65px,8vw,105px); }
+.home-market .home-faq-list details { background: transparent; }
+.home-market .home-faq-list summary { position: relative; padding: 23px 46px 23px 8px; list-style: none; font-weight: 700; }
+.home-market .home-faq-list summary::-webkit-details-marker { display: none; }
+.home-market .home-faq-list summary::after { content: '+'; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #b35322; font-size: 24px; font-weight: 400; }
+.home-market .home-faq-list details[open] summary::after { content: '-'; }
+.home-market .home-faq-list details[open] { border-bottom-color: #da6620; }
+.home-market .home-faq-list summary:focus-visible { outline: 2px solid #da6620; outline-offset: -2px; }
+.home-market .home-faq-list details > p { max-width: 75ch; padding-right: 36px; }
+@media (max-width: 700px) {
+  .home-market .home-technology-heading { display: grid; gap: 15px; }
+  .home-market .home-technology-heading > p { max-width: 45ch; }
+  .home-market .home-technology-window { width: calc(100% - 24px); }
+  .home-market .home-technology-list li { min-height: 62px; min-width: 142px; font-size: 15px; }
+  .home-market .home-faq-list summary { padding-right: 42px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-market .home-technology-track { animation: none; }
+  .home-market .home-technology-window { overflow-x: auto; mask-image: none; }
+}

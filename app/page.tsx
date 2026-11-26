@@ -7,6 +7,8 @@ import { services } from "../lib/services";
 import { Professionals } from "./components/professionals";
 import { DemoVideo } from "./components/demo-video";
 import { WorkforceSignal } from "./components/workforce-signal";
+import { SafetyVideo } from "./components/safety-video";
+import { TechnologyTicker } from "./components/technology-ticker";
 
 export default function Home() {
   return (
@@ -128,16 +130,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="home-safety-video">
-            <iframe
-              src="https://drive.google.com/file/d/1WkwTiQNtryINCKccY5KNMdhd5ot3y06U/preview?autoplay=1"
-              title="handEwork Safety and Trust"
-              loading="lazy"
-              allow="autoplay; fullscreen"
-              allowFullScreen
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
-          </div>
+          <SafetyVideo />
 
           <Link href="/safety" className="home-safety-link">
             Explore safety and trust
@@ -145,6 +138,8 @@ export default function Home() {
           </Link>
         </div>
       </section>
+      {/* HANDEWORK_VIEWPORT_FAQ_TECH_2026 */}
+      <TechnologyTicker />
       <section className="shell booking-faq" aria-labelledby="home-faq-title">
         <div className="home-faq-heading">
           <h2 id="home-faq-title">Before you book</h2>
@@ -162,6 +157,14 @@ export default function Home() {
           <details>
             <summary>What if someone misses the appointment or the work needs attention?</summary>
             <p>Keep the messages and photos with your booking and contact <Link href="/support">support</Link> with the reference. Support can review the record and explain the next step.</p>
+          </details>
+          <details>
+            <summary>How can I tell whether a professional has been verified?</summary>
+            <p>Look for a verified status on the professional's profile. Verification involves reviewing identity and trade information, but it is not a guarantee of a particular outcome. Review their work details and keep your agreements inside the booking.</p>
+          </details>
+          <details>
+            <summary>What if I cannot find someone available for my job?</summary>
+            <p>Try another location, service or distance in <Link href="/marketplace">Find an artisan</Link>. You can also <Link href="/bookings/new">describe your job</Link> to start a request. Availability and responses depend on real professionals using handEwork.</p>
           </details>
         </div>
       </section>
