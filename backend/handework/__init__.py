@@ -23,6 +23,9 @@ def create_app(config_object=Config, *, seed_development_admin=True):
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if request.is_secure:
+            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
         if request.path.startswith("/v1/"):
             response.headers["Cache-Control"] = "private, no-store"
             response.headers["Pragma"] = "no-cache"

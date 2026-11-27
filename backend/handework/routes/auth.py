@@ -344,7 +344,7 @@ def confirm_phone_verification():
     if user.phone_verified_at:
         return jsonify(message="Phone already verified", user=user.public())
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(silent=True)
 
     if not isinstance(data, dict):
         return jsonify(message="Invalid request"), 422
