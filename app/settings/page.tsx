@@ -9,15 +9,15 @@ export default function Settings() {
     <AppShell title="Settings" note="Make handEwork work the way you do.">
       <section className="app-content hw-settings">
         <aside className="hw-settings-nav">
-          <span className="hw-kicker">YOUR ACCOUNT</span>
-          <h2>Preferences</h2>
+          <span className="hw-kicker">ACCOUNT CONTROL</span>
+          <h2>Your account</h2>
           <nav aria-label="Settings navigation">
             <a href="#personal">Personal details <span>01</span></a>
             <a href="#security">Account security <span>02</span></a>
             <a href="#notifications">Browser notifications <span>03</span></a>
           </nav>
           <div className="hw-settings-note">
-            <strong>Built around you.</strong>
+            <strong>Make this workspace yours.</strong>
             <p>Manage how you access handEwork and stay connected.</p>
           </div>
         </aside>

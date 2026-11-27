@@ -46,15 +46,15 @@ export function LiveRecords({
 
   function content(item: Item) {
     if (variant === "admin") {
-      return <div><b>{String(item.title ?? item.reference ?? item.reason ?? item.kind ?? "Operational record")}</b><span>{String(item.status ?? item.decision ?? item.created_at ?? "")}</span></div>;
+      return <div><b>{String(item.title ?? item.reference ?? item.reason ?? item.kind ?? "Operational record")}</b><span>{String(item.status ?? item.decision ?? item.created_at ?? "").replaceAll("_", " ")}</span></div>;
     }
     if (variant === "training") {
       return <div><b>{String(item.title ?? "Training opportunity")}</b><span>{[item.provider, item.trade, item.city ?? item.delivery_mode].filter(Boolean).map(String).join(" · ")}</span></div>;
     }
-    return <div><b>{String(item.title ?? item.name ?? item.reference ?? "Record")}</b><span>{String(item.status ?? item.created_at ?? "")}</span></div>;
+    return <div><b>{String(item.service ?? item.title ?? item.name ?? item.reference ?? "Work record")}</b><span>{[item.reference, typeof item.status === "string" ? item.status.replaceAll("_", " ") : item.created_at].filter(Boolean).map(String).join(" · ")}</span></div>;
   }
 
-  return <div className="record-list">{items.map((item, index) => {
+  return <div className="record-list hw-premium-records">{items.map((item, index) => {
     const href = destination(item);
     return <div className="record-row" key={String(item.id ?? index)}>{content(item)}{href && <Link href={href}>Open</Link>}{typeof item.evidence_url === "string" && <a href={item.evidence_url} target="_blank" rel="noreferrer">Review evidence</a>}</div>;
   })}</div>;
