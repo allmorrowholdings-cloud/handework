@@ -20,7 +20,7 @@ export function DemoVideo() {
       if (disposed || reducedMotion.matches || !element.paused) return;
 
       try {
-        element.muted = false;
+        element.muted = true;
         await element.play();
       } catch {
         if (disposed) return;
@@ -77,6 +77,7 @@ export function DemoVideo() {
         aria-label="handEwork demonstration"
         playsInline
         controls
+        muted
         preload="metadata"
         width={1080}
         height={1732}
