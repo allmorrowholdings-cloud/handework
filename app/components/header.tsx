@@ -28,8 +28,8 @@ export function Header() {
   return <header className={`site-header ${isHome ? "home-header" : ""}`}><div className="shell nav-wrap">
     <div className="nav-brand"><Logo light={!isHome} /><small>from ALLMORROW</small></div>
     <nav className={open ? "nav-links open" : "nav-links"} aria-label="Main navigation">
-      <Link href="/marketplace" onClick={() => setOpen(false)}>Services</Link>
-      <Link href="/how-it-works" onClick={() => setOpen(false)}>How it works</Link>
+      <Link href="/about" onClick={() => setOpen(false)}>About</Link>
+      <Link href="/contact" onClick={() => setOpen(false)}>Contact</Link>
       {signedIn && <Link href="/my-jobs" onClick={() => setOpen(false)}>My jobs</Link>}
       <Link href="/join/artisan" onClick={() => setOpen(false)}>For professionals</Link>
       <div className="mobile-account-links">
@@ -39,10 +39,10 @@ export function Header() {
         </> : (
           <Link href="/auth/sign-in" onClick={() => setOpen(false)}>Sign in</Link>
         )}
-        <Link className="mobile-nav-booking" href="/bookings/new" onClick={() => setOpen(false)}>Describe your job</Link>
+        <Link className="mobile-nav-booking" href="/about" onClick={() => setOpen(false)}>Why handEwork?</Link>
       </div>
     </nav>
-    <div className="nav-actions"><InstallApp compact /><ThemeToggle compact />
+    <div className="nav-actions"><ThemeToggle compact />
       {signedIn && (
         <Link
           className="account-avatar"
@@ -55,6 +55,6 @@ export function Header() {
             <path d="M5 20c0-4 3-6 7-6s7 2 7 6" />
           </svg>
         </Link>
-      )}<Link className="nav-signin" href={signedIn ? "/my-jobs" : "/auth/sign-in"}>{signedIn ? "Dashboard" : "Sign in"}</Link><Link className="button button-orange nav-cta" href="/bookings/new">Describe your job</Link><button className="menu-button" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen(!open)}><span /><span /></button></div>
+      )}<Link className="nav-signin" href={signedIn ? "/my-jobs" : "/auth/sign-in"} aria-label={signedIn ? "Dashboard" : "Sign in"} title={signedIn ? "Dashboard" : "Sign in"}><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M5 20c0-4 3-6 7-6s7 2 7 6"/></svg></Link><InstallApp compact /><button className="menu-button" aria-label="Toggle menu" aria-expanded={open} onClick={() => setOpen(!open)}><span /><span /></button></div>
   </div></header>;
 }

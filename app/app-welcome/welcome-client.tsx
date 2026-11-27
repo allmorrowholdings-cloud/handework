@@ -13,7 +13,6 @@ export function AppWelcomeClient() {
   const router = useRouter();
   useEffect(() => {
     let active = true;
-    const started = Date.now();
     async function continueToApp() {
       let destination = installedApp() ? "/auth/sign-in?app=1" : "/";
       if (installedApp() && accessToken()) {
@@ -27,8 +26,7 @@ export function AppWelcomeClient() {
           destination = "/auth/sign-in";
         }
       }
-      const remaining = Math.max(0, 1950 - (Date.now() - started));
-      window.setTimeout(() => { if (active) router.replace(destination); }, remaining);
+      if (active) router.replace(destination);
     }
     void continueToApp();
     return () => { active = false; };

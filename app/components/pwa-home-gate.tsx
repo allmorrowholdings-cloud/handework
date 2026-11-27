@@ -44,9 +44,7 @@ export function PwaHomeGate({ children }: { children: React.ReactNode }) {
     };
   }, [router]);
 
-  if (state === "checking") return <div className="hw-pwa-checking" role="status" aria-label="Opening handEwork">
-    <img src="/app-welcome-logo.svg" alt="handEwork" width={420} height={140} />
-  </div>;
+  if (state === "checking") return null;
   return <>
     {children}
     {state === "pwa-public" && <nav className="hw-pwa-quick-nav" aria-label="Quick links">

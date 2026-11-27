@@ -51,23 +51,14 @@ export function AuthForm({ mode, onAuthenticated, onSwitch }: {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [destination, setDestination] = useState("/dashboard");
-
-  useEffect(() => {
-    if (step !== "complete") return;
-    const timer = window.setTimeout(() => {
-      if (onAuthenticated) onAuthenticated();
-      else router.replace(destination);
-    }, 1100);
-    return () => window.clearTimeout(timer);
-  }, [step, destination, onAuthenticated, router]);
 
   function complete(session: Session) {
     saveSession(session.access_token, session.refresh_token);
     setCredential("");
-    setDestination(dashboardPath(session.user.role));
     setError("");
     setStep("complete");
+    if (onAuthenticated) onAuthenticated();
+    else router.replace(dashboardPath(session.user.role));
   }
 
   function explain(caught: unknown) {
@@ -160,14 +151,7 @@ export function AuthForm({ mode, onAuthenticated, onSwitch }: {
     setExistingPassword(""); setError(""); setStep("choice");
   }
 
-  if (step === "complete") return <div className="hw-auth-complete" role="status">
-    <span className="hw-auth-check"><CheckMark /></span>
-    <h2>You&apos;re all set.</h2>
-    <p>Your account is ready. Opening your dashboard…</p>
-    <button type="button" className="hw-auth-inline-link" onClick={() => {
-      if (onAuthenticated) onAuthenticated(); else router.replace(destination);
-    }}>Go to dashboard</button>
-  </div>;
+  if (step === "complete") return null;
 
   if (step === "profile") return <form className="auth-form hw-auth-progress" onSubmit={completeGoogleProfile}>
     <div className="hw-auth-progress-heading"><span className="hw-auth-step">STEP 2 OF 2</span>

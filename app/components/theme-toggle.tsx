@@ -19,7 +19,10 @@ function subscribe(listener: () => void) {
 }
 
 function savedTheme(): Theme {
-  return localStorage.getItem("handework_theme_v2") === "light" ? "light" : "dark";
+  const installed = window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  const value = localStorage.getItem(installed ? "handework_app_theme_v1" : "handework_theme_v2");
+  return value === "light" || value === "dark" ? value : installed ? "light" : "dark";
 }
 
 export function ThemeToggle({ compact = false, className = "" }: { compact?: boolean; className?: string }) {
@@ -28,7 +31,9 @@ export function ThemeToggle({ compact = false, className = "" }: { compact?: boo
 
   function toggle() {
     const next: Theme = theme === "light" ? "dark" : "light";
-    window.localStorage.setItem("handework_theme_v2", next);
+    const installed = window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true;
+    window.localStorage.setItem(installed ? "handework_app_theme_v1" : "handework_theme_v2", next);
     window.dispatchEvent(new Event("handework-theme"));
   }
 

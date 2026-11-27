@@ -7,7 +7,6 @@ import { services } from "../lib/services";
 import { Professionals } from "./components/professionals";
 import { DemoVideo } from "./components/demo-video";
 import { WorkforceSignal } from "./components/workforce-signal";
-import { PlatformTicker } from "./components/platform-ticker";
 import { SafetyVideo } from "./components/safety-video";
 import { PwaHomeGate } from "./components/pwa-home-gate";
 
@@ -19,8 +18,8 @@ export default function Home() {
       <section className="hero hero-light" id="top">
         <div className="shell hero-grid hero-grid-visual">
           <div className="hero-copy">
-            <h1>Get it done.</h1>
-            <p className="hero-lede">Find skilled professionals for the things you need fixed, made or maintained.</p>
+            <h1>Skilled work deserves recognition.</h1>
+            <p className="hero-lede">Find capable hands, agree on the job, and follow every step with confidence. For the people who do the work, handEwork makes skill visible and reputation portable.</p>
             <LocationSearch />
           </div>
           <div className="home-hammer" aria-hidden="true">
@@ -68,11 +67,10 @@ export default function Home() {
       </section>
 
       {/* HANDEWORK_PWA_GPS_INTEGRATIONS_2026 */}
-      <PlatformTicker />
       <section className="section shell service-showcase" id="services">
-        <div className="section-head"><div><h2>What needs doing?</h2><p>Start with the work. We’ll help you find the right hands.</p></div><Link className="text-link" href="/marketplace">View all services</Link></div>
+        <div className="section-head"><div><h2>What needs doing?</h2><p>From repairs to celebrations, start with the work you need done.</p></div></div>
         <div className="service-visual-grid">{services.filter((service) => service.name !== "Catering").map((service) => (
-          <Link className="service-visual-card" href={`/marketplace?service=${encodeURIComponent(service.name)}`} key={service.name}>
+          <Link className="service-visual-card" href={`/bookings/new?service=${encodeURIComponent(service.name)}`} key={service.name}>
             <div className="service-visual-media">
               <picture>
                 <source media="(prefers-reduced-motion: reduce)" srcSet={`/services/home/animated/stills/${service.image}.webp`} />
@@ -93,19 +91,20 @@ export default function Home() {
 
       <section className="home-evidence" aria-labelledby="home-evidence-title">
         <div className="shell">
-          <h2 id="home-evidence-title">A stronger future for skilled work.</h2>
+          <h2 id="home-evidence-title">A career built on skill, not job titles.</h2>
           <div className="home-workforce-signal" aria-label="National workforce context">
             <WorkforceSignal />
           </div>
         </div>
       </section>
+      <section className="shell hw-training-story"><div><span className="hw-section-label">FOR SKILLED PROFESSIONALS</span><h2>Finished training. Now what?</h2></div><div><p>Completing vocational school does not automatically bring customers, tools or a workshop. handEwork helps you present your skills professionally, create a portfolio and connect with real opportunities.</p><p>Explore short practical courses and training opportunities to develop your craft without assuming everyone can afford to relocate or enter another expensive apprenticeship. Course access, location and fees depend on each provider.</p><Link href="/training" className="home-process-cta">Explore training opportunities</Link></div></section>
       <Professionals />
 
       <section className="home-workproof" aria-labelledby="home-workproof-title">
         <div className="shell home-workproof-grid">
           <div className="home-workproof-intro">
-            <h2 id="home-workproof-title">Good work leaves proof.</h2>
-            <p>Skills deserve recognition. Build your work history, portfolio and reputation with every completed job.</p>
+            <h2 id="home-workproof-title">A trade is a profession. Your work should prove it.</h2>
+            <p>A qualification or apprenticeship should be the beginning, not the end of your career. Show what you can do with a professional portfolio, verified job history and WorkProof. Let your work speak before assumptions do.</p>
             <div className="home-workproof-actions">
               <Link href="/join/artisan" className="home-process-cta">Build your reputation</Link>
             </div>
@@ -117,7 +116,7 @@ export default function Home() {
       </section>
       {/* HANDEWORK_SAFETY_DRIVE_EMBED_2026 */}
       <section
-        className="home-safety"
+        className="home-safety" id="safety"
         aria-labelledby="home-safety-title"
       >
         <div className="shell home-safety-inner">
@@ -136,10 +135,7 @@ export default function Home() {
 
           <SafetyVideo />
 
-          <Link href="/safety" className="home-safety-link">
-            Explore safety and trust
 
-          </Link>
         </div>
       </section>
 
@@ -168,11 +164,11 @@ export default function Home() {
           </details>
           <details>
             <summary>What if I cannot find someone available for my job?</summary>
-            <p>Try another location, service or distance in <Link href="/marketplace">Find an artisan</Link>. You can also <Link href="/bookings/new">describe your job</Link> to start a request. Availability and responses depend on real professionals using handEwork.</p>
+            <p>Try another location, service or distance when describing your job. You can also <Link href="/bookings/new">describe your job</Link> to start a request. Availability and responses depend on real professionals using handEwork.</p>
           </details>
         </div>
       </section>
-      <section className="final-cta"><div className="shell final-inner"><div><h2>Ready to get it done?</h2></div><Link className="button button-cream" href="/marketplace">Find an artisan</Link></div></section>
+      <section className="final-cta"><div className="shell final-inner"><div><h2>Ready to get it done?</h2></div><Link className="button button-cream" href="/bookings/new">Book a professional</Link></div></section>
       <Footer />
     </main></PwaHomeGate>
   );
