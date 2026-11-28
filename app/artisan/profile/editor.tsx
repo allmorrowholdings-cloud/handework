@@ -6,7 +6,7 @@ import { FormEvent, useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { api } from "../../../lib/api";
 
-type Profile = { latitude?: number | null; longitude?: number | null; display_name: string; trade: string; bio?: string; starting_price?: number; radius_km: number; languages?: string; city?: string; area?: string; instant_booking: boolean; avatar_url?: string | null; verification_status?: string; available?: boolean };
+type Profile = { latitude?: number | null; longitude?: number | null; display_name: string; trade: string; secondary_services?: string; bio?: string; starting_price?: number; radius_km: number; languages?: string; city?: string; area?: string; instant_booking: boolean; avatar_url?: string | null; verification_status?: string; available?: boolean };
 
 export function ProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -67,7 +67,7 @@ export function ProfileEditor() {
     <div className="profile-banner"><div className="profile-avatar">{profile.avatar_url ? <Image src={profile.avatar_url} alt="Profile" width={80} height={80} unoptimized /> : profile.display_name.slice(0, 1)}</div><div><h2>Public artisan profile</h2><p>Approved information is shown to customers.</p><label>Profile picture<input type="file" accept="image/jpeg,image/png,image/webp" onChange={avatar} /></label></div></div>
     <label>Professional display name<input value={profile.display_name} onChange={event => set("display_name", event.target.value)} /></label>
     <label>Main trade<input value={profile.trade} onChange={event => set("trade", event.target.value)} /></label>
-    <label>Short work introduction<textarea rows={5} value={profile.bio ?? ""} onChange={event => set("bio", event.target.value)} /></label>
+    <label>Specific services offered (comma-separated)<input value={profile.secondary_services ?? ""} onChange={event => set("secondary_services", event.target.value)} placeholder="AC repair, CCTV installation" /></label><p>Only list work you are qualified to perform. Profile approval does not certify every listed service.</p><label>Short work introduction<textarea rows={5} value={profile.bio ?? ""} onChange={event => set("bio", event.target.value)} /></label>
     <div className="two-fields"><label>Starting price (GHS)<input min="0" type="number" value={profile.starting_price ?? ""} onChange={event => set("starting_price", Number(event.target.value))} /></label><label>Service radius (km)<input min="1" max="100" type="number" value={profile.radius_km} onChange={event => set("radius_km", Number(event.target.value))} /></label></div>
     <LocationPicker value={profile.latitude != null && profile.longitude != null ? `${profile.latitude},${profile.longitude}` : ""} onSelect={pin => { const [latitude, longitude] = pin.split(",").map(Number); setProfile(current => current ? { ...current, latitude, longitude } : current); }} />
     <label>Languages<input value={profile.languages ?? ""} onChange={event => set("languages", event.target.value)} placeholder="English, Twi, Ga…" /></label>

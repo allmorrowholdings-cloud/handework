@@ -4,7 +4,7 @@ import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ghanaPlaces from "../../lib/ghana-places.json";
-import { serviceNames } from "../../lib/services";
+import { findServices } from "../../lib/service-catalogue";
 import { api } from "../../lib/api";
 
 type Professional = { id: string; display_name: string; trade?: string; area?: string; city?: string; distance_km?: number; verification_status?: string };
@@ -30,7 +30,8 @@ export function AppBookingFlow() {
   useEffect(()=>{try{sessionStorage.setItem("hw-app-booking-draft",JSON.stringify({step,form}))}catch{}},[step,form]);
   const region = regions.find(r=>r.name===form.region);
   const district = region?.districts.find(d=>d.name===form.district);
-  const serviceOptions = useMemo(()=>[...serviceNames].sort((a,b)=>a.localeCompare(b)),[]);
+  const [serviceSearch,setServiceSearch]=useState("");
+  const serviceOptions = useMemo(()=>[...new Set([...findServices(serviceSearch),form.service].filter(Boolean))].sort((a,b)=>a.localeCompare(b)),[serviceSearch,form.service]);
   const location = [form.area || form.town, form.city || form.region].filter(Boolean).join(", ");
   const today = new Date().toLocaleDateString("en-CA",{timeZone:"Africa/Accra"});
   const update = (key:keyof typeof initial,value:string) => setForm(old=>({...old,[key]:value}));
@@ -81,7 +82,7 @@ export function AppBookingFlow() {
     <header className="hw-app-flow-head"><button type="button" aria-label="Previous step" onClick={()=>{if(step===0)router.push("/dashboard");else setStep(v=>v-1)}}>Back</button><strong>{steps[step]}</strong><span>{step+1} / 8</span></header>
     <div className="hw-app-progress" aria-label={`Step ${step+1} of 8`}><span style={{width:`${(step+1)/8*100}%`}}/></div>
     <div className="hw-app-flow-body"><p className="hw-app-eyebrow">{steps[step]} · Step {step+1}</p>
-      {step===0&&<><h1>What do you need done?</h1><p>Choose the type of professional you need.</p><div className="hw-app-services">{serviceOptions.map(name=><button type="button" key={name} className={form.service===name?"chosen":""} onClick={()=>update("service",name)}>{name}<span aria-hidden="true">{form.service===name?"✓":""}</span></button>)}</div></>}
+      {step===0&&<><h1>What do you need done?</h1><p>Choose a specific service or trade.</p><input type="search" aria-label="Search services" placeholder="AC repair, CCTV, cleaning..." value={serviceSearch} onChange={e=>setServiceSearch(e.target.value)}/><div className="hw-app-services">{serviceOptions.map(name=><button type="button" key={name} className={form.service===name?"chosen":""} onClick={()=>update("service",name)}>{name}<span aria-hidden="true">{form.service===name?"✓":""}</span></button>)}</div></>}
       {step===1&&<><h1>Tell us about the job.</h1><p>A short description helps professionals understand the work.</p><label>Job details<textarea rows={6} value={form.description} onChange={e=>update("description",e.target.value)} placeholder="For example, my kitchen sink is leaking and the tap needs replacing."/></label></>}
       {step===2&&<><h1>Add photos or a video.</h1><p>Optional, but useful for accurate estimates.</p><label className="hw-app-upload">Photos or short video<input type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4" onChange={pickMedia}/><span>{media.length?`${media.length} attachment(s) selected` : "Up to five JPG, PNG, WebP photos or MP4 clips"}</span></label><small>Files are uploaded when you confirm the job. Reselect them if the app refreshes.</small><label>Or add a Google Drive link (optional)<input type="url" placeholder="https://drive.google.com/..." value={form.drive_url} onChange={e=>update("drive_url",e.target.value)}/></label><small>Shared Drive links are reviewed separately; they are not automatically added to the booking gallery.</small></>}
       {step===3&&<><h1>Where is the job?</h1><p>Choose a location or enter your nearest landmark.</p><button type="button" className={`hw-app-outline ${(gpsVerified||Boolean(form.coordinates&&form.address))?"hw-app-gps-success":""}`} onClick={useGps} disabled={gpsBusy} aria-live="polite">{gpsBusy?"Finding your location…":(gpsVerified||Boolean(form.coordinates&&form.address))?"GPS location selected ✓":"Use my current location"}</button>{(gpsVerified||Boolean(form.coordinates&&form.address))&&<button type="button" className="hw-app-location-edit" onClick={()=>{setGpsVerified(false);setForm(v=>({...v,coordinates:"",area:"",address:"",city:""}))}}>Change location manually</button>}

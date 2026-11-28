@@ -107,6 +107,10 @@ def bookings():
     if data.get("artisan_id"):
         artisan = ArtisanProfile.query.filter_by(id=data["artisan_id"], verification_status="approved", available=True).filter(ArtisanProfile.user.has(User.status == "active"), ArtisanProfile.radius_km > 0).first()
         if not artisan: return jsonify({"message": "This artisan is not available for booking"}), 409
+        from ..services.service_catalogue import specific_service, capability_matches
+        specific = specific_service(booking.service)
+        if specific and not capability_matches(specific, artisan.trade, artisan.secondary_services):
+            return jsonify(message="This professional has not listed the requested service"),409
         if booking.latitude is not None and (artisan.latitude is None or artisan.longitude is None):
             return jsonify(message="This artisan has not configured a service location"),409
         if booking.latitude is not None and artisan.latitude is not None and artisan.longitude is not None:

@@ -10,6 +10,7 @@ from ..security import current_user, role_required
 from ..services.distance import haversine_km
 from ..services.maps import geocode, places, point, LocationUnavailable
 from ..services.matching import matching_score
+from ..services.service_catalogue import CATALOGUE, specific_service, capability_matches
 from ..services.storage import private_download_url, upload_file, metadata_for, delete_object
 from ..services.workproof import public_workproof
 
@@ -28,7 +29,7 @@ def parse_coordinates(value):
 def services():
     profiles = db.session.query(ArtisanProfile.trade, ArtisanProfile.secondary_services).filter_by(verification_status="approved").distinct()
     names = {name.strip() for trade, secondary in profiles for name in [trade, *(secondary or "").split(",")] if name.strip()}
-    return jsonify({"items": sorted(names, key=str.casefold)})
+    return jsonify({"items": sorted(names | {row["name"] for row in CATALOGUE}, key=str.casefold), "catalogue": CATALOGUE})
 
 
 TRADE_TERMS = {
@@ -75,7 +76,8 @@ def search_artisans():
 
 def ranked_artisans(service,coordinates,distance_limit,location=None,weekday=None):
     query = ArtisanProfile.query.filter_by(verification_status="approved", available=True).filter(ArtisanProfile.user.has(User.status == "active"), ArtisanProfile.radius_km > 0)
-    if service:
+    specific = specific_service(service)
+    if service and not specific:
         query = query.filter(db.or_(*(
             column.icontains(term, autoescape=True) for term in search_terms(service)
             for column in (ArtisanProfile.trade, ArtisanProfile.secondary_services)
@@ -92,6 +94,8 @@ def ranked_artisans(service,coordinates,distance_limit,location=None,weekday=Non
         query=query.filter(ArtisanProfile.id.in_(db.select(Availability.artisan_id).where(
             Availability.weekday==weekday, Availability.active.is_(True))))
     for profile in query.yield_per(200):
+        if specific and not capability_matches(specific, profile.trade, profile.secondary_services):
+            continue
         if coordinates and profile.latitude is not None and profile.longitude is not None:
             distance = haversine_km(coordinates[0], coordinates[1], profile.latitude, profile.longitude)
         elif coordinates:
@@ -141,7 +145,7 @@ def my_artisan_profile():
         if "starting_price" in data: profile.starting_price = data["starting_price"]
         if "instant_booking" in data: profile.instant_booking = bool(data["instant_booking"])
         db.session.commit()
-    return jsonify({"artisan": {**profile.search_card(None), "avatar_url":private_download_url(profile.avatar_url,300) if profile.avatar_url else None, "bio": profile.bio, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km, "latitude":float(profile.latitude) if profile.latitude is not None else None,"longitude":float(profile.longitude) if profile.longitude is not None else None,"verification_status": profile.verification_status, "available": profile.available}})
+    return jsonify({"artisan": {**profile.search_card(None), "avatar_url":private_download_url(profile.avatar_url,300) if profile.avatar_url else None, "bio": profile.bio, "secondary_services": profile.secondary_services or "", "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km, "latitude":float(profile.latitude) if profile.latitude is not None else None,"longitude":float(profile.longitude) if profile.longitude is not None else None,"verification_status": profile.verification_status, "available": profile.available}})
 
 
 @bp.route("/artisans/me/availability", methods=["GET", "PUT"])
