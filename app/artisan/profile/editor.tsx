@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import { api } from "../../../lib/api";
+import { findServices } from "../../../lib/service-catalogue";
 
 type Profile = { latitude?: number | null; longitude?: number | null; display_name: string; trade: string; secondary_services?: string; bio?: string; starting_price?: number; radius_km: number; languages?: string; city?: string; area?: string; instant_booking: boolean; avatar_url?: string | null; verification_status?: string; available?: boolean };
 
@@ -12,6 +13,7 @@ export function ProfileEditor() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const [serviceQuery,setServiceQuery]=useState("");
   useEffect(() => { api<{ artisan: Profile }>("/v1/artisans/me").then(body => setProfile(body.artisan)).catch(error => setNotice(error.message)); }, []);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!profile) return; setBusy(true); setNotice("");
@@ -50,7 +52,7 @@ export function ProfileEditor() {
         <>
           <strong>Your profile is approved and accepting work.</strong>
           <p>
-            Add a service-location pin so nearby customers can find you
+            Save your service location using GPS or an address search so nearby customers can find you
             in distance-based searches.
           </p>
         </>
@@ -66,10 +68,11 @@ export function ProfileEditor() {
     </div>
     <div className="profile-banner"><div className="profile-avatar">{profile.avatar_url ? <Image src={profile.avatar_url} alt="Profile" width={80} height={80} unoptimized /> : profile.display_name.slice(0, 1)}</div><div><h2>Public artisan profile</h2><p>Approved information is shown to customers.</p><label>Profile picture<input type="file" accept="image/jpeg,image/png,image/webp" onChange={avatar} /></label></div></div>
     <label>Professional display name<input value={profile.display_name} onChange={event => set("display_name", event.target.value)} /></label>
-    <label>Main trade<input value={profile.trade} onChange={event => set("trade", event.target.value)} /></label>
-    <label>Specific services offered (comma-separated)<input value={profile.secondary_services ?? ""} onChange={event => set("secondary_services", event.target.value)} placeholder="AC repair, CCTV installation" /></label><p>Only list work you are qualified to perform. Profile approval does not certify every listed service.</p><label>Short work introduction<textarea rows={5} value={profile.bio ?? ""} onChange={event => set("bio", event.target.value)} /></label>
+    <label>Main trade (e.g. building architect or software architect)<input value={profile.trade} onChange={event => set("trade", event.target.value)} /></label>
+    <fieldset className="hw-capability-picker"><legend>Specific services offered</legend><label>Search services<input type="search" value={serviceQuery} onChange={e=>setServiceQuery(e.target.value)} placeholder="Search for a specialist service"/></label><div className="hw-capability-list">{(profile.secondary_services??"").split(",").map(v=>v.trim()).filter(Boolean).map(name=><button key={name} type="button" onClick={()=>set("secondary_services",(profile.secondary_services??"").split(",").map(v=>v.trim()).filter(v=>v&&v!==name).join(", "))}>{name} ×</button>)}</div>{serviceQuery.trim()&&<div className="hw-capability-list">{findServices(serviceQuery).slice(0,12).map(name=><button type="button" key={name} onClick={()=>{set("secondary_services",[...new Set([...(profile.secondary_services??"").split(",").map(v=>v.trim()).filter(Boolean),name])].join(", "));setServiceQuery("")}}>Add {name}</button>)}</div>}</fieldset><p>Only list work you are qualified to perform. Profile approval does not certify every listed service.</p><label>Short work introduction<textarea rows={5} value={profile.bio ?? ""} onChange={event => set("bio", event.target.value)} /></label>
     <div className="two-fields"><label>Starting price (GHS)<input min="0" type="number" value={profile.starting_price ?? ""} onChange={event => set("starting_price", Number(event.target.value))} /></label><label>Service radius (km)<input min="1" max="100" type="number" value={profile.radius_km} onChange={event => set("radius_km", Number(event.target.value))} /></label></div>
-    <LocationPicker value={profile.latitude != null && profile.longitude != null ? `${profile.latitude},${profile.longitude}` : ""} onSelect={pin => { const [latitude, longitude] = pin.split(",").map(Number); setProfile(current => current ? { ...current, latitude, longitude } : current); }} />
+    <label>City or town<input value={profile.city??""} onChange={e=>set("city",e.target.value)} placeholder="Accra"/></label><label>Neighbourhood or area<input value={profile.area??""} onChange={e=>set("area",e.target.value)} placeholder="East Legon"/></label>
+    <LocationPicker value={profile.latitude != null && profile.longitude != null ? `${profile.latitude},${profile.longitude}` : ""} onSelect={(pin,label) => { const [latitude, longitude] = pin.split(",").map(Number); setProfile(current => current ? { ...current, latitude, longitude, area: current.area || label || "" } : current); }} />
     <label>Languages<input value={profile.languages ?? ""} onChange={event => set("languages", event.target.value)} placeholder="English, Twi, Ga…" /></label>
     <label className="setting-row"><span><b>Instant booking</b><small>Use your starting price only on dates marked available</small></span><input type="checkbox" checked={profile.instant_booking} onChange={event => set("instant_booking", event.target.checked)} /></label>
     {notice && <p className="data-note" role="status">{notice}</p>}<button className="button button-orange" disabled={busy}>{busy ? "Saving…" : "Save profile"}</button>

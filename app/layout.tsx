@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./public-design.css";
 import "./website-growth.css";
+import "./service-discovery.css";
 import { ThemeInitializer } from "./components/theme-toggle";
 import { SessionActivity } from "./components/session-activity";
 import "maplibre-gl/dist/maplibre-gl.css";

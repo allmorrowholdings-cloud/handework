@@ -1556,5 +1556,18 @@
     "name": "Home organization",
     "aliases": [],
     "specialist": false
+  },
+  {
+    "id": "it.software-architecture",
+    "category": "Technology and IT",
+    "name": "Software architecture",
+    "aliases": [
+      "software architect",
+      "application architect",
+      "app architect",
+      "application architecture",
+      "solutions architect"
+    ],
+    "specialist": false
   }
 ]
