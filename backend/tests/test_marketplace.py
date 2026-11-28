@@ -65,3 +65,31 @@ def test_shop_only_lists_confirmed_products(client, monkeypatch):
     selected = next(iter(PRODUCTS))
     monkeypatch.setenv("SHOP_PUBLISHED_PRODUCT_IDS", selected)
     assert [row["id"] for row in client.get("/v1/shop/products").json["items"]] == [selected]
+
+
+def test_inactive_artisan_excluded(client, app, artisan):
+    from handework.models import User
+    from handework.extensions import db
+    with app.app_context():
+        user = db.session.get(User, artisan['user']['id'])
+        user.status = 'inactive'
+        db.session.commit()
+    assert client.get('/v1/artisans/search?service=plumb').json['items'] == []
+    assert client.get('/v1/artisans/'+artisan['profile_id']).status_code == 404
+
+
+def test_invalid_service_radius(client, artisan):
+    assert client.patch('/v1/artisans/me', json={'radius_km':0}, headers=artisan['headers']).status_code == 422
+
+
+def test_missing_pin_then_eligible(client, app, artisan):
+    from handework.models import ArtisanProfile
+    from handework.extensions import db
+    with app.app_context():
+        profile = db.session.get(ArtisanProfile, artisan['profile_id'])
+        profile.latitude = profile.longitude = None
+        db.session.commit()
+    url = '/v1/artisans/search?service=plumb&coordinates=5.56,-0.18'
+    assert client.get(url).json['items'] == []
+    assert client.patch('/v1/artisans/me', json={'latitude':5.556,'longitude':-0.182}, headers=artisan['headers']).status_code == 200
+    assert client.get(url).json['items'][0]['id'] == artisan['profile_id']
