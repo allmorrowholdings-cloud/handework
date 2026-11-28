@@ -65,23 +65,24 @@ export function VerificationManager() {
     } finally { setBusyKind(null); }
   }
 
-  const complete = items.filter((item) => item.status === "approved").length;
+  const complete = checks.filter(check => items.some(item => item.kind === check.kind && item.status === "approved")).length;
   return <div className="app-card verify-card">
-    <div className="verify-intro"><span>{Math.round(complete / checks.length * 100)}%</span><div><h2>{profileStatus === "approved" ? "Profile verified" : "Complete your checks"}</h2><p>Your profile stays private until required checks are approved.</p></div></div>
+    <div className="verify-intro"><span>{Math.round(complete / checks.length * 100)}%</span><div><h2>{profileStatus === "approved" ? "Profile verified" : "Complete your checks"}</h2><p>{profileStatus === "approved" ? "Your checks are approved. Set your service location and availability to receive nearby requests." : "Your profile stays private until required checks are approved."}</p></div></div>
     {checks.map((check, index) => {
       const row = items.find((item) => item.kind === check.kind);
       const status = row?.status ?? "not submitted";
       const approved = status === "approved";
       const pending = status === "pending";
-      const actionText = busyKind === check.kind ? "Uploadingâ€¦" : approved ? "Approved âœ“" : pending ? "Replace file" : "Upload file";
+      const actionText = busyKind === check.kind ? "Uploading…" : approved ? "Approved" : pending ? "Replace file" : "Upload file";
       return <div className={`verify-row verification-${status.replaceAll(" ", "-")}`} key={check.kind}>
         <span>0{index + 1}</span>
-        <div><b>{check.title}</b><small>{row?.decision_reason || check.text}</small><em>{pending ? "Pending admin review" : approved ? "Approved" : ["replacement_required","rejected"].includes(status) ? "Action required" : "Not submitted"}</em></div>
+        <div><b>{check.title}</b><small>{approved ? check.text : row?.decision_reason || check.text}</small><em>{pending ? "Pending admin review" : approved ? "" : ["replacement_required","rejected"].includes(status) ? "Action required" : "Not submitted"}</em></div>
         {check.kind === "payout_name" ?
-          <button type="button" disabled={approved || busyKind === check.kind} onClick={payout}>{busyKind === check.kind ? "Savingâ€¦" : approved ? "Approved âœ“" : pending ? "Update name" : "Add payout name"}</button> :
+          <button type="button" disabled={approved || busyKind === check.kind} onClick={payout}>{busyKind === check.kind ? "Saving…" : approved ? "Approved" : pending ? "Update name" : "Add payout name"}</button> :
           <label className={`verify-upload ${approved ? "disabled" : ""}`} htmlFor={`verification-${check.kind}`}>{actionText}<input id={`verification-${check.kind}`} disabled={approved || busyKind === check.kind} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => void upload(check.kind, event)} /></label>}
       </div>;
     })}
+    {profileStatus === "approved" && <p><a href="/artisan/profile">Service location</a> · <a href="/artisan/availability">Availability</a></p>}
     {notice && <p className="data-note" role="status">{notice}</p>}
 
   </div>;

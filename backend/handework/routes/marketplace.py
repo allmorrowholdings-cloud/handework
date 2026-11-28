@@ -5,7 +5,7 @@ from flask_jwt_extended import jwt_required
 from ..services.email_delivery import queue_email
 from ..models import DriveSubmission
 from ..extensions import db, limiter
-from ..models import ArtisanProfile, Availability, FileAsset, PortfolioItem, Role, Verification
+from ..models import ArtisanProfile, Availability, FileAsset, PortfolioItem, Role, Verification, User
 from ..security import current_user, role_required
 from ..services.distance import haversine_km
 from ..services.maps import geocode, places, point, LocationUnavailable
@@ -74,7 +74,7 @@ def search_artisans():
 
 
 def ranked_artisans(service,coordinates,distance_limit,location=None,weekday=None):
-    query = ArtisanProfile.query.filter_by(verification_status="approved", available=True)
+    query = ArtisanProfile.query.filter_by(verification_status="approved", available=True).filter(ArtisanProfile.user.has(User.status == "active"), ArtisanProfile.radius_km > 0)
     if service:
         query = query.filter(db.or_(*(
             column.icontains(term, autoescape=True) for term in search_terms(service)
@@ -111,7 +111,7 @@ def ranked_artisans(service,coordinates,distance_limit,location=None,weekday=Non
 
 @bp.get("/artisans/<artisan_id>")
 def artisan_detail(artisan_id):
-    profile = ArtisanProfile.query.filter_by(id=artisan_id, verification_status="approved").first_or_404()
+    profile = ArtisanProfile.query.filter_by(id=artisan_id, verification_status="approved").filter(ArtisanProfile.user.has(User.status == "active")).first_or_404()
     portfolio = PortfolioItem.query.filter_by(artisan_id=profile.id, moderation_status="approved").order_by(PortfolioItem.created_at.desc()).all()
     links = DriveSubmission.query.filter_by(owner_id=profile.user_id, purpose="portfolio", status="approved").order_by(DriveSubmission.title)
     return jsonify({"external_portfolio": [row.link() for row in links], "artisan": {**profile.search_card(None), "avatar_url":private_download_url(profile.avatar_url,300) if profile.avatar_url else None, "bio": profile.bio, "years_experience": profile.years_experience, "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km}, "workproof": public_workproof(profile), "portfolio": [{"id": item.id, "title": item.title, "description": item.description, "service": item.service, "media_url": private_download_url(item.media_url,300), "media_type": item.media_type, "before_after": item.before_after} for item in portfolio]})
@@ -125,8 +125,14 @@ def my_artisan_profile():
         data = request.get_json(silent=True) or {}
         for field in ("display_name", "trade", "secondary_services", "bio", "city", "area", "languages"):
             if field in data: setattr(profile, field, str(data[field]).strip())
-        for field in ("years_experience", "radius_km"):
-            if field in data: setattr(profile, field, max(int(data[field]), 0))
+        try:
+            if "years_experience" in data: profile.years_experience = max(int(data["years_experience"]), 0)
+            if "radius_km" in data:
+                radius = int(data["radius_km"])
+                if not 1 <= radius <= 100: raise ValueError()
+                profile.radius_km = radius
+        except (ValueError, TypeError, OverflowError):
+            return jsonify(message="Service radius must be 1–100 km and experience must be numeric"), 422
         if data.get("latitude") is not None or data.get("longitude") is not None:
             try:
                 profile.latitude, profile.longitude = point(data.get("latitude"),data.get("longitude"))

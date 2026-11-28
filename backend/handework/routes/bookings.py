@@ -7,7 +7,7 @@ from datetime import date, datetime, time, timezone
 import re
 from flask import Blueprint, jsonify, request
 from ..extensions import db
-from ..models import ArtisanProfile, Availability, FileAsset, Booking, BookingStatus, BookingStatusEvent, Conversation, JobChange, Quote, Role
+from ..models import ArtisanProfile, Availability, FileAsset, User, Booking, BookingStatus, BookingStatusEvent, Conversation, JobChange, Quote, Role
 from ..security import current_user, role_required
 from ..services.commission import commission_bps
 from ..services.payment_plan import installments, validate_schedule
@@ -105,8 +105,10 @@ def bookings():
             return jsonify(message="No eligible artisan within service radius"),409
         data["artisan_id"]=matches[0]["id"]
     if data.get("artisan_id"):
-        artisan = ArtisanProfile.query.filter_by(id=data["artisan_id"], verification_status="approved", available=True).first()
+        artisan = ArtisanProfile.query.filter_by(id=data["artisan_id"], verification_status="approved", available=True).filter(ArtisanProfile.user.has(User.status == "active"), ArtisanProfile.radius_km > 0).first()
         if not artisan: return jsonify({"message": "This artisan is not available for booking"}), 409
+        if booking.latitude is not None and (artisan.latitude is None or artisan.longitude is None):
+            return jsonify(message="This artisan has not configured a service location"),409
         if booking.latitude is not None and artisan.latitude is not None and artisan.longitude is not None:
             from ..services.distance import haversine_km
             if haversine_km(booking.latitude,booking.longitude,artisan.latitude,artisan.longitude)>artisan.radius_km:
