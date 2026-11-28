@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { LocationPicker } from "../../components/location-picker";
+import { findServices } from "../../../lib/service-catalogue";
 import { Header } from "../../components/header";
 import { accessToken, api, saveSession } from "../../../lib/api";
 
@@ -16,7 +18,8 @@ const initialForm = {
   secondary_services: "",
   years_experience: "",
   bio: "",
-  city: "Accra",
+  city: "",
+  coordinates: "",
   area: "",
   radius_km: "10",
 };
@@ -46,6 +49,7 @@ function Application() {
     try { return {...initialForm, ...JSON.parse(sessionStorage.getItem("handework-application") || "{}"), password: ""}; }
     catch { return initialForm; }
   });
+  const [query,setQuery]=useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -72,11 +76,13 @@ function Application() {
       setStep((current) => current + 1);
       return;
     }
+    if (!form.coordinates) { setError("Confirm your service location using GPS or address search."); return; }
+    const [latitude,longitude]=form.coordinates.split(",").map(Number);
     setBusy(true);
     try {
       const session = await api<Session>("/v1/auth/register-artisan", {
         method: "POST",
-        body: JSON.stringify({ ...form, client: "web" }),
+        body: JSON.stringify({ ...form, latitude, longitude, client: "web" }),
       });
       sessionStorage.removeItem("handework-application");
       saveSession(session.access_token, session.refresh_token);
@@ -126,8 +132,8 @@ function Application() {
 
           {step === 2 && <>
             <h2>What work do you do?</h2>
-            <label>Main trade<input required name="trade" placeholder="e.g. plumber, dressmaker, welder" value={form.trade} onChange={(e) => set("trade", e.target.value)} /></label>
-            <label>Other services<input name="secondary_services" placeholder="Separate with commas" value={form.secondary_services} onChange={(e) => set("secondary_services", e.target.value)} /></label>
+            <label>Primary profession<input required name="trade" list="profession-options" placeholder="Search or enter your profession" value={form.trade} onChange={e=>set("trade",e.target.value)}/></label><datalist id="profession-options">{findServices(form.trade).slice(0,30).map(name=><option key={name} value={name}/>)}</datalist>
+            <fieldset className="hw-capability-picker"><legend>Specific services you offer</legend><label>Find a service<input type="search" value={query} onChange={e=>setQuery(e.target.value)}/></label><div className="hw-capability-list">{form.secondary_services.split(",").filter(Boolean).map(v=>v.trim()).map(name=><button type="button" key={name} onClick={()=>set("secondary_services",form.secondary_services.split(",").map(v=>v.trim()).filter(v=>v!==name).join(", "))}>{name} ×</button>)}</div>{query.trim()&&<div className="hw-capability-list">{findServices(query).slice(0,12).map(name=><button type="button" key={name} onClick={()=>{set("secondary_services",[...new Set([...form.secondary_services.split(",").map(v=>v.trim()).filter(Boolean),name])].join(", "));setQuery("")}}>Add {name}</button>)}</div>}</fieldset>
             <label>Years of experience<input required min="0" name="years_experience" type="number" value={form.years_experience} onChange={(e) => set("years_experience", e.target.value)} /></label>
             <label>Tell customers about your work<textarea required name="bio" rows={5} value={form.bio} onChange={(e) => set("bio", e.target.value)} /></label>
           </>}
@@ -135,9 +141,10 @@ function Application() {
           {step === 3 && <>
             <h2>Where can you work?</h2>
             <div className="two-fields">
-              <label>City<select name="city" value={form.city} onChange={(e) => set("city", e.target.value)}><option>Accra</option><option>Kumasi</option><option>Tema</option><option>Takoradi</option><option>Cape Coast</option><option>Tamale</option></select></label>
-              <label>Home area<input required name="area" value={form.area} onChange={(e) => set("area", e.target.value)} /></label>
+              <label>City or town<input required value={form.city} onChange={e=>setForm(v=>({...v,city:e.target.value,coordinates:""}))}/></label>
+              <label>Home area<input required name="area" value={form.area} onChange={e=>setForm(v=>({...v,area:e.target.value,coordinates:""}))} /></label>
             </div>
+            <LocationPicker value={form.coordinates} onSelect={(coordinates)=>set("coordinates",coordinates)}/><p>Confirm that the selected location matches your city and area.</p>
             <label>Travel radius<select name="radius_km" value={form.radius_km} onChange={(e) => set("radius_km", e.target.value)}><option value="3">Up to 3 km</option><option value="10">Up to 10 km</option><option value="25">Up to 25 km</option><option value="50">Up to 50 km</option></select></label>
             <label className="check consent"><input required type="checkbox" /> I agree to identity and trade verification before my profile goes live.</label>
           </>}
