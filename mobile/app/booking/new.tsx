@@ -27,10 +27,10 @@ export default function NewBooking(){
   const today=new Date().toISOString().slice(0,10);
   useEffect(()=>{if(step!==6)return;let alive=true;Promise.resolve().then(()=>{if(alive){setMatching(true);setError("");setSelected("");}});
     const query=new URLSearchParams({service:form.service,location:[form.area,form.city].filter(Boolean).join(", ")});
-    if(form.coordinates)query.set("coordinates",form.coordinates);if(form.scheduled_date)query.set("date",form.scheduled_date);
+    if(form.coordinates)query.set("coordinates",form.coordinates);if(form.scheduled_date){query.set("date",form.scheduled_date);query.set("start_time",form.start_time); }
     api<{items:Match[]}>(`/v1/artisans/search?${query}`).then(body=>{if(alive)setMatches(body.items)}).catch(()=>{if(alive){setMatches([]);setError("Matching is temporarily unavailable. You can still save your request.")}}).finally(()=>{if(alive)setMatching(false)});
     return()=>{alive=false};
-  },[step,form.service,form.area,form.city,form.coordinates,form.scheduled_date]);
+  },[step,form.service,form.area,form.city,form.coordinates,form.scheduled_date,form.start_time]);
   async function pick(){setError("");const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:["images","videos"],allowsMultipleSelection:true,selectionLimit:5,quality:.8});if(result.canceled)return;
     const assets=result.assets.slice(0,5).map((asset,index)=>({uri:asset.uri,name:asset.fileName||`attachment-${index+1}.${asset.type==="video"?"mp4":"jpg"}`,type:asset.mimeType||(asset.type==="video"?"video/mp4":"image/jpeg")}));
     if(assets.some(a=>!a.type.startsWith("image/")&&a.type!=="video/mp4")){setError("Choose photos or MP4 videos only.");return}setMedia(assets);

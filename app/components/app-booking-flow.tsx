@@ -56,12 +56,13 @@ function BookingFlow({requestedService}:{requestedService:string}) {
     queueMicrotask(()=>{if(!controller.signal.aborted){setMatching(true);setMatchingError("");setSelected("");}});
     const query=new URLSearchParams({service:form.service,location,date:form.date});
     if(form.coordinates)query.set("coordinates",form.coordinates);
+    if(form.date)query.set("start_time",form.start_time);
     api<{items:Professional[]}>(`/v1/artisans/search?${query}`,{signal:controller.signal}).then(r=>{
       if(controller.signal.aborted)return;
       setMatches(r.items);setMatching(false);
     }).catch(()=>{if(!controller.signal.aborted){setMatches([]);setMatching(false);setMatchingError("Matching is unavailable right now. You can still save your request without selecting a professional.")}});
     return()=>controller.abort();
-  },[step,form.service,form.date,form.coordinates,location]);
+  },[step,form.service,form.date,form.start_time,form.coordinates,location]);
 
   function next(){
     setError("");

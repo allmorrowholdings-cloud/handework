@@ -27,7 +27,7 @@ def conversations():
     rows = query.order_by(Conversation.last_message_at.desc(), Conversation.created_at.desc()).limit(100).all()
     items = []
     for row in rows:
-        booking = Booking.query.get(row.booking_id); last = Message.query.filter_by(conversation_id=row.id).order_by(Message.created_at.desc()).first()
+        booking = Booking.query.get(row.booking_id); last = Message.query.filter_by(conversation_id=row.id).filter(Message.deleted_at.is_(None)).order_by(Message.created_at.desc(), Message.id.desc()).first()
         items.append({"id": row.id, "booking_id": row.booking_id, "reference": booking.reference, "title": booking.service, "last_message": last.body if last else None, "last_message_at": row.last_message_at.isoformat() if row.last_message_at else None})
     return jsonify({"items": items})
 
@@ -38,7 +38,8 @@ def messages(conversation_id):
     user = current_user(); conversation = conversation_for_user(conversation_id, user)
     if not conversation: return jsonify({"message": "Conversation not found"}), 404
     if request.method == "GET":
-        rows = Message.query.filter_by(conversation_id=conversation.id).filter(Message.deleted_at.is_(None)).order_by(Message.created_at.asc()).limit(300).all()
+        rows = Message.query.filter_by(conversation_id=conversation.id).filter(Message.deleted_at.is_(None)).order_by(Message.created_at.desc(), Message.id.desc()).limit(300).all()
+        rows.reverse()
         return jsonify({"items": [{"id": row.id, "sender_id": row.sender_id, "body": row.body, "media_url": private_download_url(row.media_url), "media_type": row.media_type, "created_at": row.created_at.isoformat(), "edited_at": row.edited_at.isoformat() if row.edited_at else None} for row in rows]})
     data = request.get_json(silent=True) or {}; body = str(data.get("body") or "").strip(); media_url = data.get("media_url")
     if media_url:
@@ -46,7 +47,10 @@ def messages(conversation_id):
         asset = FileAsset.query.filter_by(id=asset_id, owner_id=user.id, purpose="chat_media", deleted_at=None).first()
         if not asset: return jsonify({"message":"Choose a file uploaded for this message."}), 422
         media_url = asset.url
+        data["media_type"] = "image" if asset.mime_type.startswith("image/") else "file"
     if not body and not media_url: return jsonify({"message": "Message or attachment is required"}), 422
+    if len(body) > 4000: return jsonify(message="Messages cannot exceed 4000 characters"), 422
+    if not media_url: data["media_type"] = None
     row = Message(conversation_id=conversation.id, sender_id=user.id, body=body[:4000] or None, media_url=media_url, media_type=data.get("media_type")); db.session.add(row); db.session.flush(); conversation.last_message_at = row.created_at; db.session.commit()
     payload = {"id": row.id, "conversation_id": conversation.id, "sender_id": user.id, "body": row.body, "media_url": private_download_url(row.media_url), "media_type": row.media_type, "created_at": row.created_at.isoformat()}
     socketio.emit("message.created", payload, to=f"conversation:{conversation.id}")

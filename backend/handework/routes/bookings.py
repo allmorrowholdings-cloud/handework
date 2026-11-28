@@ -11,6 +11,7 @@ from ..models import ArtisanProfile, Availability, FileAsset, User, Booking, Boo
 from ..security import current_user, role_required
 from ..services.commission import commission_bps
 from ..services.payment_plan import installments, validate_schedule
+from ..services.eligibility import booking_blocker, booking_coordinates
 from ..services.storage import private_download_url
 from ..services.notifications import dispatch_notifications, queue_notifications
 
@@ -100,23 +101,16 @@ def bookings():
         if booking.latitude is None:
             return jsonify(message="Select a job pin for Smart Dispatch"),422
         matches = ranked_artisans(booking.service if booking.service!="Help me choose" else booking.description,
-                                  (booking.latitude,booking.longitude),100,weekday=scheduled.weekday() if scheduled else None)
+                                  (booking.latitude,booking.longitude),100,weekday=scheduled.weekday() if scheduled else None,start=scheduled.time() if scheduled else None)
         if not matches:
             return jsonify(message="No eligible artisan within service radius"),409
         data["artisan_id"]=matches[0]["id"]
     if data.get("artisan_id"):
         artisan = ArtisanProfile.query.filter_by(id=data["artisan_id"], verification_status="approved", available=True).filter(ArtisanProfile.user.has(User.status == "active"), ArtisanProfile.radius_km > 0).first()
         if not artisan: return jsonify({"message": "This artisan is not available for booking"}), 409
-        from ..services.service_catalogue import specific_service, capability_matches
-        specific = specific_service(booking.service)
-        if specific and not capability_matches(specific, artisan.trade, artisan.secondary_services):
-            return jsonify(message="This professional has not listed the requested service"),409
-        if booking.latitude is not None and (artisan.latitude is None or artisan.longitude is None):
-            return jsonify(message="This artisan has not configured a service location"),409
-        if booking.latitude is not None and artisan.latitude is not None and artisan.longitude is not None:
-            from ..services.distance import haversine_km
-            if haversine_km(booking.latitude,booking.longitude,artisan.latitude,artisan.longitude)>artisan.radius_km:
-                return jsonify(message="The job is outside this artisan's service radius"),409
+        blocker = booking_blocker(artisan, booking.service, booking_coordinates(booking), scheduled,
+                                  require_hours=data.get("instant_booking") is True)
+        if blocker: return jsonify(message=blocker),409
         booking.artisan_id = artisan.id
         if bool(data.get("instant_booking")):
             if not scheduled: return jsonify({"message": "Choose a date for instant booking"}), 422
@@ -145,6 +139,40 @@ def bookings():
         ))
     db.session.commit();dispatch_notifications(notification_ids)
     return jsonify(booking.public()), 201
+
+
+@bp.post("/bookings/<booking_id>/reschedule")
+@role_required(Role.CUSTOMER)
+def reschedule_booking(booking_id):
+    user = current_user()
+    booking = Booking.query.filter_by(id=booking_id, customer_id=user.id).with_for_update().first_or_404()
+    if booking.status != BookingStatus.REQUESTED or Quote.query.filter_by(booking_id=booking.id).first():
+        return jsonify(message="Only requests without quotes can be rescheduled here."), 409
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(message="Choose a date and time."), 422
+    try:
+        day = date.fromisoformat(data["scheduled_date"])
+        value = data["start_time"]
+        if not re.fullmatch(r"(?:0[6-9]|1[0-9]):(?:00|30)|20:00", value):
+            raise ValueError
+        scheduled = datetime.combine(day, time.fromisoformat(value), tzinfo=timezone.utc)
+        if scheduled <= datetime.now(timezone.utc):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        return jsonify(message="Choose a future date and time between 6 AM and 8 PM, in half-hour intervals."), 422
+    if booking.artisan_id:
+        blocker = booking_blocker(booking.artisan, booking.service, booking_coordinates(booking), scheduled, require_hours=True)
+        if blocker:
+            return jsonify(message=blocker), 409
+    previous = booking.scheduled_start.isoformat() if booking.scheduled_start else "not scheduled"
+    booking.scheduled_start = scheduled
+    booking.scheduled_end = None
+    db.session.add(BookingStatusEvent(booking_id=booking.id, actor_id=user.id, from_status=booking.status.value, to_status=booking.status.value, note=f"Schedule changed from {previous} to {scheduled.isoformat()}"))
+    ids = queue_notifications(booking.artisan.user, "Booking time changed", f"{booking.reference}: {scheduled.strftime('%Y-%m-%d %H:%M')} GMT.", {"booking_id":booking.id}) if booking.artisan else []
+    db.session.commit()
+    dispatch_notifications(ids)
+    return jsonify(booking=booking.public())
 
 
 @bp.get("/bookings/<booking_id>")
@@ -216,10 +244,12 @@ def decide_change(booking_id, change_id):
 @bp.post("/bookings/<booking_id>/quotes")
 @role_required(Role.ARTISAN)
 def quote(booking_id):
-    user = current_user(); profile = ArtisanProfile.query.filter_by(user_id=user.id).first_or_404(); booking = Booking.query.get_or_404(booking_id)
+    user = current_user(); profile = ArtisanProfile.query.filter_by(user_id=user.id).first_or_404(); booking = Booking.query.filter_by(id=booking_id).with_for_update().first_or_404()
     if profile.verification_status != "approved": return jsonify({"message": "Complete verification before quoting for work."}), 403
     if booking.artisan_id not in (None, profile.id): return jsonify({"message": "This request is assigned to another artisan"}), 409
     if booking.status not in (BookingStatus.REQUESTED, BookingStatus.QUOTED): return jsonify({"message": "This booking no longer accepts quotes"}), 409
+    blocker = booking_blocker(profile, booking.service, booking_coordinates(booking), booking.scheduled_start)
+    if blocker: return jsonify(message=blocker),409
     data = request.get_json(silent=True) or {}
     try:
         amount = Decimal(str(data.get("amount", "")))
@@ -243,8 +273,8 @@ def accept_quote(booking_id, quote_id):
     user = current_user(); booking = Booking.query.filter_by(id=booking_id, customer_id=user.id).with_for_update().first_or_404(); row = Quote.query.filter_by(id=quote_id, booking_id=booking.id, status="submitted").first_or_404()
     if booking.status != BookingStatus.QUOTED: return jsonify({"message": "This quote can no longer be accepted"}), 409
     artisan = ArtisanProfile.query.filter_by(id=row.artisan_id).with_for_update().one()
-    if artisan.verification_status != "approved":
-        return jsonify({"message": "This professional is no longer eligible to accept this job."}), 409
+    blocker = booking_blocker(artisan, booking.service, booking_coordinates(booking), booking.scheduled_start)
+    if blocker: return jsonify(message=blocker),409
     booking.artisan_id, booking.agreed_amount, row.status = row.artisan_id, row.amount, "accepted"
     Quote.query.filter(Quote.booking_id == booking.id, Quote.id != row.id).update({Quote.status: "declined"})
     transition(booking, BookingStatus.ACCEPTED, user, "Customer accepted quote")
