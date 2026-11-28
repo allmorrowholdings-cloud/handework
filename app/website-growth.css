@@ -1,3 +1,15 @@
+
+
+/* Professional onboarding: compact, responsive five-stage application. */
+.hw-professional-setup { min-width:0; align-content:start; }
+.hw-setup-progress { display:grid; gap:8px; font-size:13px; font-weight:650; }
+.hw-setup-progress progress { width:100%; height:8px; accent-color:#FFCF22; }
+.hw-setup-review { display:grid; grid-template-columns:minmax(90px, 1fr) minmax(0, 2fr); gap:14px; margin:0; padding:20px; border:1px solid var(--line); border-radius:16px; }
+.hw-setup-review dt { font-weight:650; }
+.hw-setup-review dd { margin:0; overflow-wrap:anywhere; }
+.hw-professional-setup input:not([type=checkbox]), .hw-professional-setup textarea, .hw-professional-setup select { font-size:16px; min-width:0; box-sizing:border-box; }
+.hw-professional-setup .consent input { width:20px; min-height:20px; }
+@media(max-width:800px) { .join-layout:has(.hw-professional-setup) { gap:20px; } .join-layout:has(.hw-professional-setup)>aside { grid-template-columns:repeat(5,minmax(0,1fr)); } .join-layout:has(.hw-professional-setup)>aside span { overflow-wrap:anywhere; } .hw-professional-setup { min-height:0; } }
 .hw-home-checking,.hw-home-content{display:contents}
 @media(display-mode:standalone){.hw-home-checking{display:none}}
 .hw-service-discovery-link{display:inline-block;margin-top:16px;font-weight:750;text-decoration:underline;text-underline-offset:4px}
