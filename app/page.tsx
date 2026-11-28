@@ -11,16 +11,20 @@ import { SafetyVideo } from "./components/safety-video";
 import { PwaHomeGate } from "./components/pwa-home-gate";
 
 
+export const metadata = { title: { absolute: "Find skilled professionals in Ghana | handEwork" }, description: "Find plumbers, electricians, cleaners and other skilled professionals in Ghana. Describe your job, compare quotes and follow your work with handEwork.", alternates: { canonical: "/" } };
+
 export default function Home() {
   return (
     <PwaHomeGate><main className="home-market">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify({"@context":"https://schema.org","@type":"Organization",name:"handEwork",url:"https://handework.allmorrow.com/",logo:"https://handework.allmorrow.com/handework-logo.png",slogan:"Get it done with skilled hands."})}} />
       <Header />
       <section className="hero hero-light" id="top">
         <div className="shell hero-grid hero-grid-visual">
           <div className="hero-copy">
-            <h1>Skilled work deserves recognition.</h1>
-            <p className="hero-lede">Find capable hands, agree on the job, and follow every step with confidence. For the people who do the work, handEwork makes skill visible and reputation portable.</p>
+            <h1>Get it done with skilled hands.</h1>
+            <p className="hero-lede">Find the right professional for the job. From everyday repairs to specialist projects, describe what you need, agree on the scope and quote, and keep a record of the work.</p>
             <LocationSearch />
+            <Link className="hw-service-discovery-link" href="/services">Explore services →</Link>
           </div>
           <div className="home-hammer" aria-hidden="true">
             <img src="/handework-hammer.webp" width={1024} height={1024} alt="" fetchPriority="high" />

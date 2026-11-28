@@ -28,18 +28,20 @@ export function Header() {
   return <header className={`site-header ${isHome ? "home-header" : ""}`}><div className="shell nav-wrap">
     <div className="nav-brand"><Logo light={!isHome} /><small>from ALLMORROW</small></div>
     <nav className={open ? "nav-links open" : "nav-links"} aria-label="Main navigation">
+      <Link href="/services" onClick={() => setOpen(false)}>Services</Link>
       <Link href="/about" onClick={() => setOpen(false)}>About</Link>
       <Link href="/contact" onClick={() => setOpen(false)}>Contact</Link>
       {signedIn && <Link href="/my-jobs" onClick={() => setOpen(false)}>My jobs</Link>}
       <Link href="/join/artisan" onClick={() => setOpen(false)}>For professionals</Link>
       <div className="mobile-account-links">
+        <div className="hw-menu-theme"><ThemeToggle compact /></div>
         {signedIn ? <>
           <Link href="/my-jobs" onClick={() => setOpen(false)}>My jobs</Link>
           <Link href="/settings" onClick={() => setOpen(false)}>Account & settings</Link>
         </> : (
           <Link href="/auth/sign-in" onClick={() => setOpen(false)}>Sign in</Link>
         )}
-        <Link className="mobile-nav-booking" href="/about" onClick={() => setOpen(false)}>Why handEwork?</Link>
+        <Link href="/services" onClick={() => setOpen(false)}>Explore services</Link>
       </div>
     </nav>
     <div className="nav-actions"><ThemeToggle compact />
