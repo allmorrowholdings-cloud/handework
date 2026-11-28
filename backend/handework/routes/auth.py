@@ -76,7 +76,19 @@ def register_artisan():
     if error: return error
     trade, city, area = str(data.get("trade") or "").strip(), str(data.get("city") or "").strip(), str(data.get("area") or "").strip()
     if not all((trade, city, area)): db.session.rollback(); return jsonify({"message": "Trade, city and area are required", "code": "incomplete_artisan_profile"}), 422
-    profile = ArtisanProfile(user_id=user.id, display_name=f"{user.first_name} {user.last_name}".strip(), trade=trade, secondary_services=str(data.get("secondary_services") or ""), bio=str(data.get("bio") or ""), years_experience=max(int(data.get("years_experience") or 0), 0), city=city, area=area, radius_km=min(max(int(data.get("radius_km") or 10), 1), 100))
+    from ..services.maps import point
+    try:
+        latitude, longitude = (None, None)
+        if data.get("latitude") not in (None, "") or data.get("longitude") not in (None, ""):
+            latitude, longitude = point(data.get("latitude"), data.get("longitude"))
+        years = int(data.get("years_experience") or 0)
+        radius = int(data.get("radius_km") or 10)
+        if not 0 <= years <= 100 or not 1 <= radius <= 100 or len(trade) > 120:
+            raise ValueError()
+    except (ValueError, TypeError, OverflowError):
+        db.session.rollback()
+        return jsonify(message="Check your location, experience and service radius"), 422
+    profile = ArtisanProfile(latitude=latitude, longitude=longitude, user_id=user.id, display_name=f"{user.first_name} {user.last_name}".strip(), trade=trade, secondary_services=str(data.get("secondary_services") or ""), bio=str(data.get("bio") or ""), years_experience=years, city=city, area=area, radius_km=radius)
     db.session.add(profile); db.session.commit(); return jsonify(session_for(user)), 201
 
 
