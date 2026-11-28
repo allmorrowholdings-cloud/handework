@@ -141,6 +141,40 @@ def bookings():
     return jsonify(booking.public()), 201
 
 
+@bp.post("/bookings/<booking_id>/reschedule")
+@role_required(Role.CUSTOMER)
+def reschedule_booking(booking_id):
+    user = current_user()
+    booking = Booking.query.filter_by(id=booking_id, customer_id=user.id).with_for_update().first_or_404()
+    if booking.status != BookingStatus.REQUESTED or Quote.query.filter_by(booking_id=booking.id).first():
+        return jsonify(message="Only requests without quotes can be rescheduled here."), 409
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(message="Choose a date and time."), 422
+    try:
+        day = date.fromisoformat(data["scheduled_date"])
+        value = data["start_time"]
+        if not re.fullmatch(r"(?:0[6-9]|1[0-9]):(?:00|30)|20:00", value):
+            raise ValueError
+        scheduled = datetime.combine(day, time.fromisoformat(value), tzinfo=timezone.utc)
+        if scheduled <= datetime.now(timezone.utc):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        return jsonify(message="Choose a future date and time between 6 AM and 8 PM, in half-hour intervals."), 422
+    if booking.artisan_id:
+        blocker = booking_blocker(booking.artisan, booking.service, booking_coordinates(booking), scheduled, require_hours=True)
+        if blocker:
+            return jsonify(message=blocker), 409
+    previous = booking.scheduled_start.isoformat() if booking.scheduled_start else "not scheduled"
+    booking.scheduled_start = scheduled
+    booking.scheduled_end = None
+    db.session.add(BookingStatusEvent(booking_id=booking.id, actor_id=user.id, from_status=booking.status.value, to_status=booking.status.value, note=f"Schedule changed from {previous} to {scheduled.isoformat()}"))
+    ids = queue_notifications(booking.artisan.user, "Booking time changed", f"{booking.reference}: {scheduled.strftime('%Y-%m-%d %H:%M')} GMT.", {"booking_id":booking.id}) if booking.artisan else []
+    db.session.commit()
+    dispatch_notifications(ids)
+    return jsonify(booking=booking.public())
+
+
 @bp.get("/bookings/<booking_id>")
 @role_required(Role.CUSTOMER, Role.ARTISAN, Role.ADMIN)
 def booking_detail(booking_id):
@@ -210,7 +244,7 @@ def decide_change(booking_id, change_id):
 @bp.post("/bookings/<booking_id>/quotes")
 @role_required(Role.ARTISAN)
 def quote(booking_id):
-    user = current_user(); profile = ArtisanProfile.query.filter_by(user_id=user.id).first_or_404(); booking = Booking.query.get_or_404(booking_id)
+    user = current_user(); profile = ArtisanProfile.query.filter_by(user_id=user.id).first_or_404(); booking = Booking.query.filter_by(id=booking_id).with_for_update().first_or_404()
     if profile.verification_status != "approved": return jsonify({"message": "Complete verification before quoting for work."}), 403
     if booking.artisan_id not in (None, profile.id): return jsonify({"message": "This request is assigned to another artisan"}), 409
     if booking.status not in (BookingStatus.REQUESTED, BookingStatus.QUOTED): return jsonify({"message": "This booking no longer accepts quotes"}), 409

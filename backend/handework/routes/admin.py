@@ -34,6 +34,43 @@ def professional_readiness(artisan_id):
                    secondary_services=profile.secondary_services or "", readiness=readiness(profile))
 
 
+def _support_record(row):
+    return {"id": row.id, "topic": row.topic, "message": row.message,
+            "email": row.email, "priority": row.priority, "status": row.status,
+            "created_at": row.created_at.isoformat(), "assigned_admin_id": row.assigned_admin_id}
+
+
+@bp.get("/admin/support")
+@role_required(Role.ADMIN)
+def support_queue():
+    status = request.args.get("status", "open")
+    if status not in ("open", "resolved", "all"):
+        return jsonify(message="Invalid support status"), 422
+    query = SupportTicket.query
+    if status != "all":
+        query = query.filter_by(status=status)
+    rows = query.order_by(SupportTicket.created_at.desc()).limit(100).all()
+    return jsonify(items=[_support_record(row) for row in rows])
+
+
+@bp.patch("/admin/support/<ticket_id>")
+@role_required(Role.ADMIN)
+def update_support(ticket_id):
+    data = request.get_json(silent=True) or {}
+    status = data.get("status")
+    reason = str(data.get("reason") or "").strip()
+    if status not in ("open", "resolved") or not reason or len(reason) > 500:
+        return jsonify(message="Choose a status and provide a reason of up to 500 characters."), 422
+    row = SupportTicket.query.filter_by(id=ticket_id).with_for_update().first_or_404()
+    if row.status == status:
+        return jsonify(_support_record(row))
+    before = {"status": row.status, "assigned_admin_id": row.assigned_admin_id}
+    row.status, row.assigned_admin_id = status, current_user().id
+    db.session.add(AuditLog(actor_id=current_user().id, action="support.status", entity_type="support_ticket", entity_id=row.id, before=before, after={"status":status,"reason":reason,"assigned_admin_id":row.assigned_admin_id}))
+    db.session.commit()
+    return jsonify(_support_record(row))
+
+
 @bp.get("/admin/verifications")
 @role_required(Role.ADMIN)
 def verification_queue():
