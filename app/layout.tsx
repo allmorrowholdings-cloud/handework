@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./public-design.css";
 import "./website-growth.css";
+import { ThemeInitializer } from "./components/theme-toggle";
 import { SessionActivity } from "./components/session-activity";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -32,5 +33,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" data-theme="dark" suppressHydrationWarning><body><SessionActivity />{children}</body></html>;
+  return <html lang="en" data-theme="light" suppressHydrationWarning><body><ThemeInitializer /><SessionActivity />{children}</body></html>;
 }
