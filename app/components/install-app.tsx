@@ -72,9 +72,9 @@ export function InstallApp({ compact = false }: { compact?: boolean }) {
       <button className="install-help-close" type="button" aria-label="Close installation instructions" onClick={() => setShowHelp(false)}>×</button>
       <strong>Install handEwork</strong>
       {device === "ios" ? <p>On iPhone or iPad, open handEwork in Safari, tap Share, select Add to Home Screen, then tap Add. Launch handEwork from the new Home Screen icon.</p> :
-        device === "android" ? <p>In Chrome or Samsung Internet, open the browser menu and choose Install app or Add to Home screen, then confirm. Launch handEwork from its Home Screen icon. No APK download or unknown-sources setting is required.</p> :
+        device === "android" ? <p>Open your browser menu and select Install app or Add to Home screen. Once installed, open handEwork from your home screen.</p> :
         <p>On desktop {browser}, use your browser&apos;s Install app command in the address bar or browser menu. If not offered, continue using handEwork normally.</p>}
-      <p className="install-help-hint">Location, camera and notification permissions are requested only when you use the features that need them. Installation alone does not require these permissions.</p>
+
     </div>}
   </div>;
 }

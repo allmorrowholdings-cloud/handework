@@ -24,7 +24,7 @@ export default function Home() {
             <h1>Get it done with skilled hands.</h1>
             <p className="hero-lede">Find the right professional for the job. From everyday repairs to specialist projects, describe what you need, agree on the scope and quote, and keep a record of the work.</p>
             <LocationSearch />
-            <Link className="hw-service-discovery-link" href="/services">Explore services →</Link>
+
           </div>
           <div className="home-hammer" aria-hidden="true">
             <img src="/handework-hammer.webp" width={1024} height={1024} alt="" fetchPriority="high" />
@@ -101,7 +101,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <section className="shell hw-training-story"><div><span className="hw-section-label">FOR SKILLED PROFESSIONALS</span><h2>Finished training. Now what?</h2></div><div><p>Completing vocational school does not automatically bring customers, tools or a workshop. handEwork helps you present your skills professionally, create a portfolio and connect with real opportunities.</p><p>Explore short practical courses and training opportunities to develop your craft without assuming everyone can afford to relocate or enter another expensive apprenticeship. Course access, location and fees depend on each provider.</p><Link href="/training" className="home-process-cta">Explore training opportunities</Link></div></section>
+      <section className="shell hw-training-story"><div><h2>Finished training. Now what?</h2></div><div><p>Completing vocational school does not automatically bring customers, tools or a workshop. handEwork helps you present your skills professionally, create a portfolio and connect with real opportunities.</p><p>Explore short practical courses and training opportunities to develop your craft. Course access, location and fees depend on each provider.</p><Link href="/training" className="home-process-cta">Explore training opportunities</Link></div></section>
       <Professionals />
 
       <section className="home-workproof" aria-labelledby="home-workproof-title">
