@@ -10,4 +10,4 @@ export const services = [
   { code: "09", name: "Catering", note: "Feed your guests without the cooking.", image: "food-events" },
 ];
 
-export const serviceNames = [...services.map(service => service.name), "Electrical", "Digital design"];
+export { serviceNames } from "./service-catalogue";
