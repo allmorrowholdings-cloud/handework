@@ -11,6 +11,7 @@ from ..models import ArtisanProfile, Availability, FileAsset, User, Booking, Boo
 from ..security import current_user, role_required
 from ..services.commission import commission_bps
 from ..services.payment_plan import installments, validate_schedule
+from ..services.eligibility import booking_blocker, booking_coordinates
 from ..services.storage import private_download_url
 from ..services.notifications import dispatch_notifications, queue_notifications
 
@@ -100,23 +101,16 @@ def bookings():
         if booking.latitude is None:
             return jsonify(message="Select a job pin for Smart Dispatch"),422
         matches = ranked_artisans(booking.service if booking.service!="Help me choose" else booking.description,
-                                  (booking.latitude,booking.longitude),100,weekday=scheduled.weekday() if scheduled else None)
+                                  (booking.latitude,booking.longitude),100,weekday=scheduled.weekday() if scheduled else None,start=scheduled.time() if scheduled else None)
         if not matches:
             return jsonify(message="No eligible artisan within service radius"),409
         data["artisan_id"]=matches[0]["id"]
     if data.get("artisan_id"):
         artisan = ArtisanProfile.query.filter_by(id=data["artisan_id"], verification_status="approved", available=True).filter(ArtisanProfile.user.has(User.status == "active"), ArtisanProfile.radius_km > 0).first()
         if not artisan: return jsonify({"message": "This artisan is not available for booking"}), 409
-        from ..services.service_catalogue import specific_service, capability_matches
-        specific = specific_service(booking.service)
-        if specific and not capability_matches(specific, artisan.trade, artisan.secondary_services):
-            return jsonify(message="This professional has not listed the requested service"),409
-        if booking.latitude is not None and (artisan.latitude is None or artisan.longitude is None):
-            return jsonify(message="This artisan has not configured a service location"),409
-        if booking.latitude is not None and artisan.latitude is not None and artisan.longitude is not None:
-            from ..services.distance import haversine_km
-            if haversine_km(booking.latitude,booking.longitude,artisan.latitude,artisan.longitude)>artisan.radius_km:
-                return jsonify(message="The job is outside this artisan's service radius"),409
+        blocker = booking_blocker(artisan, booking.service, booking_coordinates(booking), scheduled,
+                                  require_hours=data.get("instant_booking") is True)
+        if blocker: return jsonify(message=blocker),409
         booking.artisan_id = artisan.id
         if bool(data.get("instant_booking")):
             if not scheduled: return jsonify({"message": "Choose a date for instant booking"}), 422
@@ -220,6 +214,8 @@ def quote(booking_id):
     if profile.verification_status != "approved": return jsonify({"message": "Complete verification before quoting for work."}), 403
     if booking.artisan_id not in (None, profile.id): return jsonify({"message": "This request is assigned to another artisan"}), 409
     if booking.status not in (BookingStatus.REQUESTED, BookingStatus.QUOTED): return jsonify({"message": "This booking no longer accepts quotes"}), 409
+    blocker = booking_blocker(profile, booking.service, booking_coordinates(booking), booking.scheduled_start)
+    if blocker: return jsonify(message=blocker),409
     data = request.get_json(silent=True) or {}
     try:
         amount = Decimal(str(data.get("amount", "")))
@@ -243,8 +239,8 @@ def accept_quote(booking_id, quote_id):
     user = current_user(); booking = Booking.query.filter_by(id=booking_id, customer_id=user.id).with_for_update().first_or_404(); row = Quote.query.filter_by(id=quote_id, booking_id=booking.id, status="submitted").first_or_404()
     if booking.status != BookingStatus.QUOTED: return jsonify({"message": "This quote can no longer be accepted"}), 409
     artisan = ArtisanProfile.query.filter_by(id=row.artisan_id).with_for_update().one()
-    if artisan.verification_status != "approved":
-        return jsonify({"message": "This professional is no longer eligible to accept this job."}), 409
+    blocker = booking_blocker(artisan, booking.service, booking_coordinates(booking), booking.scheduled_start)
+    if blocker: return jsonify(message=blocker),409
     booking.artisan_id, booking.agreed_amount, row.status = row.artisan_id, row.amount, "accepted"
     Quote.query.filter(Quote.booking_id == booking.id, Quote.id != row.id).update({Quote.status: "declined"})
     transition(booking, BookingStatus.ACCEPTED, user, "Customer accepted quote")

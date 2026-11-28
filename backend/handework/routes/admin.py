@@ -25,6 +25,15 @@ def operations_queue():
     items.sort(key=lambda x:x["created_at"]);return jsonify({"items":items[:100]})
 
 
+@bp.get("/admin/professional-readiness/<artisan_id>")
+@role_required(Role.ADMIN)
+def professional_readiness(artisan_id):
+    from ..services.eligibility import readiness
+    profile = db.get_or_404(ArtisanProfile, artisan_id)
+    return jsonify(id=profile.id, display_name=profile.display_name, trade=profile.trade,
+                   secondary_services=profile.secondary_services or "", readiness=readiness(profile))
+
+
 @bp.get("/admin/verifications")
 @role_required(Role.ADMIN)
 def verification_queue():

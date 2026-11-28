@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from flask import Blueprint, current_app, jsonify, request
 from ..services.email_delivery import queue_email
 from ..extensions import db
-from ..models import ArtisanProfile, AuditLog, FileAsset, Role, WorkProofEvidence
+from ..models import ArtisanProfile, AuditLog, FileAsset, Role, User, WorkProofEvidence
 from ..security import current_user, role_required
 from ..services.storage import upload_file, metadata_for, private_download_url, delete_object
 from ..services.workproof import public_workproof
@@ -12,7 +12,7 @@ bp = Blueprint("workproof", __name__)
 
 @bp.get("/workproof/<artisan_id>")
 def public_record(artisan_id):
-    profile = ArtisanProfile.query.filter_by(id=artisan_id, verification_status="approved").first_or_404()
+    profile = ArtisanProfile.query.filter_by(id=artisan_id, verification_status="approved").filter(ArtisanProfile.user.has(User.status == "active")).first_or_404()
     return jsonify({"artisan_id": profile.id, "display_name": profile.display_name, "trade": profile.trade, "workproof": public_workproof(profile)})
 
 

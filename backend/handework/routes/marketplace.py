@@ -10,6 +10,7 @@ from ..security import current_user, role_required
 from ..services.distance import haversine_km
 from ..services.maps import geocode, places, point, LocationUnavailable
 from ..services.matching import matching_score
+from ..services.eligibility import readiness, parse_start
 from ..services.service_catalogue import CATALOGUE, specific_service, capability_matches
 from ..services.storage import private_download_url, upload_file, metadata_for, delete_object
 from ..services.workproof import public_workproof
@@ -70,11 +71,17 @@ def search_artisans():
         weekday = date.fromisoformat(request.args["date"]).weekday() if request.args.get("date") else None
     except ValueError:
         return jsonify(message="Date must use YYYY-MM-DD"),422
-    rows = ranked_artisans(service,coordinates,distance_limit,request.args.get("location"),weekday)
+    try:
+        start = parse_start(request.args["start_time"]) if request.args.get("start_time") else None
+        if start is not None and weekday is None:
+            raise ValueError("Choose a date with the start time")
+    except ValueError as error:
+        return jsonify(message=str(error)),422
+    rows = ranked_artisans(service,coordinates,distance_limit,request.args.get("location"),weekday,start)
     return jsonify({"items": rows[:50], "meta": {"service": service, "coordinates_used": bool(coordinates), "distance_km": distance_limit}})
 
 
-def ranked_artisans(service,coordinates,distance_limit,location=None,weekday=None):
+def ranked_artisans(service,coordinates,distance_limit,location=None,weekday=None,start=None):
     query = ArtisanProfile.query.filter_by(verification_status="approved", available=True).filter(ArtisanProfile.user.has(User.status == "active"), ArtisanProfile.radius_km > 0)
     specific = specific_service(service)
     if service and not specific:
@@ -91,8 +98,10 @@ def ranked_artisans(service,coordinates,distance_limit,location=None,weekday=Non
         band = distance_limit/110 + .001
         query = query.filter(ArtisanProfile.latitude.between(coordinates[0]-band, coordinates[0]+band))
     if weekday is not None:
-        query=query.filter(ArtisanProfile.id.in_(db.select(Availability.artisan_id).where(
-            Availability.weekday==weekday, Availability.active.is_(True))))
+        slots = db.select(Availability.artisan_id).where(Availability.weekday==weekday, Availability.active.is_(True))
+        if start is not None:
+            slots = slots.where(Availability.start_time <= start, Availability.end_time > start)
+        query = query.filter(ArtisanProfile.id.in_(slots))
     for profile in query.yield_per(200):
         if specific and not capability_matches(specific, profile.trade, profile.secondary_services):
             continue
@@ -145,7 +154,7 @@ def my_artisan_profile():
         if "starting_price" in data: profile.starting_price = data["starting_price"]
         if "instant_booking" in data: profile.instant_booking = bool(data["instant_booking"])
         db.session.commit()
-    return jsonify({"artisan": {**profile.search_card(None), "avatar_url":private_download_url(profile.avatar_url,300) if profile.avatar_url else None, "bio": profile.bio, "secondary_services": profile.secondary_services or "", "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km, "latitude":float(profile.latitude) if profile.latitude is not None else None,"longitude":float(profile.longitude) if profile.longitude is not None else None,"verification_status": profile.verification_status, "available": profile.available}})
+    return jsonify({"artisan": {**profile.search_card(None), "avatar_url":private_download_url(profile.avatar_url,300) if profile.avatar_url else None, "bio": profile.bio, "secondary_services": profile.secondary_services or "", "city": profile.city, "area": profile.area, "languages": profile.languages, "radius_km": profile.radius_km, "latitude":float(profile.latitude) if profile.latitude is not None else None,"longitude":float(profile.longitude) if profile.longitude is not None else None,"verification_status": profile.verification_status, "available": profile.available, "readiness": readiness(profile)}})
 
 
 @bp.route("/artisans/me/availability", methods=["GET", "PUT"])
@@ -153,13 +162,33 @@ def my_artisan_profile():
 def availability():
     profile = ArtisanProfile.query.filter_by(user_id=current_user().id).first_or_404()
     if request.method == "PUT":
-        data = request.get_json(silent=True) or {}; rows = data.get("items", [])
+        data = request.get_json(silent=True)
+        rows = data.get("items") if isinstance(data, dict) else None
+        if not isinstance(rows, list) or len(rows) > 7:
+            return jsonify(message="Provide up to seven working days."),422
+        parsed = []
+        seen = set()
+        try:
+            for row in rows:
+                if not isinstance(row, dict): raise ValueError()
+                day = row.get("weekday")
+                active = row.get("active", True)
+                if type(day) is not int or not 0 <= day <= 6 or day in seen or type(active) is not bool:
+                    raise ValueError()
+                start = parse_start(row.get("start_time"))
+                end = parse_start(row.get("end_time"))
+                if start >= end: raise ValueError()
+                seen.add(day)
+                parsed.append(dict(weekday=day, start_time=start, end_time=end, active=active))
+        except (TypeError, ValueError):
+            return jsonify(message="Use unique weekdays (0–6) and valid working hours with an end after the start."),422
+        # Serialize updates to this professional, and validate before deleting saved hours.
+        profile = ArtisanProfile.query.filter_by(id=profile.id).with_for_update().one()
         Availability.query.filter_by(artisan_id=profile.id).delete()
-        for row in rows:
-            from datetime import time
-            start_h, start_m = map(int, row["start_time"].split(":")); end_h, end_m = map(int, row["end_time"].split(":"))
-            db.session.add(Availability(artisan_id=profile.id, weekday=int(row["weekday"]), start_time=time(start_h, start_m), end_time=time(end_h, end_m), active=bool(row.get("active", True))))
-        profile.available = any(row.get("active", True) for row in rows); db.session.commit()
+        for row in parsed:
+            db.session.add(Availability(artisan_id=profile.id, **row))
+        profile.available = any(row["active"] for row in parsed)
+        db.session.commit()
     items = Availability.query.filter_by(artisan_id=profile.id).order_by(Availability.weekday).all()
     return jsonify({"items": [{"weekday": row.weekday, "start_time": row.start_time.strftime("%H:%M"), "end_time": row.end_time.strftime("%H:%M"), "active": row.active} for row in items]})
 
