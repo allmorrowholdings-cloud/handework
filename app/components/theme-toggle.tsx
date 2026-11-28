@@ -22,11 +22,17 @@ function savedTheme(): Theme {
   const installed = window.matchMedia("(display-mode: standalone)").matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone === true;
   const value = localStorage.getItem(installed ? "handework_app_theme_v1" : "handework_theme_v2");
-  return value === "light" || value === "dark" ? value : installed ? "light" : "dark";
+  return value === "light" || value === "dark" ? value : "light";
+}
+
+export function ThemeInitializer() {
+  const theme = useSyncExternalStore(subscribe, savedTheme, () => "light" as const);
+  useEffect(() => applyTheme(theme), [theme]);
+  return null;
 }
 
 export function ThemeToggle({ compact = false, className = "" }: { compact?: boolean; className?: string }) {
-  const theme = useSyncExternalStore(subscribe, savedTheme, () => "dark" as const);
+  const theme = useSyncExternalStore(subscribe, savedTheme, () => "light" as const);
   useEffect(() => applyTheme(theme), [theme]);
 
   function toggle() {

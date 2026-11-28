@@ -2354,3 +2354,42 @@ html[data-theme="dark"] .app-layout{--hw-ws-bg:#111815;--hw-ws-card:#1a2420;--hw
 @media(max-width:760px){.app-layout .hw-premium-sidebar{display:none}.app-layout .hw-premium-topbar{padding:26px 18px 22px;min-height:0;align-items:flex-start}.hw-workspace-heading h1{font-size:32px}.hw-workspace-heading p{font-size:13px}.hw-topbar-actions{gap:7px}.hw-topbar-profile{height:40px;width:40px}.app-layout .hw-premium-main .app-content{padding:18px 16px 110px}.hw-workspace-intro{display:grid;padding:22px;gap:20px}.hw-workspace-intro .button{width:100%}.hw-workspace-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}.hw-workspace-shortcuts a{padding:17px 14px}.hw-premium-records .record-row{align-items:flex-start}.hw-premium-records .record-row a{min-height:38px}.app-layout .hw-premium-main .app-columns{grid-template-columns:1fr}}
 @media(max-width:390px){.hw-workspace-shortcuts{grid-template-columns:1fr}.hw-workspace-intro h2{font-size:26px}}
 @media(prefers-reduced-motion:reduce){.hw-workspace-shortcuts a{transition:none}.hw-workspace-shortcuts a:hover{transform:none}}
+
+/* Batch 06A: intrinsic sizing, safe areas and consistent mobile controls. */
+.hw-native-app-shell,.hw-app-booking{--hw-action:#ffcf22;--hw-control-radius:12px;--hw-touch:48px;min-width:0;width:100%;max-width:100%;}
+.hw-native-app-content,.hw-app-flow-shell,.hw-app-flow-body{min-width:0;max-width:100%;}
+.hw-native-app-content{max-width:1200px;}
+.hw-app-flow-body{grid-template-columns:minmax(0,1fr);overflow-wrap:anywhere;}
+.hw-app-flow-body>* , .hw-app-flow-body label>*{min-width:0;max-width:100%;}
+.hw-app-flow-body input[type=file]{width:100%;max-width:100%;min-width:0;font-size:13px;padding:8px;}
+.hw-app-flow-body input::file-selector-button{white-space:normal;border:0;border-radius:8px;padding:10px;background:var(--hw-action);color:#141414;font-weight:700;}
+.hw-app-flow-head strong{min-width:0;overflow-wrap:anywhere;}
+.hw-app-flow-head>span{flex:none;}
+.hw-app-flow-actions>*{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;}
+.hw-app-bottom-nav button[data-active=true]{background:var(--hw-action);color:#161616;}
+.hw-native-app-top{height:auto;min-height:60px;padding-top:calc(10px + env(safe-area-inset-top,0px));gap:12px;}
+.hw-native-app-top .hw-app-location{min-width:0;overflow-wrap:anywhere;}
+.hw-native-avatar{flex:none;}
+.hw-app-menu{overscroll-behavior:contain;max-height:min(65dvh,100%);}
+.hw-app-flow-body :is(button,input,select,textarea):focus-visible,.hw-app-bottom-nav :is(a,button):focus-visible,.hw-app-menu :is(a,button):focus-visible{outline:2px solid #e76c1d;outline-offset:2px;}
+@media(max-width:760px){
+ .hw-native-app-shell{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px));}
+ .hw-native-app-content{padding:16px;}
+ .hw-native-app-content .hw-app-home-book{margin:12px auto 0;padding:16px 0;}
+ .hw-native-app-content .hw-app-home-book h1{font-size:clamp(28px,8vw,40px);margin-bottom:20px;}
+ .hw-native-app-content .hw-app-home-book a{min-width:0;width:100%;}
+ .hw-app-booking{padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));}
+ .hw-app-flow-body h1{font-size:clamp(26px,7.8vw,36px);line-height:1.12;}
+ .hw-app-services{grid-template-columns:repeat(2,minmax(0,1fr));}
+ .hw-app-services button,.hw-app-choice button{gap:6px;overflow-wrap:anywhere;}
+ .hw-app-flow-actions{position:static;flex-wrap:wrap;margin-top:24px;padding-bottom:env(safe-area-inset-bottom,0px);}
+ .hw-app-primary{flex:1 1 160px;}
+ .hw-app-outline{flex:0 1 auto;}
+ .hw-app-upload{padding:14px;}
+ .hw-app-review{grid-template-columns:minmax(0,1fr) minmax(0,2fr);}
+ .app-layout .hw-premium-topbar{flex-wrap:wrap;gap:12px;}
+ .app-layout .hw-premium-main{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px));}
+ .hw-workspace-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr));}
+ .hw-workspace-shortcuts a{min-width:0;overflow-wrap:anywhere;}
+}
+@media(max-width:360px){.hw-app-flow-head{gap:6px}.hw-app-flow-head button{min-width:44px}.hw-app-flow-actions .hw-app-outline{flex:1 1 100%}.hw-workspace-shortcuts{grid-template-columns:minmax(0,1fr)}}
