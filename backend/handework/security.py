@@ -16,14 +16,20 @@ def session_version(identity):
 @jwt.token_in_blocklist_loader
 def session_inactive(_header, claims):
     user = db.session.get(User, claims["sub"])
-    if not user or claims.get("session_version", 0) != user.session_version:
+    # Suspended accounts and revoked sessions must be rejected, including
+    # already-issued access tokens and mobile tokens without a browser sid.
+    if (not user or user.status != "active"
+            or claims.get("session_version", 0) != user.session_version):
         return True
     sid = claims.get("sid")
     if not sid:
         return False
+    # Installed clients get a 30-day idle window; browsers get one day.
+    # This must match the /auth/refresh policy.
+    idle_days = 30 if claims.get("installed") is True else 1
     return LoginSession.query.filter(
         LoginSession.id == sid, LoginSession.user_id == claims["sub"],
-        LoginSession.last_active > datetime.now(timezone.utc) - timedelta(days=1)
+        LoginSession.last_active > datetime.now(timezone.utc) - timedelta(days=idle_days)
     ).first() is None
 
 
