@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 CATALOGUE = json.loads(Path(__file__).with_name("service_catalogue.json").read_text(encoding="utf-8"))
-LEGACY = {"plumbing", "carpentry", "welding", "painting", "masonry", "tailoring", "hairdressing", "makeup artist", "catering", "electrical", "digital design", "architect"}
+LEGACY = {"plumbing", "carpentry", "welding", "painting", "masonry", "tailoring", "hairdressing", "makeup artist", "catering", "electrical", "digital design"}
 
 def normalize(value):
     return " ".join((value or "").casefold().split())

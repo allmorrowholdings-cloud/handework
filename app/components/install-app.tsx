@@ -66,7 +66,7 @@ export function InstallApp({ compact = false }: { compact?: boolean }) {
   return <div className={compact ? "header-install" : "footer-install"}>
     {!compact && <div><strong>Take handEwork with you.</strong><p>Bookings, messages and WorkProof, one tap away.</p></div>}
     <button type="button" aria-expanded={showHelp} aria-label="Install handEwork or show installation instructions" onClick={() => void install()}>
-      {compact ? <><span aria-hidden="true">↓</span><span className="header-install-label">Install app</span></> : "Install handEwork"}
+      {compact ? <span className="header-install-label">Install app</span> : "Install handEwork"}
     </button>
     {showHelp && <div className={compact ? "header-install-help" : "footer-install-help"} role="status">
       <button className="install-help-close" type="button" aria-label="Close installation instructions" onClick={() => setShowHelp(false)}>×</button>
