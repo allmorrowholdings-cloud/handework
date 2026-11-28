@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./public-design.css";
+import "./website-growth.css";
 import { SessionActivity } from "./components/session-activity";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://handework.allmorrow.com"),
   title: { default: "handEwork | Get it done with skilled hands.", template: "%s | handEwork" },
   description: "Get it done with skilled hands. Find trusted artisans near you, book work clearly and pay safely with handEwork.",
   applicationName: "handEwork",
@@ -13,10 +15,12 @@ export const metadata: Metadata = {
     title: "handEwork | Get it done with skilled hands.",
     description: "Get it done with skilled hands. Find trusted artisans near you, book work clearly and pay safely with handEwork.",
     siteName: "handEwork",
+    images: [{ url: "/handework-opening-poster.png", alt: "handEwork — Get it done with skilled hands." }],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
+    images: ["/handework-opening-poster.png"],
     title: "handEwork | Get it done with skilled hands.",
     description: "Get it done with skilled hands. Find trusted artisans near you, book work clearly and pay safely with handEwork.",
   },

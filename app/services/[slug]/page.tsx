@@ -1,0 +1,11 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Header } from "../../components/header";
+import { Footer } from "../../components/footer";
+import { serviceGuides } from "../../../lib/service-guides";
+type Props = {params: Promise<{slug:string}>};
+export function generateStaticParams(){return serviceGuides.map(({slug})=>({slug}));}
+export const dynamicParams = false;
+export async function generateMetadata({params}:Props):Promise<Metadata>{const {slug}=await params;const s=serviceGuides.find(x=>x.slug===slug);if(!s)return {};return {title:`${s.name} in Ghana`,description:s.intro,alternates:{canonical:`/services/${s.slug}`},openGraph:{title:`${s.name} in Ghana | handEwork`,description:s.intro,url:`/services/${s.slug}`}};}
+export default async function ServicePage({params}:Props){const {slug}=await params;const s=serviceGuides.find(x=>x.slug===slug);if(!s)notFound();const booking=`/bookings/new?service=${encodeURIComponent(s.booking)}&problem=${encodeURIComponent(s.name)}`;return <main className="paper-page"><Header/><section className="shell hw-growth-intro"><nav aria-label="Breadcrumb"><Link href="/">Home</Link> / <Link href="/services">Services</Link> / {s.name}</nav><p className="hw-section-label">SKILLED SERVICES IN GHANA</p><h1>{s.name}</h1><p>{s.intro}</p><Link className="button button-orange" href={booking}>Describe your job</Link><p className="hw-growth-note">Requests depend on eligible professionals, location and availability. Specialist requests may need manual service selection.</p></section><section className="shell hw-guide-grid"><article className="hw-growth-card"><h2>Types of work</h2><ul>{s.tasks.map(t=><li key={t}>{t}</li>)}</ul></article><article className="hw-growth-card"><h2>Before requesting a quote</h2><p>{s.prepare}</p></article><article className="hw-growth-card"><h2>Agree on the work</h2><p>Confirm the scope, materials, price, schedule and relevant qualifications before accepting a quote. <Link href="/safety">Read our safety guidance.</Link></p></article></section><section className="shell hw-guide-related"><h2>Explore other services</h2>{serviceGuides.filter(x=>x.slug!==slug).map(x=><Link key={x.slug} href={`/services/${x.slug}`}>{x.name}</Link>)}</section><Footer/></main>}

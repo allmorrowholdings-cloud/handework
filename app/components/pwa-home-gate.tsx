@@ -44,9 +44,8 @@ export function PwaHomeGate({ children }: { children: React.ReactNode }) {
     };
   }, [router]);
 
-  if (state === "checking") return null;
   return <>
-    {children}
+    <div className={state === "checking" ? "hw-home-checking" : "hw-home-content"}>{children}</div>
     {state === "pwa-public" && <nav className="hw-pwa-quick-nav" aria-label="Quick links">
       <Link href="/marketplace">Services</Link>
       <Link href="/auth/sign-in">Sign in</Link>
