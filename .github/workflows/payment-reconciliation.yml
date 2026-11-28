@@ -18,8 +18,10 @@ jobs:
           TOKEN: ${{ secrets.PAYMENT_SCHEDULER_TOKEN }}
         run: |
           set -eu
+          test "${#TOKEN}" -ge 32 || { echo "Scheduler token missing or too short"; exit 1; }
           for i in $(seq 1 50); do
-            result=$(curl --silent --show-error --fail --max-time 90 --retry 2 -X POST \
+            result=$(curl --silent --show-error --fail --max-time 90 -X POST \
               -H "Authorization: Bearer $TOKEN" https://handework-api.onrender.com/v1/internal/payments/tick)
-            echo "$result" | jq -e '.processed == 1' >/dev/null || break
+            echo "$result" | jq -e '(.enabled == true) and (.error == null) and (.processed == 0 or .processed == 1)' >/dev/null || { echo "Financial scheduler disabled or job error; review required"; exit 1; }
+            if echo "$result" | jq -e '.processed == 0' >/dev/null; then break; fi
           done

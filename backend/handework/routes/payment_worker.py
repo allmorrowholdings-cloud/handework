@@ -127,18 +127,37 @@ def run_job(job):
 
 @bp.post("/internal/payments/tick")
 def tick():
-    secret = os.getenv("PAYMENT_SCHEDULER_TOKEN","")
-    if len(secret)<32 or not hmac.compare_digest(request.headers.get("Authorization",""), "Bearer "+secret):
+    secret = os.getenv("PAYMENT_SCHEDULER_TOKEN", "")
+    if len(secret) < 32 or not hmac.compare_digest(request.headers.get("Authorization", ""), "Bearer " + secret):
         abort(403)
+    if not enabled("PAYMENT_SCHEDULER_ENABLED"):
+        return jsonify(processed=0, enabled=False)
     now = datetime.now(timezone.utc)
-    job = PaymentJob.query.filter(PaymentJob.state=="pending", PaymentJob.due_at<=now).order_by(PaymentJob.due_at).with_for_update().first()
+    # Never automatically reclaim an uncertain in-flight financial operation.
+    # A dead worker leaves a durable claim for operator/provider reconciliation.
+    stale = PaymentJob.query.filter(PaymentJob.state == "running", PaymentJob.due_at <= now).first()
+    if stale:
+        return jsonify(processed=0, enabled=True, error="stale_financial_claim"), 409
+    kinds = ["verify_charge", "settlement", "verify_operation"]
+    if enabled("PAYMENTS_ENABLED") and enabled("PAYMENT_AUTO_RELEASE_ENABLED"):
+        kinds.append("auto_release")
+    if all(enabled(flag) for flag in ("PAYMENTS_ENABLED", "PAYSTACK_TRANSFERS_ENABLED", "PAYMENT_AUTO_PAYOUT_ENABLED")):
+        kinds.extend(["auto_payout", "retry_payout"])
+    job = PaymentJob.query.filter(PaymentJob.state == "pending", PaymentJob.due_at <= now,
+                                  PaymentJob.kind.in_(kinds)).order_by(PaymentJob.due_at, PaymentJob.key).first()
     if not job:
-        return jsonify(processed=0)
-    # Durable lease survives process death. All effects have independent DB claims.
-    job.due_at = now + timedelta(minutes=5)
-    job.attempts += 1
+        return jsonify(processed=0, enabled=True)
     key = job.key
+    # Conditional UPDATE is atomic even when two requests select the same row.
+    claimed = PaymentJob.query.filter(PaymentJob.key == key, PaymentJob.state == "pending",
+                                      PaymentJob.due_at <= now).update({
+        PaymentJob.state: "running", PaymentJob.due_at: now + timedelta(minutes=15),
+        PaymentJob.attempts: PaymentJob.attempts + 1,
+    }, synchronize_session=False)
     db.session.commit()
+    if claimed != 1:
+        return jsonify(processed=0, enabled=True)
+    job = db.session.get(PaymentJob, key)
     try:
         done = run_job(job)
         job.state = "done" if done else "pending"
@@ -147,7 +166,9 @@ def tick():
         db.session.rollback()
         job = db.session.get(PaymentJob, key)
         job.last_error = str(exc.code) if isinstance(exc, HTTPException) else type(exc).__name__
-    if job.state != "done":
-        job.due_at = datetime.now(timezone.utc) + timedelta(minutes=min(60, 2**min(job.attempts,6)))
+        # Money movement errors can be ambiguous; do not automatically resubmit.
+        job.state = "review" if job.kind in {"auto_release", "auto_payout", "retry_payout"} or job.attempts >= 5 else "pending"
+    if job.state == "pending":
+        job.due_at = datetime.now(timezone.utc) + timedelta(minutes=min(60, 2**min(job.attempts, 6)))
     db.session.commit()
-    return jsonify(processed=1, state=job.state, error=job.last_error)
+    return jsonify(processed=1, enabled=True, state=job.state, error=job.last_error)
